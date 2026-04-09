@@ -16,7 +16,8 @@ router.get("/users/me/sessions", requireAuth, async (req, res): Promise<void> =>
     .where(eq(sessionsTable.userId, req.userId!))
     .orderBy(desc(sessionsTable.createdAt));
 
-  const sessionIds = sessions.map(s => s.id);
+  const completedSessions = sessions.filter(s => s.status === "completed");
+  const sessionIds = completedSessions.map(s => s.id);
 
   let reports: (typeof reportsTable.$inferSelect)[] = [];
   if (sessionIds.length > 0) {
@@ -28,7 +29,7 @@ router.get("/users/me/sessions", requireAuth, async (req, res): Promise<void> =>
 
   const reportBySessionId = new Map(reports.map(r => [r.sessionId, r]));
 
-  const result = sessions.map(session => ({
+  const result = completedSessions.map(session => ({
     id: session.id,
     userId: session.userId,
     jobRole: session.jobRole,

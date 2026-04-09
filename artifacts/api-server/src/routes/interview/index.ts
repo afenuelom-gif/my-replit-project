@@ -164,7 +164,7 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
   });
 });
 
-router.get("/interview/sessions/:id", async (req, res): Promise<void> => {
+router.get("/interview/sessions/:id", optionalAuth, async (req, res): Promise<void> => {
   const params = GetSessionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -179,6 +179,11 @@ router.get("/interview/sessions/:id", async (req, res): Promise<void> => {
 
   if (!session) {
     res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  if (session.userId && session.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 
@@ -439,7 +444,7 @@ router.delete("/interview/sessions/:id", async (req, res): Promise<void> => {
   res.json({ id: updated.id, status: updated.status });
 });
 
-router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => {
+router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Promise<void> => {
   const params = GetReportParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -454,6 +459,11 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
 
   if (!session) {
     res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  if (session.userId && session.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 

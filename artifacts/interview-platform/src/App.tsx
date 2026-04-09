@@ -185,7 +185,7 @@ function App() {
               <Route path="/" component={() => <Home />} />
               <Route path="/interview/:sessionId" component={Interview} />
               <Route path="/report/:sessionId" component={Report} />
-              <Route path="/history" component={History} />
+              <Route path="/history" component={() => <Redirect to="/" />} />
               <Route component={NotFound} />
             </Switch>
           </WouterRouter>

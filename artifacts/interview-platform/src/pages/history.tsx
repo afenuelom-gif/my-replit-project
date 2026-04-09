@@ -1,4 +1,3 @@
-import { useUser } from "@clerk/react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -42,7 +41,6 @@ function statusBadgeVariant(status: string): "default" | "secondary" | "destruct
 }
 
 export default function History() {
-  const { user } = useUser();
   const [, setLocation] = useLocation();
 
   const { data: sessions, isLoading, isError } = useQuery<SessionWithReport[]>({
@@ -66,7 +64,7 @@ export default function History() {
           <div>
             <h1 className="text-2xl font-bold text-white">Interview History</h1>
             <p className="text-muted-foreground text-sm">
-              {user?.firstName ? `${user.firstName}'s` : "Your"} past interview sessions
+              Your past interview sessions
             </p>
           </div>
         </div>
