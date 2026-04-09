@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for the AI Job Interview Platform
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: interview
+    description: Interview session management
+  - name: avatars
+    description: Interviewer avatar management
 paths:
   /healthz:
     get:
@@ -24,6 +28,225 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /interview/interviewers:
+    get:
+      operationId: listInterviewers
+      tags: [interview]
+      summary: List all available interviewers
+      description: Returns all interviewer personas with their avatar images
+      responses:
+        "200":
+          description: List of interviewers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Interviewer"
+
+  /interview/sessions:
+    post:
+      operationId: createSession
+      tags: [interview]
+      summary: Create a new interview session
+      description: Starts a new interview session, randomizes 2-3 interviewers, generates opening questions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionBody"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "400":
+          description: Bad request
+
+  /interview/sessions/{id}:
+    get:
+      operationId: getSession
+      tags: [interview]
+      summary: Get session details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionWithQA"
+        "404":
+          description: Session not found
+
+  /interview/sessions/{id}/next-question:
+    post:
+      operationId: getNextQuestion
+      tags: [interview]
+      summary: Submit an answer and get the next question
+      description: Accepts user's transcribed answer, determines follow-up or next question, returns next question with assigned interviewer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAnswerBody"
+      responses:
+        "200":
+          description: Next question or interview complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NextQuestionResponse"
+        "400":
+          description: Bad request
+        "404":
+          description: Session not found
+
+  /interview/sessions/{id}/posture:
+    post:
+      operationId: analyzePosture
+      tags: [interview]
+      summary: Analyze user posture from webcam snapshot
+      description: Accepts a base64-encoded JPEG webcam snapshot and returns posture feedback via AI vision
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostureAnalysisBody"
+      responses:
+        "200":
+          description: Posture analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostureAnalysisResult"
+        "400":
+          description: Bad request
+        "404":
+          description: Session not found
+
+  /interview/sessions/{id}/complete:
+    post:
+      operationId: completeSession
+      tags: [interview]
+      summary: Mark session as complete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Session completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "404":
+          description: Session not found
+
+  /interview/sessions/{id}/report:
+    get:
+      operationId: getReport
+      tags: [interview]
+      summary: Get the post-interview report for a session
+      description: Returns a detailed report with scores, per-question feedback, posture analysis, and suggestions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Interview report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewReport"
+        "404":
+          description: Session not found
+
+  /interview/sessions/{id}/tts:
+    post:
+      operationId: textToSpeech
+      tags: [interview]
+      summary: Convert interviewer question text to speech audio
+      description: Returns base64-encoded MP3 audio of the question spoken in the interviewer's voice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TtsRequestBody"
+      responses:
+        "200":
+          description: Audio data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TtsResponse"
+        "400":
+          description: Bad request
+
+  /interview/sessions/{id}/transcribe:
+    post:
+      operationId: transcribeAnswer
+      tags: [interview]
+      summary: Transcribe user's spoken answer audio
+      description: Accepts base64-encoded audio blob and returns transcribed text
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranscribeBody"
+      responses:
+        "200":
+          description: Transcribed text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscribeResponse"
+        "400":
+          description: Bad request
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +257,316 @@ components:
       required:
         - status
 
+    Interviewer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        personality:
+          type: string
+        voiceId:
+          type: string
+          description: OpenAI TTS voice identifier
+        avatarUrl:
+          type: ["string", "null"]
+          description: URL or base64 of the avatar image
+      required:
+        - id
+        - name
+        - title
+        - company
+        - personality
+        - voiceId
+
+    CreateSessionBody:
+      type: object
+      properties:
+        jobRole:
+          type: string
+          description: The job role/title being interviewed for
+        jobDescription:
+          type: ["string", "null"]
+          description: Optional full job description text
+        durationMinutes:
+          type: integer
+          description: Target interview duration in minutes (30-45)
+          default: 35
+      required:
+        - jobRole
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: integer
+        jobRole:
+          type: string
+        jobDescription:
+          type: ["string", "null"]
+        durationMinutes:
+          type: integer
+        status:
+          type: string
+          description: "active | completed"
+        interviewerIds:
+          type: array
+          items:
+            type: integer
+          description: IDs of selected interviewers for this session
+        currentInterviewerIndex:
+          type: integer
+        questionCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - jobRole
+        - durationMinutes
+        - status
+        - interviewerIds
+        - currentInterviewerIndex
+        - questionCount
+        - createdAt
+        - updatedAt
+
+    QAItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        questionText:
+          type: string
+        answerText:
+          type: ["string", "null"]
+        interviewerId:
+          type: integer
+        isFollowUp:
+          type: boolean
+        questionIndex:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - questionText
+        - interviewerId
+        - isFollowUp
+        - questionIndex
+        - createdAt
+
+    SessionWithQA:
+      type: object
+      properties:
+        session:
+          $ref: "#/components/schemas/Session"
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QAItem"
+        interviewers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Interviewer"
+      required:
+        - session
+        - questions
+        - interviewers
+
+    SubmitAnswerBody:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          description: ID of the question being answered
+        answerText:
+          type: string
+          description: Transcribed text of the user's spoken answer
+      required:
+        - questionId
+        - answerText
+
+    NextQuestionResponse:
+      type: object
+      properties:
+        done:
+          type: boolean
+          description: True if the interview is complete
+        question:
+          $ref: "#/components/schemas/QAItem"
+        interviewerId:
+          type: integer
+          description: The interviewer who will ask the next question
+        sessionStatus:
+          type: string
+      required:
+        - done
+        - sessionStatus
+
+    PostureAnalysisBody:
+      type: object
+      properties:
+        imageBase64:
+          type: string
+          description: Base64-encoded JPEG webcam snapshot
+      required:
+        - imageBase64
+
+    PostureAnalysisResult:
+      type: object
+      properties:
+        score:
+          type: integer
+          description: Posture score 0-100
+        feedback:
+          type: string
+          description: Detailed posture feedback
+        issues:
+          type: array
+          items:
+            type: string
+          description: List of identified posture issues
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - score
+        - feedback
+        - issues
+        - timestamp
+
+    InterviewReport:
+      type: object
+      properties:
+        sessionId:
+          type: integer
+        overallScore:
+          type: integer
+          description: Overall interview score 0-100
+        communicationScore:
+          type: integer
+        technicalScore:
+          type: integer
+        confidenceScore:
+          type: integer
+        postureScore:
+          type: integer
+        answerFeedback:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnswerFeedback"
+        postureNotes:
+          type: array
+          items:
+            type: string
+        suggestions:
+          type: array
+          items:
+            type: string
+          description: Top improvement suggestions
+        summary:
+          type: string
+          description: Overall performance summary paragraph
+        generatedAt:
+          type: string
+          format: date-time
+      required:
+        - sessionId
+        - overallScore
+        - communicationScore
+        - technicalScore
+        - confidenceScore
+        - postureScore
+        - answerFeedback
+        - postureNotes
+        - suggestions
+        - summary
+        - generatedAt
+
+    AnswerFeedback:
+      type: object
+      properties:
+        questionId:
+          type: integer
+        questionText:
+          type: string
+        answerText:
+          type: ["string", "null"]
+        score:
+          type: integer
+        feedback:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        improvements:
+          type: array
+          items:
+            type: string
+      required:
+        - questionId
+        - questionText
+        - score
+        - feedback
+        - strengths
+        - improvements
+
+    TtsRequestBody:
+      type: object
+      properties:
+        text:
+          type: string
+          description: Text to convert to speech
+        interviewerId:
+          type: integer
+          description: Interviewer ID to use their assigned voice
+      required:
+        - text
+        - interviewerId
+
+    TtsResponse:
+      type: object
+      properties:
+        audioBase64:
+          type: string
+          description: Base64-encoded MP3 audio
+        format:
+          type: string
+          default: mp3
+      required:
+        - audioBase64
+        - format
+
+    TranscribeBody:
+      type: object
+      properties:
+        audioBase64:
+          type: string
+          description: Base64-encoded audio blob (webm/mp3/wav)
+        mimeType:
+          type: string
+          description: Audio MIME type
+          default: audio/webm
+      required:
+        - audioBase64
+
+    TranscribeResponse:
+      type: object
+      properties:
+        text:
+          type: string
+          description: Transcribed text
+      required:
+        - text

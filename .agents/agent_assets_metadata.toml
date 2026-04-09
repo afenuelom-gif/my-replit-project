@@ -1,0 +1,44 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "3YM06nwfU0TzujFTHrnDm"
+uri = "file://attached_assets/generated_images/generated_image.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "2PJ0cBmdPLzA8Q58Rdv81"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-1.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "UjSVKD5RFB32GpymTKFUQ"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "uF-d9B4zR7VuDC6RLSstA"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "YPdP7hWC8nlihu7R6C6r1"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-4.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "EJ5GAHhHyr3gdM3bXMXU1"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-5.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "pGFKhPJ38FZ_sQuMSdxjJ"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-6.png"
+type = "image"
+title = "generated_image"
