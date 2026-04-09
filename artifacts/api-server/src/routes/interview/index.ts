@@ -31,6 +31,7 @@ import {
   transcribeAudio,
   shouldAskFollowUp,
 } from "../../lib/interviewAI.js";
+import { seedInterviewersIfNeeded } from "../../lib/seedInterviewers.js";
 
 const router: IRouter = Router();
 
@@ -46,11 +47,15 @@ router.post("/interview/sessions", async (req, res): Promise<void> => {
     return;
   }
 
-  const { jobRole, jobDescription, durationMinutes } = parsed.data;
+  const { jobRole, jobDescription, durationMinutes: rawDuration } = parsed.data;
+  const VALID_DURATIONS = [30, 35, 40, 45];
+  const durationMinutes = VALID_DURATIONS.includes(rawDuration) ? rawDuration : 35;
+
+  await seedInterviewersIfNeeded();
 
   const allInterviewers = await db.select().from(interviewersTable);
   if (allInterviewers.length < 2) {
-    res.status(500).json({ error: "Not enough interviewers in database. Please seed interviewers first." });
+    res.status(500).json({ error: "Not enough interviewers in database." });
     return;
   }
 
@@ -483,6 +488,17 @@ router.post("/interview/sessions/:id/tts", async (req, res): Promise<void> => {
     return;
   }
 
+  const session = await db
+    .select()
+    .from(sessionsTable)
+    .where(eq(sessionsTable.id, params.data.id))
+    .then((rows) => rows[0]);
+
+  if (!session) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
   const body = TextToSpeechBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
@@ -508,6 +524,17 @@ router.post("/interview/sessions/:id/transcribe", async (req, res): Promise<void
   const params = TranscribeAnswerParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const session = await db
+    .select()
+    .from(sessionsTable)
+    .where(eq(sessionsTable.id, params.data.id))
+    .then((rows) => rows[0]);
+
+  if (!session) {
+    res.status(404).json({ error: "Session not found" });
     return;
   }
 
