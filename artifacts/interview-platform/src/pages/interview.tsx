@@ -41,6 +41,7 @@ export default function Interview() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -74,11 +75,13 @@ export default function Interview() {
   useEffect(() => {
     const initWebcam = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        mediaStreamRef.current = stream;
+        const videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        mediaStreamRef.current = videoStream;
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          videoRef.current.srcObject = videoStream;
         }
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        audioStreamRef.current = audioStream;
       } catch (err) {
         console.error("Webcam error:", err);
         setWebcamEnabled(false);
@@ -192,18 +195,19 @@ export default function Interview() {
       setIsProcessing(true);
       setStatusMessage("Processing your answer...");
     } else {
-      if (!mediaStreamRef.current) {
+      const recordingStream = audioStreamRef.current ?? mediaStreamRef.current;
+      if (!recordingStream) {
         setStatusMessage("No microphone detected. Please enable webcam/mic first.");
         return;
       }
       audioChunksRef.current = [];
-      
+
       let mimeType = 'audio/webm';
       if (!MediaRecorder.isTypeSupported(mimeType)) {
         mimeType = 'audio/mp4';
       }
       
-      const recorder = new MediaRecorder(mediaStreamRef.current, { mimeType });
+      const recorder = new MediaRecorder(recordingStream, { mimeType });
       
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);

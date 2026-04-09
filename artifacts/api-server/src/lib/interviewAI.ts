@@ -172,7 +172,9 @@ Return ONLY valid JSON, no markdown.`,
       technicalScore: Math.min(100, Math.max(0, Number(parsed.technicalScore) || 65)),
       confidenceScore: Math.min(100, Math.max(0, Number(parsed.confidenceScore) || 65)),
       summary: parsed.summary ?? "Overall performance was satisfactory.",
-      suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 3) : [],
+      suggestions: ensureThreeSuggestions(
+        Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 3) : []
+      ),
     };
   } catch {
     return {
@@ -181,9 +183,22 @@ Return ONLY valid JSON, no markdown.`,
       technicalScore: 65,
       confidenceScore: 65,
       summary: "Overall performance was satisfactory.",
-      suggestions: [],
+      suggestions: ensureThreeSuggestions([]),
     };
   }
+}
+
+function ensureThreeSuggestions(suggestions: string[]): string[] {
+  const defaults = [
+    "Practice structuring answers using the STAR method (Situation, Task, Action, Result).",
+    "Provide more specific examples and quantifiable outcomes in your responses.",
+    "Work on concise delivery by keeping answers to 1-2 minutes and eliminating filler words.",
+  ];
+  const result = [...suggestions];
+  while (result.length < 3) {
+    result.push(defaults[result.length]);
+  }
+  return result;
 }
 
 export async function analyzePostureFromImage(imageBase64: string): Promise<{
