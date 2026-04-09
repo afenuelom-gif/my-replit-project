@@ -4,9 +4,9 @@ const router: IRouter = Router();
 
 const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
 
-router.get("/dev/status", (req, res): void => {
+router.get("/dev/status", (_req, res): void => {
   res.json({
-    bypassAuth: BYPASS_AUTH,
+    bypassActive: BYPASS_AUTH,
     nodeEnv: process.env.NODE_ENV ?? "development",
   });
 });

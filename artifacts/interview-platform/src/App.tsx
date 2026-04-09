@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk, useUser } from "@clerk/react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +20,29 @@ function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
     ? path.slice(basePath.length) || "/"
     : path;
+}
+
+function useDevMode() {
+  const [bypassActive, setBypassActive] = useState(false);
+  useEffect(() => {
+    fetch("/api/dev/status")
+      .then((r) => r.json())
+      .then((data: { bypassActive?: boolean }) => {
+        setBypassActive(data.bypassActive === true);
+      })
+      .catch(() => {});
+  }, []);
+  return bypassActive;
+}
+
+function DevModeBanner() {
+  const bypassActive = useDevMode();
+  if (!bypassActive) return null;
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-400 text-yellow-900 text-center text-sm font-semibold py-1.5 px-4">
+      Dev Mode — auth bypassed
+    </div>
+  );
 }
 
 function SignInPage() {
@@ -81,6 +104,12 @@ function ClerkUserMenu() {
 }
 
 function HistoryRoute() {
+  const bypassActive = useDevMode();
+
+  if (bypassActive) {
+    return <History />;
+  }
+
   return (
     <>
       <Show when="signed-in">
@@ -128,6 +157,7 @@ function ClerkProviderWithRoutes() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <ClerkQueryClientCacheInvalidator />
+          <DevModeBanner />
           <Switch>
             <Route path="/" component={() => <Home authMenu={<ClerkUserMenu />} />} />
             <Route path="/sign-in/*?" component={SignInPage} />
@@ -150,10 +180,12 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <WouterRouter base={basePath}>
+            <DevModeBanner />
             <Switch>
-              <Route path="/" component={Home} />
+              <Route path="/" component={() => <Home />} />
               <Route path="/interview/:sessionId" component={Interview} />
               <Route path="/report/:sessionId" component={Report} />
+              <Route path="/history" component={History} />
               <Route component={NotFound} />
             </Switch>
           </WouterRouter>

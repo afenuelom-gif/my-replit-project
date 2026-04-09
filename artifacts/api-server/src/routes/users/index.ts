@@ -29,8 +29,18 @@ router.get("/users/me/sessions", requireAuth, async (req, res): Promise<void> =>
   const reportBySessionId = new Map(reports.map(r => [r.sessionId, r]));
 
   const result = sessions.map(session => ({
-    ...session,
-    report: reportBySessionId.get(session.id) ?? null,
+    id: session.id,
+    userId: session.userId,
+    jobRole: session.jobRole,
+    jobDescription: session.jobDescription,
+    durationMinutes: session.durationMinutes,
+    status: session.status,
+    createdAt: session.createdAt,
+    report: reportBySessionId.has(session.id)
+      ? (({ overallScore, communicationScore, technicalScore, confidenceScore, postureScore }) => ({
+          overallScore, communicationScore, technicalScore, confidenceScore, postureScore,
+        }))(reportBySessionId.get(session.id)!)
+      : null,
   }));
 
   res.json(result);
