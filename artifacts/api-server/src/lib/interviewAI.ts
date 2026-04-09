@@ -1,5 +1,17 @@
-import { openai } from "@workspace/integrations-openai-ai-server";
+import OpenAI from "openai";
 import type { Interviewer } from "@workspace/db";
+
+if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
+  throw new Error("AI_INTEGRATIONS_OPENAI_BASE_URL must be set. Did you forget to provision the OpenAI AI integration?");
+}
+if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+  throw new Error("AI_INTEGRATIONS_OPENAI_API_KEY must be set. Did you forget to provision the OpenAI AI integration?");
+}
+
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
 
 export interface QuestionContext {
   jobRole: string;
@@ -248,7 +260,7 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType: string): Pr
   const ext = mimeType.includes("webm") ? "webm" : mimeType.includes("mp4") ? "mp4" : mimeType.includes("wav") ? "wav" : "webm";
   const filename = `audio.${ext}`;
 
-  const file = new File([audioBuffer], filename, { type: mimeType });
+  const file = new File([new Uint8Array(audioBuffer)], filename, { type: mimeType });
 
   const transcription = await openai.audio.transcriptions.create({
     file,

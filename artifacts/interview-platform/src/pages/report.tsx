@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams, Link } from "wouter";
-import { useGetReport } from "@workspace/api-client-react";
+import { useGetReport, getGetReportQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ export default function Report() {
   const sessionId = parseInt(params.sessionId || "0");
 
   const { data: report, isLoading } = useGetReport(sessionId, {
-    query: { enabled: !!sessionId }
+    query: { enabled: !!sessionId, queryKey: getGetReportQueryKey(sessionId) }
   });
 
   if (isLoading) {

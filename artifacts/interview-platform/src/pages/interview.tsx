@@ -136,17 +136,17 @@ export default function Interview() {
 
     setLastPlayedQuestionId(currentQ.id);
     setStatusMessage("Interviewer speaking...");
-    playTTS(currentQ.questionText, activeInterviewer.voiceId || 'nova');
+    playTTS(currentQ.questionText, activeInterviewer.id);
   }, [sessionData?.questions?.length]);
 
-  const playTTS = async (text: string, voiceId: string) => {
+  const playTTS = async (text: string, interviewerId: number) => {
     setIsSpeaking(true);
     try {
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         currentAudioRef.current = null;
       }
-      const res = await textToSpeech.mutateAsync({ data: { text, voiceId } });
+      const res = await textToSpeech.mutateAsync({ id: sessionId, data: { text, interviewerId } });
       const audioBlob = base64ToBlob(res.audioBase64, 'audio/mpeg');
       const url = URL.createObjectURL(audioBlob);
       const audio = new Audio(url);
