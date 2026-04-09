@@ -113,18 +113,12 @@ export default function Report() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
-                  {(report.suggestions ?? []).length > 0 ? (
-                    (report.suggestions ?? []).map((s, i) => (
-                      <li key={i} className="flex gap-3 text-sm text-primary-foreground">
-                        <div className="min-w-[20px] pt-0.5"><CheckCircle2 className="w-4 h-4 text-primary" /></div>
-                        <span>{s}</span>
-                      </li>
-                    ))
-                  ) : (
-                    <li className="text-sm text-muted-foreground italic">
-                      No suggestions available for this session.
+                  {(report.suggestions ?? []).map((s, i) => (
+                    <li key={i} className="flex gap-3 text-sm text-primary-foreground">
+                      <div className="min-w-[20px] pt-0.5"><CheckCircle2 className="w-4 h-4 text-primary" /></div>
+                      <span>{s}</span>
                     </li>
-                  )}
+                  ))}
                 </ul>
               </CardContent>
             </Card>

@@ -421,6 +421,15 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
     .then((rows) => rows[0]);
 
   if (existing) {
+    const fallbackSuggestions = [
+      "Complete the full interview to receive personalised improvement suggestions.",
+      "Practice answering questions aloud before starting your next session.",
+      "Review common interview questions for your target role to build confidence.",
+    ];
+    const rawSuggestions: string[] = existing.suggestions ? JSON.parse(existing.suggestions) : [];
+    const guaranteedSuggestions = rawSuggestions.length >= 3
+      ? rawSuggestions.slice(0, 3)
+      : [...rawSuggestions, ...fallbackSuggestions.slice(rawSuggestions.length)];
     res.json({
       sessionId: session.id,
       overallScore: existing.overallScore,
@@ -430,7 +439,7 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
       postureScore: existing.postureScore,
       answerFeedback: existing.answerFeedback ? JSON.parse(existing.answerFeedback) : [],
       postureNotes: existing.postureNotes ? JSON.parse(existing.postureNotes) : [],
-      suggestions: existing.suggestions ? JSON.parse(existing.suggestions) : [],
+      suggestions: guaranteedSuggestions,
       summary: existing.summary,
       generatedAt: existing.generatedAt.toISOString(),
     });
@@ -527,7 +536,7 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
     communicationScore: reportData.communicationScore,
     technicalScore: reportData.technicalScore,
     confidenceScore: reportData.confidenceScore,
-    postureScore: avgPosture,
+    postureScore: answeredQA.length === 0 ? 0 : avgPosture,
     summary: reportData.summary,
     suggestions: JSON.stringify(reportData.suggestions),
     answerFeedback: JSON.stringify(answerFeedbacks),
@@ -540,7 +549,7 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
     communicationScore: reportData.communicationScore,
     technicalScore: reportData.technicalScore,
     confidenceScore: reportData.confidenceScore,
-    postureScore: avgPosture,
+    postureScore: answeredQA.length === 0 ? 0 : avgPosture,
     answerFeedback: answerFeedbacks,
     postureNotes,
     suggestions: reportData.suggestions,

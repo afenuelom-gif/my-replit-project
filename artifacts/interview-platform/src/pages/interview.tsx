@@ -480,7 +480,7 @@ export default function Interview() {
             title="Cancel and discard this session"
           >
             <XCircle className="w-4 h-4" />
-            Cancel
+            Cancel Interview
           </Button>
 
           <Button 
