@@ -105,7 +105,7 @@ export default function Home() {
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    Upload .txt or .pdf
+                    Upload .txt file
                   </Button>
                   {uploadedFileName && (
                     <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-md">
@@ -120,7 +120,7 @@ export default function Home() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".txt,.pdf,.doc,.docx"
+                  accept=".txt"
                   className="hidden"
                   onChange={handleFileUpload}
                   data-testid="input-jobDescriptionFile"
