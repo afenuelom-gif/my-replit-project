@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useParams } from "wouter";
-import { useQueryClient } from "@tanstack/react-query";
 import { 
   useGetSession, 
   getGetSessionQueryKey,
   useCompleteSession,
   useGetNextQuestion,
   useTranscribeAnswer,
-  useTextToSpeech,
   useAnalyzePosture
 } from "@workspace/api-client-react";
+import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -27,8 +26,6 @@ export default function Interview() {
   const params = useParams();
   const sessionId = parseInt(params.sessionId || "0");
   const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
-
   const { data: sessionData, isLoading, refetch } = useGetSession(sessionId, {
     query: { enabled: !!sessionId, queryKey: getGetSessionQueryKey(sessionId) }
   });
@@ -36,13 +33,12 @@ export default function Interview() {
   const completeSession = useCompleteSession();
   const getNextQuestion = useGetNextQuestion();
   const transcribeAnswer = useTranscribeAnswer();
-  const textToSpeech = useTextToSpeech();
   const analyzePosture = useAnalyzePosture();
+  const { speak: speechSpeak, stop: speechStop, isSpeaking, isSupported: isTTSSupported } = useSpeechSynthesis();
 
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isRecording, setIsRecording] = useState(false);
   const [webcamEnabled, setWebcamEnabled] = useState(true);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPlayedQuestionId, setLastPlayedQuestionId] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState("Waiting...");
@@ -55,9 +51,9 @@ export default function Interview() {
   const audioStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const postureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerStartedRef = useRef(false);
+  const hasTTSStartedRef = useRef(false);
 
   // Setup timer
   useEffect(() => {
@@ -150,52 +146,33 @@ export default function Interview() {
     }
   }, [sessionId, webcamEnabled]);
 
-  // Auto-play TTS for new questions
+  // Auto-play TTS for new questions via Web Speech API
   useEffect(() => {
     const currentQ = sessionData?.questions[sessionData.questions.length - 1];
     if (!currentQ || currentQ.id === lastPlayedQuestionId) return;
-    
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
     if (!activeInterviewer) return;
 
     setLastPlayedQuestionId(currentQ.id);
-    setStatusMessage("Interviewer speaking...");
-    playTTS(currentQ.questionText, activeInterviewer.id);
+
+    if (isTTSSupported) {
+      setStatusMessage("Interviewer speaking...");
+      hasTTSStartedRef.current = true;
+      speechSpeak(currentQ.questionText, activeInterviewer.voiceId);
+    } else {
+      setStatusMessage("Read the question above, then click the mic to answer");
+    }
   }, [sessionData?.questions?.length]);
 
-  const playTTS = async (text: string, interviewerId: number) => {
-    setIsSpeaking(true);
-    try {
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current = null;
-      }
-      const res = await textToSpeech.mutateAsync({ id: sessionId, data: { text, interviewerId } });
-      const audioBlob = base64ToBlob(res.audioBase64, 'audio/mpeg');
-      const url = URL.createObjectURL(audioBlob);
-      const audio = new Audio(url);
-      currentAudioRef.current = audio;
-      audio.onended = () => {
-        setIsSpeaking(false);
-        setStatusMessage("Your turn — click the mic to answer");
-        URL.revokeObjectURL(url);
-      };
-      await audio.play();
-    } catch (e) {
-      console.error("TTS error:", e);
-      setIsSpeaking(false);
+  // Update status when speech ends
+  useEffect(() => {
+    if (!isSpeaking && hasTTSStartedRef.current) {
       setStatusMessage("Your turn — click the mic to answer");
     }
-  };
-
-  const base64ToBlob = (base64: string, mimeType: string): Blob => {
-    const bytes = atob(base64);
-    const arr = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    return new Blob([arr], { type: mimeType });
-  };
+  }, [isSpeaking]);
 
   const handleComplete = async () => {
+    speechStop();
     try {
       await completeSession.mutateAsync({ id: sessionId });
       setLocation(`/report/${sessionId}`);
@@ -206,6 +183,7 @@ export default function Interview() {
   };
 
   const handleCancel = async () => {
+    speechStop();
     setIsCancelling(true);
     try {
       const res = await fetch(`/api/interview/sessions/${sessionId}`, { method: "DELETE" });
@@ -493,6 +471,19 @@ export default function Interview() {
         </div>
 
         <div className="flex items-center gap-4">
+          {isSpeaking && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-primary/40 text-primary hover:bg-primary/10 gap-2"
+              onClick={() => speechStop()}
+              data-testid="button-skip-tts"
+              title="Skip to answering"
+            >
+              Skip
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="sm"
