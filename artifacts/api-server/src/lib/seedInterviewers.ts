@@ -22,7 +22,7 @@ const INTERVIEWERS = [
     title: "VP of Engineering",
     company: "ScaleUp",
     personality: "Analytical and experienced, probes leadership capabilities, team dynamics, and scaling challenges.",
-    voiceId: "alloy",
+    voiceId: "shimmer",
     avatarUrl: "/avatars/interviewer-3.png",
   },
   {

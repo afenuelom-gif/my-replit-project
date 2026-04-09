@@ -18,7 +18,7 @@ export default function Home({ authMenu }: HomeProps) {
   
   const [jobRole, setJobRole] = useState("");
   const [jobDescription, setJobDescription] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState(35);
+  const [durationMinutes, setDurationMinutes] = useState(30);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

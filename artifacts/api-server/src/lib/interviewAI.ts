@@ -206,7 +206,15 @@ function ensureThreeSuggestions(suggestions: string[]): string[] {
   return result;
 }
 
-const VOICE_POOL = ["nova", "onyx", "alloy", "echo", "shimmer", "fable"] as const;
+const FEMALE_VOICES = ["nova", "shimmer"] as const;
+const MALE_VOICES = ["onyx", "echo", "fable"] as const;
+
+function pickVoice(gender: string, usedFemale: number, usedMale: number): string {
+  if (gender === "female") {
+    return FEMALE_VOICES[usedFemale % FEMALE_VOICES.length];
+  }
+  return MALE_VOICES[usedMale % MALE_VOICES.length];
+}
 
 export async function generateDynamicInterviewers(
   jobRole: string,
@@ -235,6 +243,7 @@ Return a JSON array of exactly ${count} objects, each with:
 - title (string, realistic job title fitting the industry of the role)
 - company (string, realistic company or organisation name fitting the industry)
 - personality (string, one sentence describing their interviewing style and focus areas)
+- gender (string, either "female" or "male" — must match the name you chose)
 
 Examples for "Nurse": Chief Nursing Officer, Nurse Manager, Clinical HR Lead
 Examples for "Data Scientist": Head of Analytics, Senior Data Scientist, Technical Recruiter (AI/ML)
@@ -257,17 +266,26 @@ Return ONLY valid JSON array, no markdown.`,
       title: string;
       company: string;
       personality: string;
+      gender?: string;
     }>;
 
     if (!Array.isArray(parsed) || parsed.length === 0) return null;
 
-    return parsed.slice(0, count).map((p, i) => ({
-      name: String(p.name ?? `Interviewer ${i + 1}`),
-      title: String(p.title ?? "Senior Manager"),
-      company: String(p.company ?? "Organisation"),
-      personality: String(p.personality ?? "Professional and thorough interviewer."),
-      voiceId: VOICE_POOL[i % VOICE_POOL.length],
-    }));
+    let femaleCount = 0;
+    let maleCount = 0;
+
+    return parsed.slice(0, count).map((p) => {
+      const gender = (p.gender ?? "").toLowerCase() === "female" ? "female" : "male";
+      const voiceId = pickVoice(gender, femaleCount, maleCount);
+      if (gender === "female") femaleCount++; else maleCount++;
+      return {
+        name: String(p.name ?? `Interviewer ${femaleCount + maleCount}`),
+        title: String(p.title ?? "Senior Manager"),
+        company: String(p.company ?? "Organisation"),
+        personality: String(p.personality ?? "Professional and thorough interviewer."),
+        voiceId,
+      };
+    });
   } catch {
     return null;
   }

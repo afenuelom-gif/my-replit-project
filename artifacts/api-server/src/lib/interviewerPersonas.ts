@@ -29,7 +29,7 @@ export const INTERVIEWER_PERSONAS: InterviewerPersona[] = [
     title: "VP of Engineering",
     company: "ScaleUp",
     personality: "Analytical and experienced, probes leadership capabilities, team dynamics, and scaling challenges.",
-    voiceId: "alloy",
+    voiceId: "shimmer",
     avatarPrompt: "Professional headshot of a Latina woman in her mid 40s, wearing a dark blazer with pearl necklace, authoritative yet approachable, blurred boardroom background, studio lighting, photorealistic",
   },
   {
