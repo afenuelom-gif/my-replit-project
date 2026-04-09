@@ -11,7 +11,8 @@ import {
   useAnalyzePosture
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, Volume2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, Volume2, MessagesSquare } from "lucide-react";
 
 export default function Interview() {
   const params = useParams();
@@ -287,66 +288,106 @@ export default function Interview() {
         </div>
       </header>
 
-      {/* Main Grid */}
-      <main className="flex-1 p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Interviewers */}
-        {sessionData?.interviewers.map(inv => {
-          const isActive = inv.id === activeInterviewerId;
-          return (
-            <div 
-              key={inv.id} 
-              className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-all duration-300 min-h-48 ${
-                isActive ? 'border-primary shadow-[0_0_30px_rgba(0,195,255,0.2)]' : 'border-white/5'
-              }`}
-            >
-              {inv.avatarUrl ? (
-                <img src={inv.avatarUrl} alt={inv.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl font-bold text-white/20 min-h-48">
-                  {inv.name.charAt(0)}
-                </div>
-              )}
-              
-              {isActive && isSpeaking && (
-                <div className="absolute top-4 right-4 bg-primary/20 border border-primary/40 backdrop-blur-sm rounded-full p-2 flex items-center gap-2">
-                  <Volume2 className="w-4 h-4 text-primary animate-pulse" />
-                  <div className="flex gap-0.5">
-                    {[1,2,3,4].map(i => (
-                      <div key={i} className="w-0.5 bg-primary rounded-full animate-pulse" 
-                        style={{ height: `${8 + i * 4}px`, animationDelay: `${i * 0.1}s` }} />
-                    ))}
+      {/* Main Area: Video Grid + Transcript Panel */}
+      <main className="flex-1 flex overflow-hidden">
+        {/* Video Grid */}
+        <div className="flex-1 p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 content-start overflow-y-auto">
+          {/* Interviewers */}
+          {sessionData?.interviewers.map(inv => {
+            const isActive = inv.id === activeInterviewerId;
+            return (
+              <div 
+                key={inv.id} 
+                className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-all duration-300 min-h-48 ${
+                  isActive ? 'border-primary shadow-[0_0_30px_rgba(0,195,255,0.2)]' : 'border-white/5'
+                }`}
+              >
+                {inv.avatarUrl ? (
+                  <img src={inv.avatarUrl} alt={inv.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl font-bold text-white/20 min-h-48">
+                    {inv.name.charAt(0)}
                   </div>
+                )}
+                
+                {isActive && isSpeaking && (
+                  <div className="absolute top-4 right-4 bg-primary/20 border border-primary/40 backdrop-blur-sm rounded-full p-2 flex items-center gap-2">
+                    <Volume2 className="w-4 h-4 text-primary animate-pulse" />
+                    <div className="flex gap-0.5">
+                      {[1,2,3,4].map(i => (
+                        <div key={i} className="w-0.5 bg-primary rounded-full animate-pulse" 
+                          style={{ height: `${8 + i * 4}px`, animationDelay: `${i * 0.1}s` }} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="absolute bottom-4 left-4 bg-black/80 px-3 py-1 rounded-md backdrop-blur-sm border border-white/10 flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-primary animate-pulse' : 'bg-zinc-600'}`} />
+                  <span className="font-medium text-sm">{inv.name}</span>
+                  <span className="text-xs text-muted-foreground ml-1 hidden sm:inline">{inv.title}</span>
                 </div>
-              )}
-
-              <div className="absolute bottom-4 left-4 bg-black/80 px-3 py-1 rounded-md backdrop-blur-sm border border-white/10 flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-primary animate-pulse' : 'bg-zinc-600'}`} />
-                <span className="font-medium text-sm">{inv.name}</span>
-                <span className="text-xs text-muted-foreground ml-1 hidden sm:inline">{inv.title}</span>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
 
-        {/* User Webcam */}
-        <div className="relative rounded-xl overflow-hidden bg-zinc-900 border border-white/10 min-h-48">
-          {webcamEnabled ? (
-            <video 
-              ref={videoRef}
-              autoPlay 
-              playsInline 
-              muted 
-              className="w-full h-full object-cover transform -scale-x-100"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-zinc-800 min-h-48">
-              <VideoOff className="w-12 h-12 text-zinc-600" />
+          {/* User Webcam */}
+          <div className="relative rounded-xl overflow-hidden bg-zinc-900 border border-white/10 min-h-48">
+            {webcamEnabled ? (
+              <video 
+                ref={videoRef}
+                autoPlay 
+                playsInline 
+                muted 
+                className="w-full h-full object-cover transform -scale-x-100"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-zinc-800 min-h-48">
+                <VideoOff className="w-12 h-12 text-zinc-600" />
+              </div>
+            )}
+            <div className="absolute bottom-4 left-4 bg-black/80 px-3 py-1 rounded-md backdrop-blur-sm border border-white/10 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="font-medium text-sm">You</span>
             </div>
-          )}
-          <div className="absolute bottom-4 left-4 bg-black/80 px-3 py-1 rounded-md backdrop-blur-sm border border-white/10 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span className="font-medium text-sm">You</span>
           </div>
+        </div>
+
+        {/* Transcript Panel */}
+        <div className="hidden xl:flex flex-col w-80 border-l border-white/10 bg-black/30">
+          <div className="p-4 border-b border-white/10 flex items-center gap-2">
+            <MessagesSquare className="w-4 h-4 text-primary" />
+            <h2 className="font-semibold text-sm uppercase tracking-wider text-white/70">Transcript</h2>
+          </div>
+          <ScrollArea className="flex-1">
+            <div className="p-4 space-y-4" data-testid="transcript-panel">
+              {sessionData?.questions && sessionData.questions.length > 0 ? (
+                sessionData.questions.map((q, idx) => {
+                  const interviewer = sessionData.interviewers.find(i => i.id === q.interviewerId);
+                  return (
+                    <div key={q.id} className="space-y-2">
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                        <div className="text-xs text-primary font-semibold mb-1">
+                          {interviewer?.name || "Interviewer"} · Q{idx + 1}
+                        </div>
+                        <p className="text-sm text-white/80">{q.questionText}</p>
+                      </div>
+                      {q.answerText && (
+                        <div className="bg-white/5 border border-white/10 rounded-lg p-3 ml-4">
+                          <div className="text-xs text-zinc-500 font-semibold mb-1">You</div>
+                          <p className="text-sm text-zinc-300">{q.answerText}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-zinc-600 italic text-center mt-8">
+                  The conversation will appear here...
+                </p>
+              )}
+            </div>
+          </ScrollArea>
         </div>
       </main>
 

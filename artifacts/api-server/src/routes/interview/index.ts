@@ -178,10 +178,21 @@ router.post("/interview/sessions/:id/next-question", async (req, res): Promise<v
     return;
   }
 
-  await db
+  const updateResult = await db
     .update(questionsTable)
     .set({ answerText: body.data.answerText })
-    .where(eq(questionsTable.id, body.data.questionId));
+    .where(
+      and(
+        eq(questionsTable.id, body.data.questionId),
+        eq(questionsTable.sessionId, session.id)
+      )
+    )
+    .returning({ id: questionsTable.id });
+
+  if (updateResult.length === 0) {
+    res.status(404).json({ error: "Question not found in this session" });
+    return;
+  }
 
   const allQA = await db
     .select()

@@ -4,7 +4,7 @@ import { useGetReport, getGetReportQueryKey } from "@workspace/api-client-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, ChevronLeft, Target, MessageSquare, Code, Lightbulb, User } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Target, MessageSquare, Code, Lightbulb, User, Camera } from "lucide-react";
 
 export default function Report() {
   const params = useParams();
@@ -122,6 +122,26 @@ export default function Report() {
                 </ul>
               </CardContent>
             </Card>
+            {report.postureNotes && report.postureNotes.length > 0 && (
+              <Card className="bg-card border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-purple-400" />
+                    Posture & Presence Notes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {report.postureNotes.map((note: string, i: number) => (
+                      <li key={i} className="flex gap-3 text-sm text-muted-foreground">
+                        <div className="min-w-[20px] pt-0.5"><User className="w-4 h-4 text-purple-400" /></div>
+                        <span>{note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Right Column: Q&A Details */}
