@@ -1,4 +1,40 @@
 import { db, interviewersTable } from "@workspace/db";
+import { eq, inArray } from "drizzle-orm";
+
+const MALE_VOICES = new Set(["onyx", "echo", "fable"]);
+
+const FEMALE_VOICE_CORRECTIONS: Record<string, string> = {
+  "Alicia K. Patel":   "nova",
+  "Aisha N. Thompson": "shimmer",
+  "Marisol Vega":      "nova",
+  "Priya S. Desai":    "shimmer",
+  "Meera K. Patel":    "nova",
+  "Elena Márquez":     "shimmer",
+  "Priya Natarajan":   "nova",
+  "Alexandra Ruiz":    "nova",
+};
+
+export async function patchFemaleInterviewerVoices(): Promise<void> {
+  try {
+    const names = Object.keys(FEMALE_VOICE_CORRECTIONS);
+    const rows = await db
+      .select({ id: interviewersTable.id, name: interviewersTable.name, voiceId: interviewersTable.voiceId })
+      .from(interviewersTable)
+      .where(inArray(interviewersTable.name, names));
+
+    for (const row of rows) {
+      const targetVoice = FEMALE_VOICE_CORRECTIONS[row.name];
+      if (targetVoice && MALE_VOICES.has(row.voiceId)) {
+        await db
+          .update(interviewersTable)
+          .set({ voiceId: targetVoice })
+          .where(eq(interviewersTable.id, row.id));
+      }
+    }
+  } catch (err) {
+    console.error("Failed to patch female interviewer voices:", err);
+  }
+}
 
 const INTERVIEWERS = [
   {
