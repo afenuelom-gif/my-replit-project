@@ -351,7 +351,6 @@ export default function Interview() {
                     <span className="font-semibold text-sm text-white">{inv.name}</span>
                   </div>
                   <p className="text-xs text-zinc-400 leading-tight">{inv.title}</p>
-                  <p className="text-xs text-zinc-600 leading-tight">{inv.company}</p>
 
                   {isTalking ? (
                     <div className="flex items-end gap-1 mt-2 h-8" aria-label="Speaking">
