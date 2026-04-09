@@ -271,11 +271,6 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType: string): Pr
   return transcription.text;
 }
 
-export function pickRandomInterviewers(count: number): number[] {
-  const allIds = [1, 2, 3, 4, 5, 6];
-  const shuffled = [...allIds].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
-}
 
 export function shouldAskFollowUp(questionCount: number, answerLength: number): boolean {
   if (questionCount < 2) return false;

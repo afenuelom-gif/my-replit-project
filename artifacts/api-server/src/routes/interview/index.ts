@@ -28,7 +28,6 @@ import {
   analyzePostureFromImage,
   generateTTS,
   transcribeAudio,
-  pickRandomInterviewers,
   shouldAskFollowUp,
 } from "../../lib/interviewAI.js";
 
@@ -48,8 +47,16 @@ router.post("/interview/sessions", async (req, res): Promise<void> => {
 
   const { jobRole, jobDescription, durationMinutes } = parsed.data;
 
-  const interviewerCount = Math.floor(Math.random() * 2) + 2;
-  const interviewerIds = pickRandomInterviewers(interviewerCount);
+  const allInterviewers = await db.select().from(interviewersTable);
+  if (allInterviewers.length < 2) {
+    res.status(500).json({ error: "Not enough interviewers in database. Please seed interviewers first." });
+    return;
+  }
+
+  const interviewerCount = Math.min(Math.floor(Math.random() * 2) + 2, allInterviewers.length);
+  const shuffled = [...allInterviewers].sort(() => Math.random() - 0.5);
+  const selectedInterviewers = shuffled.slice(0, interviewerCount);
+  const interviewerIds = selectedInterviewers.map((i) => i.id);
 
   const [session] = await db
     .insert(sessionsTable)
@@ -64,12 +71,7 @@ router.post("/interview/sessions", async (req, res): Promise<void> => {
     })
     .returning();
 
-  const interviewers = await db
-    .select()
-    .from(interviewersTable)
-    .where(eq(interviewersTable.id, interviewerIds[0]));
-
-  const interviewer = interviewers[0];
+  const interviewer = selectedInterviewers[0];
   if (!interviewer) {
     res.status(500).json({ error: "No interviewers found" });
     return;
