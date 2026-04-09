@@ -209,6 +209,27 @@ function ensureThreeSuggestions(suggestions: string[]): string[] {
 const FEMALE_VOICES = ["nova", "shimmer"] as const;
 const MALE_VOICES = ["onyx", "echo", "fable"] as const;
 
+const KNOWN_FEMALE_FIRST_NAMES = new Set([
+  // Western
+  "aaliyah","abigail","ada","addison","adriana","agatha","agnes","aimee","alexa","alexandra","alexis","alice","alicia","alison","allison","amanda","amelia","amy","ana","andrea","angela","anna","annabelle","annie","aria","ariana","ashley","aubrey","audrey","aurora","ava","avery","barbara","beatrice","bella","beth","betty","bianca","bonnie","brenda","brianna","brooklyn","camila","carol","caroline","carrie","cassandra","cassidy","cassie","charlene","charlotte","cheryl","chloe","christine","claire","clara","claudia","colleen","daisy","dana","daniela","deborah","diana","donna","eleanor","elena","elise","eliza","elizabeth","ella","ellie","emily","emma","erica","erin","eva","evelyn","faith","felicia","florence","fiona","frances","gabby","gabriela","gabrielle","genevieve","georgia","gianna","grace","hailey","hannah","hazel","heather","helen","holly","hope","isabelle","isabella","ivy","jade","jasmine","jennifer","jessica","jill","joan","joanna","josephine","joy","julia","juliana","june","karen","kate","katherine","katie","kayla","keira","kelly","kennedy","kim","kimberly","kristen","kristina","layla","leah","leila","lena","lillian","lily","linda","lisa","lola","lorraine","lucy","luna","lydia","mackenzie","madeline","madelyn","maggie","mara","maria","mariana","marie","marlene","mary","megan","melanie","melissa","mia","michelle","millie","miranda","molly","monica","naomi","natalia","natalie","nathalie","nichole","nicola","nicole","nora","norma","nadia","olivia","paige","pamela","patricia","paula","penelope","peyton","phoebe","quinn","rachel","rebecca","riley","rose","roxanne","ruby","ruth","sadie","samantha","sandra","sara","sarah","savannah","shannon","sharon","sierra","skylar","sofia","sophia","stephanie","stella","summer","susan","sydney","tamara","tara","taylor","tiffany","tina","valentina","valeria","valerie","vanessa","vera","veronica","victoria","violet","virginia","vivian","wendy","willow","yvonne","zoe","zoey",
+  // South Asian
+  "aaditi","aarti","abha","aditi","akanksha","alka","amita","amrita","ananya","anita","anjali","ankita","anupama","anuradha","archana","arushi","asha","avni","bhavna","deepa","deepika","devyani","divya","durga","gauri","geeta","gita","gitanjali","hema","ila","indira","jaya","jyoti","kajal","kalpana","kamla","kavita","kavya","kiran","komal","kritika","lakshmi","lata","lavanya","laxmi","madhuri","manisha","manju","meena","meera","mohini","nalini","namrata","neha","nidhi","nisha","nita","parvati","pooja","prachi","pragya","pratibha","pratima","preeti","prerna","priya","puja","purnima","pushpa","radha","rakhi","rashmi","ratna","renu","ritu","riya","roopa","rupali","sadhna","sangeeta","sanjana","sangita","sarita","savita","seema","shailaja","shikha","shilpa","shreya","shubha","shweta","sita","smita","smriti","sonal","sonali","sudha","sujata","sunita","sushma","tanvi","tripti","usha","uma","vandana","veena","vidya","vimla","vinita","vrinda","yashaswini",
+  // Middle Eastern / Islamic
+  "aisha","amina","amira","asma","basma","bushra","dalia","dana","dina","fadwa","farah","farida","fatima","ghada","hana","haneen","hibah","huda","iman","jameela","khadija","laila","lara","leila","lina","lubna","manal","mariam","maryam","mina","miriam","mona","najwa","noor","noura","nuha","rania","reem","rina","safia","salma","sama","samah","samira","sana","sara","sarah","shaheen","shirin","sondos","suha","tahira","yasmin","zahra","zainab","zara",
+  // East Asian
+  "akemi","akiko","ami","ayako","ayumi","fumiko","hanako","haruka","hikaru","hiromi","hana","hua","jing","kaori","keiko","kumiko","kyoko","li","maho","mai","makiko","mei","mika","mikako","miki","ming","miwa","miyuki","momoko","natsuki","noriko","reiko","reina","rie","rika","riko","risa","sachiko","sakura","sayaka","sayuri","seiko","setsuko","shizuka","suki","sumiko","takako","tomoko","tomomi","wakako","wei","xin","xue","yoko","yoshiko","yuki","yuko","yumi","yumiko","yuri","yuriko",
+  // African / African-American
+  "abena","abimbola","adaeze","adaora","adwoa","afriyie","akosua","amara","ambi","aminata","amira","amma","bimpe","chidinma","chioma","chisom","ebunola","efua","eniola","fatou","folake","funmi","imani","isatou","kadiatou","kiara","kiri","maïmouna","mariama","nadia","nana","ngozi","nkechi","nneka","nse","oge","ogechi","omowunmi","oumou","ronke","rokhaya","safiatou","sayo","taiwo","temitayo","titi","titilayo","tokunbo","zuri",
+  // Hispanic / Latina
+  "adriana","alejandra","alicia","alma","ana","andrea","anita","aurora","beatriz","camila","carmen","carolina","catalina","cecilia","claudia","consuelo","cristina","diana","dolores","elena","elisa","elvia","esperanza","fernanda","flor","gabriela","gloria","graciela","guadalupe","ingrid","irene","isabel","isabela","josefina","juanita","leticia","liliana","lourdes","lucia","luisa","luz","magdalena","mariana","marisol","marlene","marta","mercedes","monica","natalia","norma","ofelia","paola","patricia","paula","pilar","raquel","renata","rosa","rosario","sandra","silvia","sonia","susana","teresa","valeria","veronica","xiomara","yolanda",
+]);
+
+function resolveGender(name: string, gptGender: string): "female" | "male" {
+  const firstName = name.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+  if (KNOWN_FEMALE_FIRST_NAMES.has(firstName)) return "female";
+  return gptGender.toLowerCase() === "female" ? "female" : "male";
+}
+
 function pickVoice(gender: string, usedFemale: number, usedMale: number): string {
   if (gender === "female") {
     return FEMALE_VOICES[usedFemale % FEMALE_VOICES.length];
@@ -275,7 +296,7 @@ Return ONLY valid JSON array, no markdown.`,
     let maleCount = 0;
 
     return parsed.slice(0, count).map((p) => {
-      const gender = (p.gender ?? "").toLowerCase() === "female" ? "female" : "male";
+      const gender = resolveGender(String(p.name ?? ""), p.gender ?? "");
       const voiceId = pickVoice(gender, femaleCount, maleCount);
       if (gender === "female") femaleCount++; else maleCount++;
       return {
