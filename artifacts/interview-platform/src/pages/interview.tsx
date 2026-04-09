@@ -328,10 +328,6 @@ export default function Interview() {
           <div className="font-mono text-xl text-primary" data-testid="text-timer">
             {formatTime(timeLeft)}
           </div>
-          <Button variant="destructive" size="sm" onClick={handleComplete} data-testid="button-end"
-            disabled={completeSession.isPending}>
-            {completeSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "End & Get Report"}
-          </Button>
         </div>
       </header>
 
@@ -490,6 +486,11 @@ export default function Interview() {
           >
             <XCircle className="w-4 h-4" />
             Cancel Interview
+          </Button>
+
+          <Button variant="destructive" size="sm" onClick={handleComplete} data-testid="button-end"
+            disabled={completeSession.isPending}>
+            {completeSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "End & Get Report"}
           </Button>
 
           <Button 
