@@ -1,7 +1,7 @@
 import { db, interviewersTable } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 
-const MALE_VOICES = new Set(["onyx", "echo", "fable"]);
+const DISALLOWED_FEMALE_VOICES = new Set(["alloy", "onyx", "echo", "fable"]);
 
 const FEMALE_VOICE_CORRECTIONS: Record<string, string> = {
   "Alicia K. Patel":   "nova",
@@ -24,7 +24,7 @@ export async function patchFemaleInterviewerVoices(): Promise<void> {
 
     for (const row of rows) {
       const targetVoice = FEMALE_VOICE_CORRECTIONS[row.name];
-      if (targetVoice && MALE_VOICES.has(row.voiceId)) {
+      if (targetVoice && DISALLOWED_FEMALE_VOICES.has(row.voiceId)) {
         await db
           .update(interviewersTable)
           .set({ voiceId: targetVoice })
