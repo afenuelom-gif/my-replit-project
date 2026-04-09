@@ -1,6 +1,11 @@
 import { Router, type IRouter } from "express";
 import { eq, and, asc, isNull } from "drizzle-orm";
+import type { Request, Response } from "express";
 import { optionalAuth } from "../../middlewares/requireAuth.js";
+
+function isForbidden(session: { userId: string | null }, req: Request): boolean {
+  return !!(session.userId && session.userId !== req.userId);
+}
 import {
   db,
   interviewersTable,
@@ -205,7 +210,7 @@ router.get("/interview/sessions/:id", optionalAuth, async (req, res): Promise<vo
   });
 });
 
-router.post("/interview/sessions/:id/next-question", async (req, res): Promise<void> => {
+router.post("/interview/sessions/:id/next-question", optionalAuth, async (req, res): Promise<void> => {
   const params = GetNextQuestionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -226,6 +231,11 @@ router.post("/interview/sessions/:id/next-question", async (req, res): Promise<v
 
   if (!session) {
     res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  if (isForbidden(session, req)) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 
@@ -348,7 +358,7 @@ router.post("/interview/sessions/:id/next-question", async (req, res): Promise<v
   });
 });
 
-router.post("/interview/sessions/:id/posture", async (req, res): Promise<void> => {
+router.post("/interview/sessions/:id/posture", optionalAuth, async (req, res): Promise<void> => {
   const params = AnalyzePostureParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -372,6 +382,11 @@ router.post("/interview/sessions/:id/posture", async (req, res): Promise<void> =
     return;
   }
 
+  if (isForbidden(session, req)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
   const analysis = await analyzePostureFromImage(body.data.imageBase64);
 
   await db.insert(postureAnalysisTable).values({
@@ -389,7 +404,7 @@ router.post("/interview/sessions/:id/posture", async (req, res): Promise<void> =
   });
 });
 
-router.post("/interview/sessions/:id/complete", async (req, res): Promise<void> => {
+router.post("/interview/sessions/:id/complete", optionalAuth, async (req, res): Promise<void> => {
   const params = CompleteSessionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -407,6 +422,11 @@ router.post("/interview/sessions/:id/complete", async (req, res): Promise<void> 
     return;
   }
 
+  if (isForbidden(session, req)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
   const [updated] = await db
     .update(sessionsTable)
     .set({ status: "completed" })
@@ -417,7 +437,7 @@ router.post("/interview/sessions/:id/complete", async (req, res): Promise<void> 
   res.json({ ...updated, interviewerIds });
 });
 
-router.delete("/interview/sessions/:id", async (req, res): Promise<void> => {
+router.delete("/interview/sessions/:id", optionalAuth, async (req, res): Promise<void> => {
   const params = CancelSessionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -432,6 +452,11 @@ router.delete("/interview/sessions/:id", async (req, res): Promise<void> => {
 
   if (!session) {
     res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  if (isForbidden(session, req)) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 
@@ -612,7 +637,7 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
   });
 });
 
-router.post("/interview/sessions/:id/tts", async (req, res): Promise<void> => {
+router.post("/interview/sessions/:id/tts", optionalAuth, async (req, res): Promise<void> => {
   const params = TextToSpeechParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -627,6 +652,11 @@ router.post("/interview/sessions/:id/tts", async (req, res): Promise<void> => {
 
   if (!session) {
     res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  if (isForbidden(session, req)) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 
@@ -651,7 +681,7 @@ router.post("/interview/sessions/:id/tts", async (req, res): Promise<void> => {
   });
 });
 
-router.post("/interview/sessions/:id/transcribe", async (req, res): Promise<void> => {
+router.post("/interview/sessions/:id/transcribe", optionalAuth, async (req, res): Promise<void> => {
   const params = TranscribeAnswerParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -666,6 +696,11 @@ router.post("/interview/sessions/:id/transcribe", async (req, res): Promise<void
 
   if (!session) {
     res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  if (isForbidden(session, req)) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 
