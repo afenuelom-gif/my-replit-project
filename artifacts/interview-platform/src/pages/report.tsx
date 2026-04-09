@@ -113,14 +113,16 @@ export default function Report() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
-                  {(report.suggestions?.length
-                    ? report.suggestions
-                    : [
-                        "Practice structuring answers using the STAR method (Situation, Task, Action, Result).",
-                        "Provide more specific examples and quantifiable outcomes in your responses.",
-                        "Work on concise delivery by keeping answers to 1-2 minutes and eliminating filler words.",
-                      ]
-                  ).map((s, i) => (
+                  {(() => {
+                    const defaults = [
+                      "Practice structuring answers using the STAR method (Situation, Task, Action, Result).",
+                      "Provide more specific examples and quantifiable outcomes in your responses.",
+                      "Work on concise delivery by keeping answers to 1-2 minutes and eliminating filler words.",
+                    ];
+                    const base = report.suggestions ?? [];
+                    const padded = [...base, ...defaults.slice(base.length)].slice(0, 3);
+                    return padded;
+                  })().map((s, i) => (
                     <li key={i} className="flex gap-3 text-sm text-primary-foreground">
                       <div className="min-w-[20px] pt-0.5"><CheckCircle2 className="w-4 h-4 text-primary" /></div>
                       <span>{s}</span>
