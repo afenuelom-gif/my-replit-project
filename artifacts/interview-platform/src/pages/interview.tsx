@@ -11,7 +11,6 @@ import {
   useAnalyzePosture
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -209,14 +208,24 @@ export default function Interview() {
   const handleCancel = async () => {
     setIsCancelling(true);
     try {
-      await fetch(`/api/interview/sessions/${sessionId}`, { method: "DELETE" });
+      const res = await fetch(`/api/interview/sessions/${sessionId}`, { method: "DELETE" });
+      if (!res.ok) {
+        console.error("Cancel request failed:", res.status);
+        setIsCancelling(false);
+        setShowCancelDialog(false);
+        setStatusMessage("Failed to cancel — please try again.");
+        return;
+      }
     } catch (e) {
       console.error("Cancel error:", e);
-    } finally {
       setIsCancelling(false);
       setShowCancelDialog(false);
-      setLocation("/");
+      setStatusMessage("Failed to cancel — please check your connection.");
+      return;
     }
+    setIsCancelling(false);
+    setShowCancelDialog(false);
+    setLocation("/");
   };
 
   const currentQuestion = sessionData?.questions[sessionData.questions.length - 1];
