@@ -141,7 +141,15 @@ export default function Report() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {report.postureNotes.map((note: string, i: number) => (
+                    {(() => {
+                      const seen = new Set<string>();
+                      return (report.postureNotes as string[]).filter(note => {
+                        const key = note.trim().toLowerCase();
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                      });
+                    })().map((note: string, i: number) => (
                       <li key={i} className="flex gap-3 text-sm text-muted-foreground">
                         <div className="min-w-[20px] pt-0.5"><User className="w-4 h-4 text-purple-400" /></div>
                         <span>{note}</span>

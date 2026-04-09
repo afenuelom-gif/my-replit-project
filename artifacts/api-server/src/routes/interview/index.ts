@@ -536,14 +536,19 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
     .where(eq(postureAnalysisTable.sessionId, session.id));
 
   const postureScores = postureRecords.map((p) => p.score);
-  const postureNotes = [
-    ...new Set(
-      postureRecords.flatMap((p) => {
-        const issues: string[] = JSON.parse(p.issues as string);
-        return issues;
-      })
-    ),
-  ];
+  const postureNotes = (() => {
+    const all = postureRecords.flatMap((p) => {
+      const issues: string[] = JSON.parse(p.issues as string);
+      return issues;
+    });
+    const seen = new Set<string>();
+    return all.filter(note => {
+      const key = note.trim().toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
 
   const avgPosture =
     postureScores.length > 0
