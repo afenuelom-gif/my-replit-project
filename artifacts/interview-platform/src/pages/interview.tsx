@@ -95,10 +95,19 @@ export default function Interview() {
         mediaStreamRef.current = null;
         if (videoRef.current) videoRef.current.srcObject = null;
       }
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach(t => t.stop());
+        audioStreamRef.current = null;
+      }
     }
     return () => {
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(t => t.stop());
+        mediaStreamRef.current = null;
+      }
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach(t => t.stop());
+        audioStreamRef.current = null;
       }
     };
   }, [webcamEnabled]);
