@@ -31,6 +31,7 @@ import {
   generateTTS,
   transcribeAudio,
   shouldAskFollowUp,
+  generateDynamicInterviewers,
 } from "../../lib/interviewAI.js";
 import { seedInterviewersIfNeeded } from "../../lib/seedInterviewers.js";
 
@@ -54,15 +55,45 @@ router.post("/interview/sessions", async (req, res): Promise<void> => {
 
   await seedInterviewersIfNeeded();
 
-  const allInterviewers = await db.select().from(interviewersTable);
-  if (allInterviewers.length < 2) {
-    res.status(500).json({ error: "Not enough interviewers in database." });
-    return;
-  }
+  const AVATAR_POOL = [
+    "/avatars/interviewer-1.png",
+    "/avatars/interviewer-2.png",
+    "/avatars/interviewer-3.png",
+    "/avatars/interviewer-4.png",
+    "/avatars/interviewer-5.png",
+    "/avatars/interviewer-6.png",
+  ];
 
-  const interviewerCount = Math.min(Math.floor(Math.random() * 2) + 2, allInterviewers.length);
-  const shuffled = [...allInterviewers].sort(() => Math.random() - 0.5);
-  const selectedInterviewers = shuffled.slice(0, interviewerCount);
+  const interviewerCount = Math.floor(Math.random() * 2) + 2;
+
+  const dynamicPersonas = await generateDynamicInterviewers(jobRole, jobDescription ?? null, interviewerCount);
+
+  let selectedInterviewers: Array<typeof interviewersTable.$inferSelect>;
+
+  if (dynamicPersonas && dynamicPersonas.length >= 2) {
+    const inserted = await db
+      .insert(interviewersTable)
+      .values(
+        dynamicPersonas.map((p, i) => ({
+          name: p.name,
+          title: p.title,
+          company: p.company,
+          personality: p.personality,
+          voiceId: p.voiceId,
+          avatarUrl: AVATAR_POOL[i % AVATAR_POOL.length],
+        }))
+      )
+      .returning();
+    selectedInterviewers = inserted;
+  } else {
+    const allInterviewers = await db.select().from(interviewersTable);
+    if (allInterviewers.length < 2) {
+      res.status(500).json({ error: "Not enough interviewers in database." });
+      return;
+    }
+    const shuffled = [...allInterviewers].sort(() => Math.random() - 0.5);
+    selectedInterviewers = shuffled.slice(0, Math.min(interviewerCount, allInterviewers.length));
+  }
   const interviewerIds = selectedInterviewers.map((i) => i.id);
 
   const [session] = await db

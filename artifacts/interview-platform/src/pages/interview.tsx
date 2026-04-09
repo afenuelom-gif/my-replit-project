@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, MessagesSquare, XCircle, Volume2 } from "lucide-react";
+import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, MessagesSquare, XCircle } from "lucide-react";
 
 export default function Interview() {
   const params = useParams();
@@ -338,37 +338,55 @@ export default function Interview() {
           {/* Interviewers */}
           {sessionData?.interviewers.map(inv => {
             const isActive = inv.id === activeInterviewerId;
+            const isTalking = isActive && isSpeaking;
             return (
-              <div 
-                key={inv.id} 
+              <div
+                key={inv.id}
                 className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-all duration-300 min-h-48 ${
-                  isActive ? 'border-primary shadow-[0_0_30px_rgba(0,195,255,0.2)]' : 'border-white/5'
+                  isTalking
+                    ? 'border-primary animate-ring-pulse'
+                    : isActive
+                    ? 'border-primary shadow-[0_0_30px_rgba(0,195,255,0.2)]'
+                    : 'border-white/5'
                 }`}
               >
-                {inv.avatarUrl ? (
-                  <img src={inv.avatarUrl} alt={inv.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl font-bold text-white/20 min-h-48">
-                    {inv.name.charAt(0)}
-                  </div>
-                )}
-                
-                {isActive && isSpeaking && (
-                  <div className="absolute top-4 right-4 bg-primary/20 border border-primary/40 backdrop-blur-sm rounded-full p-2 flex items-center gap-2">
-                    <Volume2 className="w-4 h-4 text-primary animate-pulse" />
-                    <div className="flex gap-0.5">
-                      {[1,2,3,4].map(i => (
-                        <div key={i} className="w-0.5 bg-primary rounded-full animate-pulse" 
-                          style={{ height: `${8 + i * 4}px`, animationDelay: `${i * 0.1}s` }} />
-                      ))}
+                <div className={isActive ? 'animate-avatar-breathe w-full h-full' : 'w-full h-full'}>
+                  {inv.avatarUrl ? (
+                    <img src={inv.avatarUrl} alt={inv.name} className="w-full h-full object-cover min-h-48" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl font-bold text-white/20 min-h-48">
+                      {inv.name.charAt(0)}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                <div className="absolute bottom-4 left-4 bg-black/80 px-3 py-1 rounded-md backdrop-blur-sm border border-white/10 flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-primary animate-pulse' : 'bg-zinc-600'}`} />
-                  <span className="font-medium text-sm">{inv.name}</span>
-                  <span className="text-xs text-muted-foreground ml-1 hidden sm:inline">{inv.title}</span>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pt-6 pb-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isActive ? 'bg-primary animate-pulse' : 'bg-zinc-600'}`} />
+                    <span className="font-semibold text-sm text-white">{inv.name}</span>
+                  </div>
+                  <p className="text-xs text-zinc-400 leading-tight">{inv.title}</p>
+                  <p className="text-xs text-zinc-600 leading-tight">{inv.company}</p>
+
+                  {isTalking ? (
+                    <div className="flex items-end gap-0.5 mt-2 h-5" aria-label="Speaking">
+                      {[0, 1, 2, 3, 4].map(i => (
+                        <div
+                          key={i}
+                          className="w-1 bg-primary rounded-full animate-sound-bar origin-bottom"
+                          style={{
+                            height: `${10 + (i % 3) * 5}px`,
+                            animationDelay: `${i * 0.1}s`,
+                          }}
+                        />
+                      ))}
+                      <span className="text-xs text-primary ml-2 font-medium">Speaking…</span>
+                    </div>
+                  ) : isActive ? (
+                    <p className="text-xs text-primary/60 mt-2">Active</p>
+                  ) : (
+                    <p className="text-xs text-zinc-700 mt-2">Waiting</p>
+                  )}
                 </div>
               </div>
             );

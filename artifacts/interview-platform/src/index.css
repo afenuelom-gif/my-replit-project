@@ -126,3 +126,33 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* ── Interviewer avatar animations ─────────────────────────────── */
+
+@keyframes avatar-breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.015); opacity: 0.96; }
+}
+
+@keyframes ring-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0, 195, 255, 0.55); }
+  70%  { box-shadow: 0 0 0 14px rgba(0, 195, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 195, 255, 0); }
+}
+
+@keyframes sound-bar {
+  0%, 100% { transform: scaleY(0.35); }
+  50%       { transform: scaleY(1); }
+}
+
+.animate-avatar-breathe {
+  animation: avatar-breathe 4s ease-in-out infinite;
+}
+
+.animate-ring-pulse {
+  animation: ring-pulse 1.2s ease-out infinite;
+}
+
+.animate-sound-bar {
+  animation: sound-bar 0.6s ease-in-out infinite;
+}

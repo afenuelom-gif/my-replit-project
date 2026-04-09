@@ -206,6 +206,73 @@ function ensureThreeSuggestions(suggestions: string[]): string[] {
   return result;
 }
 
+const VOICE_POOL = ["nova", "onyx", "alloy", "echo", "shimmer", "fable"] as const;
+
+export async function generateDynamicInterviewers(
+  jobRole: string,
+  jobDescription: string | null,
+  count: number
+): Promise<Array<{
+  name: string;
+  title: string;
+  company: string;
+  personality: string;
+  voiceId: string;
+}> | null> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-5.2",
+      max_completion_tokens: 512,
+      messages: [
+        {
+          role: "system",
+          content: `You are generating realistic professional interviewer personas for a job interview simulation.
+Given a job role, produce exactly ${count} interviewer personas who would realistically interview someone for that position.
+The personas should have industry-appropriate titles (NOT generic tech titles like "VP of Engineering" unless the role is actually in tech).
+
+Return a JSON array of exactly ${count} objects, each with:
+- name (string, realistic full name)
+- title (string, realistic job title fitting the industry of the role)
+- company (string, realistic company or organisation name fitting the industry)
+- personality (string, one sentence describing their interviewing style and focus areas)
+
+Examples for "Nurse": Chief Nursing Officer, Nurse Manager, Clinical HR Lead
+Examples for "Data Scientist": Head of Analytics, Senior Data Scientist, Technical Recruiter (AI/ML)
+Examples for "Lawyer": Partner (Litigation), General Counsel, Legal Talent Director
+Examples for "Teacher": Principal, Department Head, District HR Manager
+Examples for "Marketing Manager": CMO, Brand Strategy Director, Talent Partner
+
+Return ONLY valid JSON array, no markdown.`,
+        },
+        {
+          role: "user",
+          content: `Job role: ${jobRole}${jobDescription ? `\nJob description: ${jobDescription.slice(0, 500)}` : ""}`,
+        },
+      ],
+    });
+
+    const raw = response.choices[0]?.message?.content?.trim() ?? "[]";
+    const parsed = JSON.parse(raw) as Array<{
+      name: string;
+      title: string;
+      company: string;
+      personality: string;
+    }>;
+
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+
+    return parsed.slice(0, count).map((p, i) => ({
+      name: String(p.name ?? `Interviewer ${i + 1}`),
+      title: String(p.title ?? "Senior Manager"),
+      company: String(p.company ?? "Organisation"),
+      personality: String(p.personality ?? "Professional and thorough interviewer."),
+      voiceId: VOICE_POOL[i % VOICE_POOL.length],
+    }));
+  } catch {
+    return null;
+  }
+}
+
 export async function analyzePostureFromImage(imageBase64: string): Promise<{
   score: number;
   feedback: string;
