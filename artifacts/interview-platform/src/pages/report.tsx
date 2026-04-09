@@ -123,7 +123,7 @@ export default function Report() {
                     const padded = [...base, ...defaults.slice(base.length)].slice(0, 3);
                     return padded;
                   })().map((s, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-primary-foreground">
+                    <li key={i} className="flex gap-3 text-sm text-white">
                       <div className="min-w-[20px] pt-0.5"><CheckCircle2 className="w-4 h-4 text-primary" /></div>
                       <span>{s}</span>
                     </li>

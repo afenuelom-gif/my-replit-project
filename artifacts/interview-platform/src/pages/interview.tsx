@@ -329,7 +329,7 @@ export default function Interview() {
                 key={inv.id}
                 className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-all duration-300 min-h-48 ${
                   isTalking
-                    ? 'border-primary animate-ring-pulse'
+                    ? 'border-primary animate-ring-pulse scale-[1.03] shadow-[0_0_50px_rgba(0,195,255,0.55)]'
                     : isActive
                     ? 'border-primary shadow-[0_0_30px_rgba(0,195,255,0.2)]'
                     : 'border-white/5'
@@ -354,18 +354,18 @@ export default function Interview() {
                   <p className="text-xs text-zinc-600 leading-tight">{inv.company}</p>
 
                   {isTalking ? (
-                    <div className="flex items-end gap-0.5 mt-2 h-5" aria-label="Speaking">
-                      {[0, 1, 2, 3, 4].map(i => (
+                    <div className="flex items-end gap-1 mt-2 h-8" aria-label="Speaking">
+                      {[0, 1, 2, 3, 4, 5, 6].map(i => (
                         <div
                           key={i}
-                          className="w-1 bg-primary rounded-full animate-sound-bar origin-bottom"
+                          className="w-1.5 bg-primary rounded-full animate-sound-bar origin-bottom"
                           style={{
-                            height: `${10 + (i % 3) * 5}px`,
-                            animationDelay: `${i * 0.1}s`,
+                            height: `${14 + (i % 4) * 6}px`,
+                            animationDelay: `${i * 0.08}s`,
                           }}
                         />
                       ))}
-                      <span className="text-xs text-primary ml-2 font-medium">Speaking…</span>
+                      <span className="text-xs text-primary ml-2 font-semibold tracking-wide">Speaking…</span>
                     </div>
                   ) : isActive ? (
                     <p className="text-xs text-primary/60 mt-2">Active</p>

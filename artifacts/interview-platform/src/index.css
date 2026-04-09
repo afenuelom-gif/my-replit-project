@@ -135,9 +135,9 @@
 }
 
 @keyframes ring-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(0, 195, 255, 0.55); }
-  70%  { box-shadow: 0 0 0 14px rgba(0, 195, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 195, 255, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(0, 195, 255, 0.75), 0 0 30px rgba(0, 195, 255, 0.4); }
+  70%  { box-shadow: 0 0 0 18px rgba(0, 195, 255, 0), 0 0 50px rgba(0, 195, 255, 0.15); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 195, 255, 0), 0 0 30px rgba(0, 195, 255, 0.4); }
 }
 
 @keyframes sound-bar {
