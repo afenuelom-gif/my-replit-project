@@ -123,10 +123,6 @@ export async function generateReport(
   summary: string;
   suggestions: string[];
 }> {
-  const avgPosture = postureScores.length > 0
-    ? Math.round(postureScores.reduce((a, b) => a + b, 0) / postureScores.length)
-    : 70;
-
   const qaText = qaItems
     .map((qa, i) => `Q${i + 1}: ${qa.question}\nA: ${qa.answer ?? "[No answer]"}`)
     .join("\n\n");

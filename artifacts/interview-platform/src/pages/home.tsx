@@ -14,6 +14,7 @@ export default function Home() {
   
   const [jobRole, setJobRole] = useState("");
   const [jobDescription, setJobDescription] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState(35);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,6 +46,7 @@ export default function Home() {
         data: {
           jobRole,
           jobDescription: jobDescription || undefined,
+          durationMinutes,
         }
       });
       setLocation(`/interview/${session.id}`);
@@ -88,6 +90,29 @@ export default function Home() {
                   required
                   data-testid="input-jobRole"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-white flex items-center gap-2">
+                  Interview Duration
+                </Label>
+                <div className="flex gap-2">
+                  {[30, 35, 40, 45].map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => setDurationMinutes(mins)}
+                      className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                        durationMinutes === mins
+                          ? "border-primary bg-primary/20 text-primary"
+                          : "border-white/10 text-zinc-400 hover:border-white/30 hover:text-white"
+                      }`}
+                      data-testid={`button-duration-${mins}`}
+                    >
+                      {mins} min
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2">
