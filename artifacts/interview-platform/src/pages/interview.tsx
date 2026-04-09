@@ -216,11 +216,18 @@ export default function Interview() {
       setIsProcessing(true);
       setStatusMessage("Processing your answer...");
     } else {
-      const recordingStream = audioStreamRef.current ?? mediaStreamRef.current;
-      if (!recordingStream) {
+      const sourceStream = audioStreamRef.current ?? mediaStreamRef.current;
+      if (!sourceStream) {
         setStatusMessage("No microphone detected. Please enable webcam/mic first.");
         return;
       }
+
+      const audioTracks = sourceStream.getAudioTracks();
+      if (audioTracks.length === 0) {
+        setStatusMessage("No microphone detected. Please enable webcam/mic first.");
+        return;
+      }
+      const recordingStream = new MediaStream(audioTracks);
       audioChunksRef.current = [];
 
       let mimeType = 'audio/webm';
