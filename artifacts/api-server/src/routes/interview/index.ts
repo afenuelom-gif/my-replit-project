@@ -16,6 +16,7 @@ import {
   AnalyzePostureParams,
   AnalyzePostureBody,
   CompleteSessionParams,
+  CancelSessionParams,
   GetReportParams,
   TextToSpeechParams,
   TextToSpeechBody,
@@ -368,6 +369,33 @@ router.post("/interview/sessions/:id/complete", async (req, res): Promise<void> 
   res.json({ ...updated, interviewerIds });
 });
 
+router.delete("/interview/sessions/:id", async (req, res): Promise<void> => {
+  const params = CancelSessionParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const session = await db
+    .select()
+    .from(sessionsTable)
+    .where(eq(sessionsTable.id, params.data.id))
+    .then((rows) => rows[0]);
+
+  if (!session) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(sessionsTable)
+    .set({ status: "cancelled" })
+    .where(eq(sessionsTable.id, params.data.id))
+    .returning();
+
+  res.json({ id: updated.id, status: updated.status });
+});
+
 router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => {
   const params = GetReportParams.safeParse(req.params);
   if (!params.success) {
@@ -400,9 +428,9 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
       technicalScore: existing.technicalScore,
       confidenceScore: existing.confidenceScore,
       postureScore: existing.postureScore,
-      answerFeedback: JSON.parse(existing.answerFeedback),
-      postureNotes: JSON.parse(existing.postureNotes),
-      suggestions: JSON.parse(existing.suggestions),
+      answerFeedback: existing.answerFeedback ? JSON.parse(existing.answerFeedback) : [],
+      postureNotes: existing.postureNotes ? JSON.parse(existing.postureNotes) : [],
+      suggestions: existing.suggestions ? JSON.parse(existing.suggestions) : [],
       summary: existing.summary,
       generatedAt: existing.generatedAt.toISOString(),
     });
@@ -457,17 +485,41 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
     })
   );
 
-  const qaItems = questions.map((q) => ({
-    question: q.questionText,
-    answer: q.answerText ?? null,
-  }));
+  let reportData: {
+    overallScore: number;
+    communicationScore: number;
+    technicalScore: number;
+    confidenceScore: number;
+    summary: string;
+    suggestions: string[];
+  };
 
-  const reportData = await generateReport(
-    session.jobRole,
-    session.jobDescription ?? null,
-    qaItems,
-    postureScores
-  );
+  if (answeredQA.length === 0) {
+    reportData = {
+      overallScore: 0,
+      communicationScore: 0,
+      technicalScore: 0,
+      confidenceScore: 0,
+      summary:
+        "No answers were provided during this session. Please complete the interview to receive a meaningful evaluation.",
+      suggestions: [
+        "Complete the full interview to receive personalised improvement suggestions.",
+        "Practice answering questions aloud before starting your next session.",
+        "Review common interview questions for your target role to build confidence.",
+      ],
+    };
+  } else {
+    const qaItems = questions.map((q) => ({
+      question: q.questionText,
+      answer: q.answerText ?? null,
+    }));
+    reportData = await generateReport(
+      session.jobRole,
+      session.jobDescription ?? null,
+      qaItems,
+      postureScores
+    );
+  }
 
   await db.insert(reportsTable).values({
     sessionId: session.id,

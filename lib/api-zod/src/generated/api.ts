@@ -209,6 +209,18 @@ export const GetReportResponse = zod.object({
 });
 
 /**
+ * @summary Cancel (discard) an interview session
+ */
+export const CancelSessionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CancelSessionResponse = zod.object({
+  id: zod.number(),
+  status: zod.string(),
+});
+
+/**
  * Returns base64-encoded MP3 audio of the question spoken in the interviewer's voice
  * @summary Convert interviewer question text to speech audio
  */

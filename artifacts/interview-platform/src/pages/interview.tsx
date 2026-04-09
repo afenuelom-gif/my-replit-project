@@ -12,7 +12,17 @@ import {
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, Volume2, MessagesSquare } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, MessagesSquare, XCircle, Volume2 } from "lucide-react";
 
 export default function Interview() {
   const params = useParams();
@@ -37,6 +47,8 @@ export default function Interview() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPlayedQuestionId, setLastPlayedQuestionId] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState("Waiting...");
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -194,6 +206,19 @@ export default function Interview() {
     }
   };
 
+  const handleCancel = async () => {
+    setIsCancelling(true);
+    try {
+      await fetch(`/api/interview/sessions/${sessionId}`, { method: "DELETE" });
+    } catch (e) {
+      console.error("Cancel error:", e);
+    } finally {
+      setIsCancelling(false);
+      setShowCancelDialog(false);
+      setLocation("/");
+    }
+  };
+
   const currentQuestion = sessionData?.questions[sessionData.questions.length - 1];
   const activeInterviewerId = currentQuestion?.interviewerId;
 
@@ -296,7 +321,7 @@ export default function Interview() {
           </div>
           <Button variant="destructive" size="sm" onClick={handleComplete} data-testid="button-end"
             disabled={completeSession.isPending}>
-            {completeSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "End Session"}
+            {completeSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "End & Get Report"}
           </Button>
         </div>
       </header>
@@ -366,41 +391,71 @@ export default function Interview() {
           </div>
         </div>
 
-        {/* Transcript Panel */}
+        {/* Transcript Panel — rolling view: last answered pair + current question */}
         <div className="hidden xl:flex flex-col w-80 border-l border-white/10 bg-black/30">
           <div className="p-4 border-b border-white/10 flex items-center gap-2">
             <MessagesSquare className="w-4 h-4 text-primary" />
-            <h2 className="font-semibold text-sm uppercase tracking-wider text-white/70">Transcript</h2>
+            <h2 className="font-semibold text-sm uppercase tracking-wider text-white/70">Live Transcript</h2>
           </div>
-          <ScrollArea className="flex-1">
-            <div className="p-4 space-y-4" data-testid="transcript-panel">
-              {sessionData?.questions && sessionData.questions.length > 0 ? (
-                sessionData.questions.map((q, idx) => {
-                  const interviewer = sessionData.interviewers.find(i => i.id === q.interviewerId);
-                  return (
-                    <div key={q.id} className="space-y-2">
+          <div className="p-4 space-y-4 flex-1 overflow-hidden" data-testid="transcript-panel">
+            {(() => {
+              const questions = sessionData?.questions ?? [];
+              if (questions.length === 0) {
+                return (
+                  <p className="text-sm text-zinc-600 italic text-center mt-8">
+                    The conversation will appear here...
+                  </p>
+                );
+              }
+              const current = questions[questions.length - 1];
+              const currentInterviewer = sessionData?.interviewers.find(i => i.id === current.interviewerId);
+              const prevAnswered = current.answerText == null && questions.length >= 2
+                ? questions[questions.length - 2]
+                : null;
+              const prevInterviewer = prevAnswered
+                ? sessionData?.interviewers.find(i => i.id === prevAnswered.interviewerId)
+                : null;
+              return (
+                <>
+                  {prevAnswered && (
+                    <div className="space-y-2 opacity-50">
                       <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
                         <div className="text-xs text-primary font-semibold mb-1">
-                          {interviewer?.name || "Interviewer"} · Q{idx + 1}
+                          {prevInterviewer?.name || "Interviewer"} · Q{questions.length - 1}
                         </div>
-                        <p className="text-sm text-white/80">{q.questionText}</p>
+                        <p className="text-sm text-white/80 line-clamp-3">{prevAnswered.questionText}</p>
                       </div>
-                      {q.answerText && (
+                      {prevAnswered.answerText && (
                         <div className="bg-white/5 border border-white/10 rounded-lg p-3 ml-4">
                           <div className="text-xs text-zinc-500 font-semibold mb-1">You</div>
-                          <p className="text-sm text-zinc-300">{q.answerText}</p>
+                          <p className="text-sm text-zinc-300 line-clamp-4">{prevAnswered.answerText}</p>
                         </div>
                       )}
                     </div>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-zinc-600 italic text-center mt-8">
-                  The conversation will appear here...
-                </p>
-              )}
-            </div>
-          </ScrollArea>
+                  )}
+                  <div className="space-y-2">
+                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                      <div className="text-xs text-primary font-semibold mb-1">
+                        {currentInterviewer?.name || "Interviewer"} · Q{questions.length}
+                      </div>
+                      <p className="text-sm text-white/80">{current.questionText}</p>
+                    </div>
+                    {current.answerText && (
+                      <div className="bg-white/5 border border-white/10 rounded-lg p-3 ml-4">
+                        <div className="text-xs text-zinc-500 font-semibold mb-1">You</div>
+                        <p className="text-sm text-zinc-300">{current.answerText}</p>
+                      </div>
+                    )}
+                  </div>
+                  {questions.length > 1 && (
+                    <p className="text-xs text-zinc-600 text-center italic">
+                      {questions.length - (prevAnswered ? 2 : 1)} earlier exchange{questions.length - (prevAnswered ? 2 : 1) !== 1 ? "s" : ""} — full history in report
+                    </p>
+                  )}
+                </>
+              );
+            })()}
+          </div>
         </div>
       </main>
 
@@ -415,6 +470,19 @@ export default function Interview() {
         </div>
 
         <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-white/20 text-zinc-400 hover:text-red-400 hover:border-red-400/40 hover:bg-red-950/20 gap-2"
+            onClick={() => setShowCancelDialog(true)}
+            data-testid="button-cancel"
+            disabled={isCancelling}
+            title="Cancel and discard this session"
+          >
+            <XCircle className="w-4 h-4" />
+            Cancel
+          </Button>
+
           <Button 
             variant="outline" 
             size="icon" 
@@ -442,6 +510,28 @@ export default function Interview() {
           </Button>
         </div>
       </footer>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Interview?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure? This session will be discarded and your progress will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>Keep going</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancel}
+              disabled={isCancelling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isCancelling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Yes, discard session
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
