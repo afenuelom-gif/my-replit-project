@@ -3,31 +3,30 @@ import { eq, inArray } from "drizzle-orm";
 
 const DISALLOWED_FEMALE_VOICES = new Set(["alloy", "onyx", "echo", "fable"]);
 
-const FEMALE_VOICE_CORRECTIONS: Record<string, string> = {
-  "Alicia K. Patel":   "nova",
-  "Aisha N. Thompson": "shimmer",
-  "Marisol Vega":      "nova",
-  "Priya S. Desai":    "shimmer",
-  "Meera K. Patel":    "nova",
-  "Elena Márquez":     "shimmer",
-  "Priya Natarajan":   "nova",
-  "Alexandra Ruiz":    "nova",
-};
+const FEMALE_VOICE_CORRECTIONS: Array<{ id: number; voice: "nova" | "shimmer" }> = [
+  { id: 9,  voice: "nova"    },
+  { id: 12, voice: "shimmer" },
+  { id: 15, voice: "nova"    },
+  { id: 18, voice: "shimmer" },
+  { id: 21, voice: "nova"    },
+  { id: 24, voice: "shimmer" },
+  { id: 27, voice: "nova"    },
+];
 
 export async function patchFemaleInterviewerVoices(): Promise<void> {
   try {
-    const names = Object.keys(FEMALE_VOICE_CORRECTIONS);
+    const ids = FEMALE_VOICE_CORRECTIONS.map(c => c.id);
     const rows = await db
-      .select({ id: interviewersTable.id, name: interviewersTable.name, voiceId: interviewersTable.voiceId })
+      .select({ id: interviewersTable.id, voiceId: interviewersTable.voiceId })
       .from(interviewersTable)
-      .where(inArray(interviewersTable.name, names));
+      .where(inArray(interviewersTable.id, ids));
 
     for (const row of rows) {
-      const targetVoice = FEMALE_VOICE_CORRECTIONS[row.name];
-      if (targetVoice && DISALLOWED_FEMALE_VOICES.has(row.voiceId)) {
+      const correction = FEMALE_VOICE_CORRECTIONS.find(c => c.id === row.id);
+      if (correction && DISALLOWED_FEMALE_VOICES.has(row.voiceId)) {
         await db
           .update(interviewersTable)
-          .set({ voiceId: targetVoice })
+          .set({ voiceId: correction.voice })
           .where(eq(interviewersTable.id, row.id));
       }
     }
