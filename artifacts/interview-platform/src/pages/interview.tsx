@@ -350,7 +350,7 @@ export default function Interview() {
                     : 'border-white/5'
                 }`}
               >
-                <div className={isActive ? 'animate-avatar-breathe w-full h-full' : 'w-full h-full'}>
+                <div className="animate-avatar-breathe w-full h-full">
                   {inv.avatarUrl ? (
                     <img src={inv.avatarUrl} alt={inv.name} className="w-full h-full object-cover min-h-48" />
                   ) : (

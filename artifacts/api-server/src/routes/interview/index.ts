@@ -68,6 +68,19 @@ router.post("/interview/sessions", async (req, res): Promise<void> => {
 
   const dynamicPersonas = await generateDynamicInterviewers(jobRole, jobDescription ?? null, interviewerCount);
 
+  const [session] = await db
+    .insert(sessionsTable)
+    .values({
+      jobRole,
+      jobDescription: jobDescription ?? null,
+      durationMinutes: durationMinutes ?? 35,
+      status: "active",
+      interviewerIds: "[]",
+      currentInterviewerIndex: 0,
+      questionCount: 0,
+    })
+    .returning();
+
   let selectedInterviewers: Array<typeof interviewersTable.$inferSelect>;
 
   if (dynamicPersonas && dynamicPersonas.length >= 2) {
@@ -81,33 +94,30 @@ router.post("/interview/sessions", async (req, res): Promise<void> => {
           personality: p.personality,
           voiceId: p.voiceId,
           avatarUrl: AVATAR_POOL[i % AVATAR_POOL.length],
+          sessionId: session.id,
         }))
       )
       .returning();
     selectedInterviewers = inserted;
   } else {
-    const allInterviewers = await db.select().from(interviewersTable);
-    if (allInterviewers.length < 2) {
+    const seededInterviewers = await db
+      .select()
+      .from(interviewersTable)
+      .where(isNull(interviewersTable.sessionId));
+    if (seededInterviewers.length < 2) {
       res.status(500).json({ error: "Not enough interviewers in database." });
       return;
     }
-    const shuffled = [...allInterviewers].sort(() => Math.random() - 0.5);
-    selectedInterviewers = shuffled.slice(0, Math.min(interviewerCount, allInterviewers.length));
+    const shuffled = [...seededInterviewers].sort(() => Math.random() - 0.5);
+    selectedInterviewers = shuffled.slice(0, Math.min(interviewerCount, seededInterviewers.length));
   }
+
   const interviewerIds = selectedInterviewers.map((i) => i.id);
 
-  const [session] = await db
-    .insert(sessionsTable)
-    .values({
-      jobRole,
-      jobDescription: jobDescription ?? null,
-      durationMinutes: durationMinutes ?? 35,
-      status: "active",
-      interviewerIds: JSON.stringify(interviewerIds),
-      currentInterviewerIndex: 0,
-      questionCount: 0,
-    })
-    .returning();
+  await db
+    .update(sessionsTable)
+    .set({ interviewerIds: JSON.stringify(interviewerIds) })
+    .where(eq(sessionsTable.id, session.id));
 
   const interviewer = selectedInterviewers[0];
   if (!interviewer) {
