@@ -1,5 +1,4 @@
 import OpenAI from "openai";
-import type { Interviewer } from "@workspace/db";
 
 if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
   throw new Error("AI_INTEGRATIONS_OPENAI_BASE_URL must be set. Did you forget to provision the OpenAI AI integration?");
@@ -280,12 +279,3 @@ export function shouldAskFollowUp(questionCount: number, answerLength: number): 
   return tooShort || randomFollowUp;
 }
 
-export function getInterviewerForQuestion(
-  interviewerIds: number[],
-  currentIndex: number,
-  questionCount: number
-): { interviewerId: number; nextIndex: number } {
-  const idx = currentIndex % interviewerIds.length;
-  const interviewerId = interviewerIds[idx];
-  return { interviewerId, nextIndex: (idx + 1) % interviewerIds.length };
-}

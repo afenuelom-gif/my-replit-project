@@ -6,6 +6,7 @@ import {
   sessionsTable,
   questionsTable,
   postureAnalysisTable,
+  reportsTable,
 } from "@workspace/db";
 import {
   CreateSessionBody,
@@ -364,6 +365,29 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
     return;
   }
 
+  const existing = await db
+    .select()
+    .from(reportsTable)
+    .where(eq(reportsTable.sessionId, session.id))
+    .then((rows) => rows[0]);
+
+  if (existing) {
+    res.json({
+      sessionId: session.id,
+      overallScore: existing.overallScore,
+      communicationScore: existing.communicationScore,
+      technicalScore: existing.technicalScore,
+      confidenceScore: existing.confidenceScore,
+      postureScore: existing.postureScore,
+      answerFeedback: JSON.parse(existing.answerFeedback),
+      postureNotes: JSON.parse(existing.postureNotes),
+      suggestions: JSON.parse(existing.suggestions),
+      summary: existing.summary,
+      generatedAt: existing.generatedAt.toISOString(),
+    });
+    return;
+  }
+
   const questions = await db
     .select()
     .from(questionsTable)
@@ -376,10 +400,14 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
     .where(eq(postureAnalysisTable.sessionId, session.id));
 
   const postureScores = postureRecords.map((p) => p.score);
-  const postureNotes = postureRecords.flatMap((p) => {
-    const issues: string[] = JSON.parse(p.issues as string);
-    return issues;
-  });
+  const postureNotes = [
+    ...new Set(
+      postureRecords.flatMap((p) => {
+        const issues: string[] = JSON.parse(p.issues as string);
+        return issues;
+      })
+    ),
+  ];
 
   const avgPosture =
     postureScores.length > 0
@@ -420,6 +448,19 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
     postureScores
   );
 
+  await db.insert(reportsTable).values({
+    sessionId: session.id,
+    overallScore: reportData.overallScore,
+    communicationScore: reportData.communicationScore,
+    technicalScore: reportData.technicalScore,
+    confidenceScore: reportData.confidenceScore,
+    postureScore: avgPosture,
+    summary: reportData.summary,
+    suggestions: JSON.stringify(reportData.suggestions),
+    answerFeedback: JSON.stringify(answerFeedbacks),
+    postureNotes: JSON.stringify(postureNotes),
+  });
+
   res.json({
     sessionId: session.id,
     overallScore: reportData.overallScore,
@@ -428,7 +469,7 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
     confidenceScore: reportData.confidenceScore,
     postureScore: avgPosture,
     answerFeedback: answerFeedbacks,
-    postureNotes: [...new Set(postureNotes)],
+    postureNotes,
     suggestions: reportData.suggestions,
     summary: reportData.summary,
     generatedAt: new Date().toISOString(),
