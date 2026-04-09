@@ -19,6 +19,8 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **AI**: OpenAI (GPT-4o for questions/evaluation/reports/posture, TTS for audio, gpt-4o-mini-transcribe for STT)
 - **Frontend**: React + Vite + TailwindCSS + shadcn/ui
+- **Auth**: Clerk (`@clerk/express` server-side, `@clerk/react` client-side)
+- **Dev bypass**: Set `BYPASS_AUTH=true` in env to skip auth; attaches synthetic `dev_bypass_user`
 
 ## Packages
 
@@ -51,13 +53,18 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `POST /api/interview/tts` — Text-to-Speech (OpenAI tts-1)
 - `POST /api/interview/sessions/:id/transcribe` — Speech-to-Text (gpt-4o-mini-transcribe)
 - `POST /api/interview/sessions/:id/posture` — Posture analysis via vision
+- `GET /api/users/me` — Get current user info (requires auth)
+- `GET /api/users/me/sessions` — Get user's interview history (requires auth)
+- `GET /api/dev/status` — Dev mode status (BYPASS_AUTH flag)
 
 ## Database Tables
 
+- `users` — Clerk user IDs, emails, session credits (for Stripe integration later)
 - `interviewers` — 6 interviewer personas with avatars, voices, personalities
-- `interview_sessions` — Session config (job role, desc, duration, status, report JSON)
+- `interview_sessions` — Session config (job role, desc, duration, status, userId FK)
 - `interview_questions` — All questions/answers per session
 - `posture_analysis` — Periodic webcam snapshots analyzed by vision AI
+- `interview_reports` — Generated performance reports (userId FK for history queries)
 
 ## Interviewers
 

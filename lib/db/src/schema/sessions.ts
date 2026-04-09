@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const sessionsTable = pgTable("interview_sessions", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   jobRole: text("job_role").notNull(),
   jobDescription: text("job_description"),
   durationMinutes: integer("duration_minutes").notNull().default(35),

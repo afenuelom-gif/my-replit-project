@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, asc, isNull } from "drizzle-orm";
+import { optionalAuth } from "../../middlewares/requireAuth.js";
 import {
   db,
   interviewersTable,
@@ -42,7 +43,7 @@ router.get("/interview/interviewers", async (_req, res): Promise<void> => {
   res.json(interviewers);
 });
 
-router.post("/interview/sessions", async (req, res): Promise<void> => {
+router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void> => {
   const parsed = CreateSessionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -71,6 +72,7 @@ router.post("/interview/sessions", async (req, res): Promise<void> => {
   const [session] = await db
     .insert(sessionsTable)
     .values({
+      userId: req.userId ?? null,
       jobRole,
       jobDescription: jobDescription ?? null,
       durationMinutes: durationMinutes ?? 35,
@@ -572,6 +574,7 @@ router.get("/interview/sessions/:id/report", async (req, res): Promise<void> => 
   }
 
   await db.insert(reportsTable).values({
+    userId: session.userId ?? null,
     sessionId: session.id,
     overallScore: reportData.overallScore,
     communicationScore: reportData.communicationScore,

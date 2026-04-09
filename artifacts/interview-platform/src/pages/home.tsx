@@ -8,7 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Briefcase, FileText, Upload, X } from "lucide-react";
 
-export default function Home() {
+interface HomeProps {
+  authMenu?: React.ReactNode;
+}
+
+export default function Home({ authMenu }: HomeProps) {
   const [, setLocation] = useLocation();
   const createSession = useCreateSession();
   
@@ -59,6 +63,12 @@ export default function Home() {
     <div className="min-h-screen w-full bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background pointer-events-none" />
       
+      {authMenu && (
+        <div className="absolute top-4 right-4 z-20">
+          {authMenu}
+        </div>
+      )}
+
       <div className="max-w-2xl w-full z-10 space-y-8">
         <div className="text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white">
