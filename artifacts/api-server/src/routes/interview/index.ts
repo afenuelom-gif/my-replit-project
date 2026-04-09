@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, isNull } from "drizzle-orm";
 import {
   db,
   interviewersTable,
@@ -191,13 +191,29 @@ router.post("/interview/sessions/:id/next-question", async (req, res): Promise<v
     .where(
       and(
         eq(questionsTable.id, body.data.questionId),
-        eq(questionsTable.sessionId, session.id)
+        eq(questionsTable.sessionId, session.id),
+        isNull(questionsTable.answerText)
       )
     )
     .returning({ id: questionsTable.id });
 
   if (updateResult.length === 0) {
-    res.status(404).json({ error: "Question not found in this session" });
+    const existingQuestion = await db
+      .select()
+      .from(questionsTable)
+      .where(
+        and(
+          eq(questionsTable.id, body.data.questionId),
+          eq(questionsTable.sessionId, session.id)
+        )
+      )
+      .then((rows) => rows[0]);
+
+    if (!existingQuestion) {
+      res.status(404).json({ error: "Question not found in this session" });
+      return;
+    }
+    res.status(409).json({ error: "Answer already submitted for this question" });
     return;
   }
 

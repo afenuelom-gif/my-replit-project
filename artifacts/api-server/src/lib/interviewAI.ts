@@ -127,21 +127,30 @@ export async function generateReport(
     .map((qa, i) => `Q${i + 1}: ${qa.question}\nA: ${qa.answer ?? "[No answer]"}`)
     .join("\n\n");
 
+  const avgPosture =
+    postureScores.length > 0
+      ? Math.round(postureScores.reduce((a, b) => a + b, 0) / postureScores.length)
+      : null;
+
+  const postureContext = avgPosture !== null
+    ? `\nPosture/presence score (1-100 scale, from webcam analysis): ${avgPosture}${avgPosture < 60 ? " — poor eye contact, slouching, or low energy observed" : avgPosture < 80 ? " — adequate but room for improvement" : " — strong, confident presence"}`
+    : "";
+
   const response = await openai.chat.completions.create({
     model: "gpt-5.2",
     max_completion_tokens: 1024,
     messages: [
       {
         role: "system",
-        content: `You are an expert interview coach evaluating a candidate's performance for the role: ${jobRole}${jobDescription ? `\nJob description: ${jobDescription}` : ""}
+        content: `You are an expert interview coach evaluating a candidate's performance for the role: ${jobRole}${jobDescription ? `\nJob description: ${jobDescription}` : ""}${postureContext}
 
 Based on the Q&A below, return a JSON object with:
 - overallScore (integer 0-100)
 - communicationScore (integer 0-100, rate clarity and structure of answers)
 - technicalScore (integer 0-100, rate technical/domain knowledge demonstrated)
 - confidenceScore (integer 0-100, rate confidence and delivery based on answer content)
-- summary (string, 3-4 sentence overall assessment)
-- suggestions (array of exactly 3 actionable improvement suggestions)
+- summary (string, 3-4 sentence overall assessment — if posture score was low, mention it briefly)
+- suggestions (array of exactly 3 actionable improvement suggestions — include posture/body language if score was below 70)
 
 Return ONLY valid JSON, no markdown.`,
       },
