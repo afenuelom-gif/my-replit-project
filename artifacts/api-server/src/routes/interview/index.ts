@@ -30,7 +30,6 @@ import {
   transcribeAudio,
   pickRandomInterviewers,
   shouldAskFollowUp,
-  getInterviewerForQuestion,
 } from "../../lib/interviewAI.js";
 
 const router: IRouter = Router();
@@ -214,11 +213,12 @@ router.post("/interview/sessions/:id/next-question", async (req, res): Promise<v
 
   const isFollowUp = shouldAskFollowUp(session.questionCount, body.data.answerText.length);
 
-  const { interviewerId, nextIndex } = getInterviewerForQuestion(
-    interviewerIds,
-    isFollowUp ? session.currentInterviewerIndex : (session.currentInterviewerIndex + 1) % interviewerIds.length,
-    session.questionCount
-  );
+  const currentIdx = session.currentInterviewerIndex % interviewerIds.length;
+  const nextInterviewerIdx = isFollowUp
+    ? currentIdx
+    : (currentIdx + 1) % interviewerIds.length;
+  const interviewerId = interviewerIds[nextInterviewerIdx];
+  const nextIndex = nextInterviewerIdx;
 
   const interviewer = await db
     .select()
