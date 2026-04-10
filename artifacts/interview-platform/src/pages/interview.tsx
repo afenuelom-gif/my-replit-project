@@ -60,7 +60,7 @@ export default function Interview() {
   const hasTTSStartedRef = useRef(false);
 
   // Interviewer card refs — keyed by interviewer ID
-  const cardRefsMap = useRef<Map<number, React.RefObject<InterviewerCardHandle>>>(new Map());
+  const cardRefsMap = useRef<Map<number, React.RefObject<InterviewerCardHandle | null>>>(new Map());
 
   const getOrCreateCardRef = useCallback((id: number) => {
     if (!cardRefsMap.current.has(id)) {
