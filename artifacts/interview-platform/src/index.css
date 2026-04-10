@@ -145,6 +145,11 @@
   50%       { transform: scaleY(1); }
 }
 
+@keyframes waveform {
+  0%   { height: 15%; }
+  100% { height: 90%; }
+}
+
 .animate-avatar-breathe {
   animation: avatar-breathe 4s ease-in-out infinite;
 }
