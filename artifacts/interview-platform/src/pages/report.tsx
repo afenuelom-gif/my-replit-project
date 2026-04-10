@@ -15,6 +15,7 @@ import {
   CheckCircle2, ChevronLeft, Target, MessageSquare, Code, Lightbulb,
   User, Camera, Volume2, Share2, Mail, Printer, Copy, Check, ExternalLink,
 } from "lucide-react";
+import { AppHeader } from "@/components/AppHeader";
 
 interface FillerResult {
   total: number;
@@ -145,15 +146,20 @@ export default function Report() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 lg:p-12 print:p-4 print:bg-white">
+    <div className="min-h-screen bg-background text-foreground flex flex-col print:bg-white">
+      <AppHeader
+        right={
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-white gap-2">
+              <ChevronLeft className="w-4 h-4" /> Dashboard
+            </Button>
+          </Link>
+        }
+      />
+      <div className="flex-1 p-6 lg:p-12 print:p-4">
       <div className="max-w-6xl mx-auto space-y-8">
         <div className="flex items-start justify-between gap-4 print:hidden">
           <div>
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="mb-4 text-muted-foreground hover:text-white">
-                <ChevronLeft className="w-4 h-4 mr-2" /> Back to Dashboard
-              </Button>
-            </Link>
             <h1 className="text-3xl font-bold tracking-tight text-white">Interview Performance Report</h1>
             <p className="text-muted-foreground mt-1">Generated on {new Date(report.generatedAt).toLocaleString()}</p>
           </div>
@@ -417,6 +423,7 @@ export default function Report() {
             ))}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

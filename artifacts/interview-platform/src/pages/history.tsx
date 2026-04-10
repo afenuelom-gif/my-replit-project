@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ArrowLeft, Trophy, Calendar, Briefcase, ChevronRight } from "lucide-react";
+import { AppHeader } from "@/components/AppHeader";
 
 interface SessionWithReport {
   id: number;
@@ -55,18 +56,19 @@ export default function History() {
   });
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
-            <ArrowLeft className="h-5 w-5" />
+    <div className="min-h-screen bg-background flex flex-col">
+      <AppHeader
+        right={
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-white gap-2" onClick={() => setLocation("/")}>
+            <ArrowLeft className="h-4 w-4" /> Back to Home
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Interview History</h1>
-            <p className="text-muted-foreground text-sm">
-              Your past interview sessions
-            </p>
-          </div>
+        }
+      />
+      <div className="flex-1 p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Interview History</h1>
+          <p className="text-muted-foreground text-sm">Your past interview sessions</p>
         </div>
 
         {isLoading && (
@@ -163,6 +165,7 @@ export default function History() {
             ))}
           </div>
         )}
+      </div>
       </div>
     </div>
   );
