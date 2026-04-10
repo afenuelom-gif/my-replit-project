@@ -2,7 +2,7 @@ import React, {
   forwardRef, useImperativeHandle, useCallback,
   useEffect, useRef, useState,
 } from "react";
-import { Clapperboard, Loader2, Play, Radio, Volume2 } from "lucide-react";
+import { Loader2, Play, Radio, Volume2 } from "lucide-react";
 import { useHeyGenVideo } from "@/hooks/useHeyGenVideo";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { useDIDTalks } from "@/hooks/useDIDTalks";
