@@ -62,11 +62,12 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 When `HEYGEN_API_KEY` is set as a Replit secret, the platform enables live AI avatar video streaming:
 
-- **Session creation**: Fetches available HeyGen avatars via `GET /v2/avatars`, assigns gender-appropriate avatar IDs to each dynamic interviewer, stores as `heygen_avatar_id` in DB
-- **Token endpoint**: Backend generates a short-lived streaming token via `POST /v1/streaming.create_token`
-- **Frontend hook**: `useHeyGenAvatar(avatarId)` — lazy WebRTC init via LiveKit, exposes `videoRef`, `speak(text)`, `stop()`, `destroy()`, `status`, `isSpeaking`
-- **InterviewerCard component**: Self-contained card with HeyGen video stream (or static avatar fallback). Exposes `speak/stop/destroy` via `useImperativeHandle` ref
-- **Graceful fallback**: If HeyGen API key not set, returns 503; frontend falls back to OpenAI TTS + static images seamlessly
+- **Session creation**: Assigns gender-appropriate HeyGen avatar IDs from fixed public pools (`HEYGEN_FEMALE_AVATARS`, `HEYGEN_MALE_AVATARS` in `seedInterviewers.ts`); stored as `heygen_avatar_id` in DB per interviewer. No dynamic `/v2/avatars` API call at runtime.
+- **Seeded interviewers**: 9 named personas with `heygen_avatar_id` pre-assigned; `patchHeyGenAvatarIds()` backfills the column on every startup for pre-migration rows
+- **Token endpoint**: `POST /api/interview/heygen/token` — backend proxies token creation via `/v1/streaming.create_token`; returns 503 with error message when `HEYGEN_API_KEY` is absent
+- **Frontend hook**: `useHeyGenAvatar(avatarId)` — lazy WebRTC session init via LiveKit; errors propagated (rethrown); exposes `videoRef`, `speak(text)`, `stop()`, `destroy()`, `status`, `isSpeaking`
+- **InterviewerCard component**: Dark placeholder with name initial (no static photo at any time); "Connecting avatar…" overlay while connecting; "Avatar unavailable" badge on error; live HeyGen video when `status === connected`. Speaking shown via HeyGen stream only — no CSS sound-bar/pulse animations. Exposes `speak/stop/destroy` via `useImperativeHandle` ref
+- **Unavailability notice**: `interview.tsx` shows a yellow "HeyGen streaming not configured" banner after first `speak()` fails; TTS audio fallback activates so questions are still heard
 - **SDK**: `@heygen/streaming-avatar@^2.1.0` (uses LiveKit under the hood)
 
 ## Database Tables
