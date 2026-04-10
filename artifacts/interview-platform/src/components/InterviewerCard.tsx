@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useCallback, useEffect, useRef } from "react";
-import { AlertTriangle, Clapperboard, Loader2, Play, Radio } from "lucide-react";
+import { Clapperboard, Loader2, Play, Radio } from "lucide-react";
 import { useHeyGenVideo } from "@/hooks/useHeyGenVideo";
 import { useDIDStream } from "@/hooks/useDIDStream";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
@@ -93,12 +93,11 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
 
     const didReady = DID_ENABLED && (didStream.status === "ready" || didStream.status === "speaking");
     const didConnecting = DID_ENABLED && didStream.status === "connecting";
-    const didError = DID_ENABLED && didStream.status === "error";
 
     const heygenHasVideo = !DID_ENABLED && heygenVideo.status === "ready" && !!heygenVideo.videoUrl;
     const heygenGenerating = !DID_ENABLED && heygenVideo.status === "generating";
 
-    const showVideoArea = DID_ENABLED || heygenHasVideo;
+    const showVideoArea = didReady || heygenHasVideo;
 
     return (
       <div
@@ -138,14 +137,7 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
               </div>
             )}
 
-            {didError && (
-              <div className="flex items-center gap-1.5 text-xs text-red-400/80">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>Stream unavailable</span>
-              </div>
-            )}
-
-            {DID_ENABLED && didStream.status === "idle" && (
+            {DID_ENABLED && !didConnecting && (
               <span className="text-xs text-zinc-600">Waiting…</span>
             )}
 
@@ -156,14 +148,7 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
               </div>
             )}
 
-            {!DID_ENABLED && heygenVideo.status === "error" && (
-              <div className="flex items-center gap-1.5 text-xs text-red-400/80">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>Video unavailable</span>
-              </div>
-            )}
-
-            {!DID_ENABLED && heygenVideo.status === "idle" && (
+            {!DID_ENABLED && !heygenGenerating && (
               <span className="text-xs text-zinc-600">Waiting…</span>
             )}
           </div>

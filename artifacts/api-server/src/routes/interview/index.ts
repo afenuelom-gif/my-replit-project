@@ -957,7 +957,7 @@ router.get("/interview/heygen/video-status/:videoId", optionalAuth, async (req, 
 const DID_API_BASE = "https://api.d-id.com";
 
 const DID_FEMALE_PRESENTER = "https://d-id-public-bucket.s3.amazonaws.com/alice.jpg";
-const DID_MALE_PRESENTER   = "https://d-id-public-bucket.s3.amazonaws.com/or-roman.jpg";
+const DID_MALE_PRESENTER   = "https://d-id-public-bucket.s3.amazonaws.com/alice.jpg";
 
 function getDIDHeaders(): { Authorization: string; "content-type": string } | null {
   const apiKey = process.env.DID_API_KEY;
@@ -966,6 +966,23 @@ function getDIDHeaders(): { Authorization: string; "content-type": string } | nu
     Authorization: `Basic ${apiKey}`,
     "content-type": "application/json",
   };
+}
+
+async function didProxy(
+  upstreamUrl: string,
+  method: string,
+  headers: Record<string, string>,
+  body?: unknown
+): Promise<{ status: number; data: unknown }> {
+  const resp = await fetch(upstreamUrl, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  const text = await resp.text();
+  let data: unknown = text;
+  try { data = JSON.parse(text); } catch { /* keep as string */ }
+  return { status: resp.status, data };
 }
 
 // POST /api/interview/did/streams — create a new D-ID streaming session
@@ -977,17 +994,8 @@ router.post("/interview/did/streams", optionalAuth, async (req, res): Promise<vo
   const sourceUrl = gender === "male" ? DID_MALE_PRESENTER : DID_FEMALE_PRESENTER;
 
   try {
-    const resp = await fetch(`${DID_API_BASE}/talks/streams`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ source_url: sourceUrl }),
-    });
-    const data = await resp.json() as Record<string, unknown>;
-    if (!resp.ok) {
-      res.status(resp.status).json({ error: (data as { description?: string }).description ?? resp.statusText });
-      return;
-    }
-    res.json(data);
+    const { status, data } = await didProxy(`${DID_API_BASE}/talks/streams`, "POST", headers, { source_url: sourceUrl });
+    res.status(status).json(data);
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
@@ -1002,17 +1010,8 @@ router.post("/interview/did/streams/:streamId/sdp", optionalAuth, async (req, re
   const { answer, session_id } = req.body as { answer: unknown; session_id: string };
 
   try {
-    const resp = await fetch(`${DID_API_BASE}/talks/streams/${streamId}/sdp`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ answer, session_id }),
-    });
-    const data = await resp.json() as Record<string, unknown>;
-    if (!resp.ok) {
-      res.status(resp.status).json({ error: (data as { description?: string }).description ?? resp.statusText });
-      return;
-    }
-    res.json(data);
+    const { status, data } = await didProxy(`${DID_API_BASE}/talks/streams/${streamId}/sdp`, "POST", headers, { answer, session_id });
+    res.status(status).json(data);
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
@@ -1027,17 +1026,8 @@ router.post("/interview/did/streams/:streamId/ice", optionalAuth, async (req, re
   const { candidate, session_id } = req.body as { candidate: unknown; session_id: string };
 
   try {
-    const resp = await fetch(`${DID_API_BASE}/talks/streams/${streamId}/ice`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ candidate, session_id }),
-    });
-    const data = await resp.json() as Record<string, unknown>;
-    if (!resp.ok) {
-      res.status(resp.status).json({ error: (data as { description?: string }).description ?? resp.statusText });
-      return;
-    }
-    res.json(data);
+    const { status, data } = await didProxy(`${DID_API_BASE}/talks/streams/${streamId}/ice`, "POST", headers, { candidate, session_id });
+    res.status(status).json(data);
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
@@ -1054,17 +1044,8 @@ router.post("/interview/did/streams/:streamId/talk", optionalAuth, async (req, r
   };
 
   try {
-    const resp = await fetch(`${DID_API_BASE}/talks/streams/${streamId}/talk`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ script, session_id, config }),
-    });
-    const data = await resp.json() as Record<string, unknown>;
-    if (!resp.ok) {
-      res.status(resp.status).json({ error: (data as { description?: string }).description ?? resp.statusText });
-      return;
-    }
-    res.json(data);
+    const { status, data } = await didProxy(`${DID_API_BASE}/talks/streams/${streamId}/talk`, "POST", headers, { script, session_id, config });
+    res.status(status).json(data);
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
@@ -1079,21 +1060,8 @@ router.delete("/interview/did/streams/:streamId", optionalAuth, async (req, res)
   const { session_id } = req.body as { session_id?: string };
 
   try {
-    const resp = await fetch(`${DID_API_BASE}/talks/streams/${streamId}`, {
-      method: "DELETE",
-      headers,
-      body: JSON.stringify({ session_id: session_id ?? "" }),
-    });
-    if (resp.status === 204 || resp.status === 200) {
-      res.json({ success: true });
-      return;
-    }
-    try {
-      const data = await resp.json() as Record<string, unknown>;
-      res.status(resp.ok ? 200 : resp.status).json(data);
-    } catch {
-      res.json({ success: true });
-    }
+    const { status, data } = await didProxy(`${DID_API_BASE}/talks/streams/${streamId}`, "DELETE", headers, { session_id: session_id ?? "" });
+    res.status(status === 204 ? 200 : status).json(data ?? {});
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
