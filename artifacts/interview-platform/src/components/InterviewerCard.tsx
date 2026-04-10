@@ -35,6 +35,8 @@ interface InterviewerCardProps {
 
 const FEMALE_VOICES = new Set(["nova", "shimmer"]);
 const DID_ENABLED = import.meta.env.VITE_DID_ENABLED === "true";
+/** The exact still image D-ID uses as its presenter — shown idle, generating, and as video poster */
+const DID_AVATAR_URL = "https://d-id-public-bucket.s3.amazonaws.com/alice.jpg";
 
 /** Staggered animated waveform bars driven by CSS keyframes */
 const WAVEFORM_HEIGHTS = [40, 70, 55, 85, 45, 75, 60, 90, 50, 65, 80, 48, 72];
@@ -174,6 +176,7 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           <video
             ref={didTalksVideoRef}
             playsInline
+            poster={DID_AVATAR_URL}
             className={`w-full h-full object-cover min-h-48 ${didVideoVisible ? "block" : "hidden"}`}
             onPlay={() => setDidVideoPlaying(true)}
             onEnded={() => {
@@ -197,12 +200,14 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           />
         )}
 
-        {/* ── Photo + animated fallback ─────────────────────────────── */}
+        {/* ── Photo / D-ID still fallback ───────────────────────────── */}
         {showPhotoFallback && (
           <div className="relative w-full h-full min-h-48">
-            {interviewer.avatarUrl ? (
+            {/* When D-ID enabled: always alice.jpg (same face as the video).
+                Otherwise: custom interviewer portrait (or initial letter). */}
+            {(DID_ENABLED || interviewer.avatarUrl) ? (
               <img
-                src={interviewer.avatarUrl}
+                src={DID_ENABLED ? DID_AVATAR_URL : interviewer.avatarUrl!}
                 alt={interviewer.name}
                 className={`w-full h-full object-cover min-h-48 absolute inset-0 transition-all duration-500 ${
                   isActive ? "opacity-95" : "opacity-35"
@@ -219,7 +224,7 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
             {/* Dark vignette */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
-            {/* Waveform overlay while TTS is playing */}
+            {/* Waveform overlay while TTS is playing (only when not generating D-ID video) */}
             {isSpeakingNow && !didGenerating && (
               <div className="absolute bottom-14 left-0 right-0 flex justify-center pointer-events-none">
                 <div className="bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2 flex items-center gap-3 border border-white/10">
@@ -229,23 +234,19 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
               </div>
             )}
 
-            {/* D-ID video generating spinner */}
+            {/* D-ID generating: small corner badge only — face stays fully visible */}
             {didGenerating && isActive && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                  <span className="text-xs text-primary/80 font-medium">Rendering avatar…</span>
-                </div>
+              <div className="absolute bottom-14 left-3 z-10 flex items-center gap-1.5 bg-black/70 border border-primary/40 rounded-md px-2 py-1 backdrop-blur-sm">
+                <Loader2 className="w-3 h-3 text-primary animate-spin" />
+                <span className="text-xs text-primary/90">Rendering…</span>
               </div>
             )}
 
-            {/* HeyGen generating */}
+            {/* HeyGen generating: small corner badge */}
             {heygenGenerating && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                  <span className="text-xs text-primary/80 font-medium">Generating video…</span>
-                </div>
+              <div className="absolute bottom-14 left-3 z-10 flex items-center gap-1.5 bg-black/70 border border-yellow-700/40 rounded-md px-2 py-1 backdrop-blur-sm">
+                <Loader2 className="w-3 h-3 text-yellow-400 animate-spin" />
+                <span className="text-xs text-yellow-300">Generating…</span>
               </div>
             )}
           </div>
@@ -256,13 +257,6 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-green-700/40 rounded-md px-2 py-1 backdrop-blur-sm">
             <Radio className="w-3 h-3 text-green-400 animate-pulse" />
             <span className="text-xs text-green-300">Live avatar</span>
-          </div>
-        )}
-
-        {didGenerating && isActive && (
-          <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-primary/30 rounded-md px-2 py-1 backdrop-blur-sm">
-            <Loader2 className="w-3 h-3 text-primary animate-spin" />
-            <span className="text-xs text-primary">Rendering…</span>
           </div>
         )}
 
@@ -277,13 +271,6 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-primary/30 rounded-md px-2 py-1 backdrop-blur-sm">
             <Play className="w-3 h-3 text-primary" />
             <span className="text-xs text-primary">Video ready</span>
-          </div>
-        )}
-
-        {heygenGenerating && (
-          <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-yellow-700/40 rounded-md px-2 py-1 backdrop-blur-sm">
-            <Clapperboard className="w-3 h-3 text-yellow-400 animate-pulse" />
-            <span className="text-xs text-yellow-300">Generating…</span>
           </div>
         )}
 
