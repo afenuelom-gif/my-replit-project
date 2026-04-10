@@ -3,7 +3,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 export type DIDStreamStatus = "idle" | "connecting" | "ready" | "speaking" | "error";
 
 export interface DIDStreamState {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
+  mediaStream: MediaStream | null;
   status: DIDStreamStatus;
   speak: (text: string, gender?: "male" | "female") => Promise<void>;
   destroy: () => Promise<void>;
@@ -20,12 +20,12 @@ interface DIDCreateResponse {
 
 interface DIDDataChannelMessage {
   event?: string;
-  status?: string;
 }
 
 export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamState {
   const [status, setStatus] = useState<DIDStreamStatus>("idle");
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const streamIdRef = useRef<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
@@ -42,9 +42,7 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
       pcRef.current.close();
       pcRef.current = null;
     }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
+    setMediaStream(null);
   }, []);
 
   const destroy = useCallback(async () => {
@@ -98,8 +96,8 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
       pcRef.current = pc;
 
       pc.ontrack = (event) => {
-        if (event.streams[0] && videoRef.current) {
-          videoRef.current.srcObject = event.streams[0];
+        if (event.streams[0]) {
+          setMediaStream(event.streams[0]);
         }
       };
 
@@ -136,14 +134,14 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
       pc.onconnectionstatechange = () => {
         if (unmountedRef.current) return;
         const state = pc.connectionState;
-        if (state === "connected") setStatus(s => s === "idle" || s === "connecting" ? "ready" : s);
+        if (state === "connected") setStatus(s => (s === "idle" || s === "connecting" ? "ready" : s));
         else if (state === "failed") setStatus("error");
       };
 
       pc.oniceconnectionstatechange = () => {
         if (unmountedRef.current) return;
         if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
-          setStatus(s => s === "idle" || s === "connecting" ? "ready" : s);
+          setStatus(s => (s === "idle" || s === "connecting" ? "ready" : s));
         }
       };
 
@@ -171,12 +169,13 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
     }
   }, [gender, closePeerConnection]);
 
-  const speak = useCallback(async (text: string) => {
+  const speak = useCallback(async (text: string, speakGender?: "male" | "female") => {
     if (!DID_ENABLED) return;
     const streamId = streamIdRef.current;
     const sessionId = sessionIdRef.current;
     if (!streamId || !sessionId) return;
 
+    const voiceGender = speakGender ?? gender;
     try {
       await fetch(`/api/interview/did/streams/${streamId}/talk`, {
         method: "POST",
@@ -187,7 +186,7 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
             subtitles: "false",
             provider: {
               type: "microsoft",
-              voice_id: gender === "female" ? "en-US-JennyNeural" : "en-US-GuyNeural",
+              voice_id: voiceGender === "female" ? "en-US-JennyNeural" : "en-US-GuyNeural",
             },
             input: text,
           },
@@ -213,5 +212,5 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
     };
   }, []);
 
-  return { videoRef, status, speak, destroy };
+  return { mediaStream, status, speak, destroy };
 }

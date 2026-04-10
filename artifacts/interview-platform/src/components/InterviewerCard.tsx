@@ -1,8 +1,8 @@
 import React, { forwardRef, useImperativeHandle, useCallback, useEffect, useRef } from "react";
 import { Clapperboard, Loader2, Play, Radio } from "lucide-react";
 import { useHeyGenVideo } from "@/hooks/useHeyGenVideo";
-import { useDIDStream } from "@/hooks/useDIDStream";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
+import type { DIDStreamStatus } from "@/hooks/useDIDStream";
 
 export interface InterviewerCardHandle {
   speak: (text: string, gender?: "male" | "female") => Promise<void>;
@@ -23,21 +23,36 @@ interface InterviewerCardProps {
   interviewer: Interviewer;
   isActive: boolean;
   onSpeakingChange?: (speaking: boolean) => void;
+  didMediaStream?: MediaStream | null;
+  didStatus?: DIDStreamStatus;
 }
 
 const FEMALE_VOICES = new Set(["nova", "shimmer"]);
 const DID_ENABLED = import.meta.env.VITE_DID_ENABLED === "true";
 
 const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
-  ({ interviewer, isActive, onSpeakingChange }, ref) => {
+  ({ interviewer, isActive, onSpeakingChange, didMediaStream, didStatus }, ref) => {
     const gender: "male" | "female" = FEMALE_VOICES.has(interviewer.voiceId ?? "") ? "female" : "male";
 
     const heygenVideo = useHeyGenVideo();
-    const didStream = useDIDStream(gender);
     const { speak: ttsSpeak, stop: ttsStop, isSpeaking: ttsSpeaking } = useSpeechSynthesis();
 
     const heygenVideoRef = useRef<HTMLVideoElement | null>(null);
-    const activeTextRef = useRef<string | null>(null);
+    const didVideoRef = useRef<HTMLVideoElement | null>(null);
+
+    useEffect(() => {
+      onSpeakingChange?.(ttsSpeaking);
+    }, [ttsSpeaking]);
+
+    useEffect(() => {
+      if (!DID_ENABLED || !didVideoRef.current) return;
+      if (isActive && didMediaStream) {
+        didVideoRef.current.srcObject = didMediaStream;
+        didVideoRef.current.play().catch(() => {});
+      } else {
+        didVideoRef.current.srcObject = null;
+      }
+    }, [isActive, didMediaStream]);
 
     useEffect(() => {
       if (!DID_ENABLED && heygenVideo.status === "ready" && heygenVideo.videoUrl && heygenVideoRef.current) {
@@ -46,18 +61,10 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
       }
     }, [heygenVideo.status, heygenVideo.videoUrl]);
 
-    useEffect(() => {
-      onSpeakingChange?.(ttsSpeaking);
-    }, [ttsSpeaking]);
-
     const speak = useCallback(async (text: string) => {
       ttsSpeak(text, interviewer.voiceId);
 
-      if (DID_ENABLED) {
-        activeTextRef.current = text;
-        await didStream.speak(text, gender);
-      } else if (interviewer.heygenAvatarId) {
-        activeTextRef.current = text;
+      if (!DID_ENABLED && interviewer.heygenAvatarId) {
         heygenVideo.generate(interviewer.id, text, gender);
       }
     }, [
@@ -66,33 +73,33 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
       interviewer.voiceId,
       gender,
       heygenVideo,
-      didStream,
       ttsSpeak,
     ]);
 
     const stop = useCallback(() => {
       ttsStop();
       if (heygenVideoRef.current) heygenVideoRef.current.pause();
-      if (didStream.videoRef.current) didStream.videoRef.current.pause();
-    }, [ttsStop, didStream.videoRef]);
+      if (didVideoRef.current) didVideoRef.current.pause();
+    }, [ttsStop]);
 
     const destroy = useCallback(() => {
       ttsStop();
       heygenVideo.reset();
-      activeTextRef.current = null;
       if (heygenVideoRef.current) {
         heygenVideoRef.current.pause();
         heygenVideoRef.current.src = "";
       }
-      if (DID_ENABLED) {
-        didStream.destroy();
+      if (didVideoRef.current) {
+        didVideoRef.current.pause();
+        didVideoRef.current.srcObject = null;
       }
-    }, [ttsStop, heygenVideo, didStream]);
+    }, [ttsStop, heygenVideo]);
 
     useImperativeHandle(ref, () => ({ speak, stop, destroy }), [speak, stop, destroy]);
 
-    const didReady = DID_ENABLED && (didStream.status === "ready" || didStream.status === "speaking");
-    const didConnecting = DID_ENABLED && didStream.status === "connecting";
+    const didReady = DID_ENABLED && isActive && !!didMediaStream &&
+      (didStatus === "ready" || didStatus === "speaking");
+    const didConnecting = DID_ENABLED && (didStatus === "connecting");
 
     const heygenHasVideo = !DID_ENABLED && heygenVideo.status === "ready" && !!heygenVideo.videoUrl;
     const heygenGenerating = !DID_ENABLED && heygenVideo.status === "generating";
@@ -107,7 +114,7 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
       >
         {DID_ENABLED && (
           <video
-            ref={didStream.videoRef}
+            ref={didVideoRef}
             playsInline
             muted
             autoPlay
@@ -130,14 +137,14 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
               {interviewer.name.charAt(0)}
             </div>
 
-            {didConnecting && (
+            {didConnecting && isActive && (
               <div className="flex items-center gap-2">
                 <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
                 <span className="text-xs text-primary/80">Connecting stream…</span>
               </div>
             )}
 
-            {DID_ENABLED && !didConnecting && (
+            {DID_ENABLED && !(didConnecting && isActive) && (
               <span className="text-xs text-zinc-600">Waiting…</span>
             )}
 
@@ -161,7 +168,7 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           </div>
         )}
 
-        {didConnecting && (
+        {didConnecting && isActive && (
           <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-primary/30 rounded-md px-2 py-1 backdrop-blur-sm">
             <Loader2 className="w-3 h-3 text-primary animate-spin" />
             <span className="text-xs text-primary">Connecting…</span>
