@@ -154,7 +154,7 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           </div>
         )}
 
-        {didReady && (
+        {didReady && isActive && (
           <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-green-700/40 rounded-md px-2 py-1 backdrop-blur-sm">
             <Radio className="w-3 h-3 text-green-400 animate-pulse" />
             <span className="text-xs text-green-300">Live</span>
