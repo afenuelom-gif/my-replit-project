@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 
-export type DIDStreamStatus = "idle" | "connecting" | "ready" | "speaking" | "error";
+export type DIDStreamStatus = "idle" | "connecting" | "connected" | "ready" | "speaking" | "error";
 
 export interface DIDStreamState {
   mediaStream: MediaStream | null;
@@ -31,6 +31,7 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
   const sessionIdRef = useRef<string | null>(null);
   const unmountedRef = useRef(false);
   const connectingRef = useRef(false);
+  const pendingSpeakRef = useRef<{ text: string; gender: "male" | "female" } | null>(null);
 
   const closePeerConnection = useCallback(() => {
     if (pcRef.current) {
@@ -67,6 +68,53 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
     }
   }, [closePeerConnection]);
 
+  // Execute speak directly against D-ID (bypasses the streamId null check)
+  const executeSpeakNow = useCallback(async (text: string, speakGender: "male" | "female") => {
+    const streamId = streamIdRef.current;
+    const sessionId = sessionIdRef.current;
+    if (!streamId || !sessionId) return;
+
+    console.log("[D-ID] Speaking:", text.substring(0, 50));
+    try {
+      const resp = await fetch(`/api/interview/did/streams/${streamId}/talk`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          script: {
+            type: "text",
+            subtitles: "false",
+            provider: {
+              type: "microsoft",
+              voice_id: speakGender === "female" ? "en-US-JennyNeural" : "en-US-GuyNeural",
+            },
+            input: text,
+          },
+          config: { fluent: "false", pad_audio: "0.0", align_driver: "false" },
+          session_id: sessionId,
+        }),
+      });
+      if (!resp.ok) {
+        console.warn("[D-ID] talk returned", resp.status);
+      }
+    } catch (err) {
+      console.error("[D-ID] speak() error:", err);
+    }
+  }, []);
+
+  const markReady = useCallback(() => {
+    if (unmountedRef.current) return;
+    setStatus(s => {
+      if (s === "idle" || s === "connecting" || s === "connected") return "ready";
+      return s;
+    });
+    // Execute any pending speak that was queued before the connection was ready
+    if (pendingSpeakRef.current) {
+      const { text, gender: g } = pendingSpeakRef.current;
+      pendingSpeakRef.current = null;
+      executeSpeakNow(text, g);
+    }
+  }, [executeSpeakNow]);
+
   const connect = useCallback(async () => {
     if (!DID_ENABLED || connectingRef.current || unmountedRef.current) return;
     connectingRef.current = true;
@@ -92,63 +140,84 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
 
       streamIdRef.current = streamId;
       sessionIdRef.current = sessionId;
+      console.log("[D-ID] Stream created:", streamId);
 
       const pc = new RTCPeerConnection({ iceServers: ice_servers });
       pcRef.current = pc;
 
-      pc.ontrack = (event) => {
-        if (event.streams[0]) {
-          setMediaStream(event.streams[0]);
-        }
-      };
+      // Buffer ICE candidates until SDP answer is sent — avoids race where
+      // candidates arrive at D-ID before they know our SDP answer
+      const iceCandidateQueue: RTCIceCandidateInit[] = [];
+      let sdpAnswerSent = false;
 
-      pc.onicecandidate = async (event) => {
-        if (!event.candidate || !streamIdRef.current || !sessionIdRef.current) return;
+      const sendCandidate = async (candidate: RTCIceCandidateInit) => {
+        if (!streamIdRef.current || !sessionIdRef.current) return;
         try {
           await fetch(`/api/interview/did/streams/${streamIdRef.current}/ice`, {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              candidate: event.candidate.toJSON(),
-              session_id: sessionIdRef.current,
-            }),
+            body: JSON.stringify({ candidate, session_id: sessionIdRef.current }),
           });
-        } catch {
+        } catch { /* ignore */ }
+      };
+
+      pc.ontrack = (event) => {
+        console.log("[D-ID] ontrack fired, streams:", event.streams.length, "track:", event.track.kind);
+        if (event.streams[0]) {
+          setMediaStream(event.streams[0]);
+          markReady();
+        }
+      };
+
+      pc.onicecandidate = (event) => {
+        if (!event.candidate) {
+          console.log("[D-ID] ICE gathering complete");
+          return;
+        }
+        const c = event.candidate.toJSON();
+        if (!sdpAnswerSent) {
+          console.log("[D-ID] ICE candidate queued (SDP not yet sent)");
+          iceCandidateQueue.push(c);
+        } else {
+          sendCandidate(c);
         }
       };
 
       pc.ondatachannel = (event) => {
+        console.log("[D-ID] data channel:", event.channel.label);
         const dc = event.channel;
         dc.onmessage = (msg) => {
           if (unmountedRef.current) return;
+          console.log("[D-ID] datachannel msg:", msg.data);
           try {
             const data = JSON.parse(msg.data as string) as DIDDataChannelMessage;
-            if (data.event === "stream/ready") setStatus("ready");
+            if (data.event === "stream/ready") markReady();
             else if (data.event === "stream/started") setStatus("speaking");
-            else if (data.event === "stream/done") setStatus("ready");
+            else if (data.event === "stream/done") markReady();
             else if (data.event === "stream/error") setStatus("error");
-          } catch {
-          }
+          } catch { /* ignore */ }
         };
       };
 
       pc.onconnectionstatechange = () => {
-        if (unmountedRef.current) return;
         const state = pc.connectionState;
-        if (state === "connected") setStatus(s => (s === "idle" || s === "connecting" ? "ready" : s));
+        console.log("[D-ID] connectionState:", state);
+        if (unmountedRef.current) return;
+        if (state === "connected") markReady();
         else if (state === "failed") setStatus("error");
       };
 
       pc.oniceconnectionstatechange = () => {
+        const state = pc.iceConnectionState;
+        console.log("[D-ID] iceConnectionState:", state);
         if (unmountedRef.current) return;
-        if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
-          setStatus(s => (s === "idle" || s === "connecting" ? "ready" : s));
-        }
+        if (state === "connected" || state === "completed") markReady();
       };
 
       await pc.setRemoteDescription(offer);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
+      console.log("[D-ID] Local description set, sending SDP answer");
 
       const sdpResp = await fetch(`/api/interview/did/streams/${streamId}/sdp`, {
         method: "POST",
@@ -161,6 +230,14 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
         throw new Error(err.error ?? `SDP error ${sdpResp.status}`);
       }
 
+      // SDP sent — now flush any ICE candidates that were queued
+      sdpAnswerSent = true;
+      console.log("[D-ID] SDP sent. Flushing", iceCandidateQueue.length, "queued ICE candidates");
+      for (const c of iceCandidateQueue) {
+        sendCandidate(c);
+      }
+      iceCandidateQueue.length = 0;
+
     } catch (err) {
       console.error("[D-ID] Connection error:", err);
       if (!unmountedRef.current) setStatus("error");
@@ -168,41 +245,23 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
     } finally {
       connectingRef.current = false;
     }
-  }, [gender, closePeerConnection]);
+  }, [gender, closePeerConnection, markReady]);
 
   const speak = useCallback(async (text: string, speakGender?: "male" | "female") => {
     if (!DID_ENABLED) return;
+    const resolvedGender = speakGender ?? gender;
     const streamId = streamIdRef.current;
     const sessionId = sessionIdRef.current;
-    if (!streamId || !sessionId) return;
 
-    const voiceGender = speakGender ?? gender;
-    try {
-      await fetch(`/api/interview/did/streams/${streamId}/talk`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          script: {
-            type: "text",
-            subtitles: "false",
-            provider: {
-              type: "microsoft",
-              voice_id: voiceGender === "female" ? "en-US-JennyNeural" : "en-US-GuyNeural",
-            },
-            input: text,
-          },
-          config: {
-            fluent: "false",
-            pad_audio: "0.0",
-            align_driver: "false",
-          },
-          session_id: sessionId,
-        }),
-      });
-    } catch (err) {
-      console.error("[D-ID] speak() error:", err);
+    if (!streamId || !sessionId) {
+      // Queue for when connection is ready
+      console.log("[D-ID] speak() called but not connected yet — queuing");
+      pendingSpeakRef.current = { text, gender: resolvedGender };
+      return;
     }
-  }, [gender]);
+
+    await executeSpeakNow(text, resolvedGender);
+  }, [gender, executeSpeakNow]);
 
   useEffect(() => {
     if (!DID_ENABLED) return;

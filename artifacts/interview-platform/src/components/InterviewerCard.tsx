@@ -97,9 +97,9 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
 
     useImperativeHandle(ref, () => ({ speak, stop, destroy }), [speak, stop, destroy]);
 
-    const didReady = DID_ENABLED && isActive && !!didMediaStream &&
-      (didStatus === "ready" || didStatus === "speaking");
-    const didConnecting = DID_ENABLED && (didStatus === "connecting");
+    const didReady = DID_ENABLED && isActive && !!didMediaStream;
+    const didConnecting = DID_ENABLED && isActive &&
+      (didStatus === "connecting" || didStatus === "connected");
 
     const heygenHasVideo = !DID_ENABLED && heygenVideo.status === "ready" && !!heygenVideo.videoUrl;
     const heygenGenerating = !DID_ENABLED && heygenVideo.status === "generating";

@@ -191,6 +191,7 @@ export default function Interview() {
 
     const FEMALE_VOICE_IDS = new Set(["nova", "shimmer"]);
     const interviewerGender: "male" | "female" = FEMALE_VOICE_IDS.has(activeInterviewer.voiceId ?? "") ? "female" : "male";
+    // speak() will queue the text if D-ID isn't connected yet and auto-execute once ready
     didStream.speak(currentQ.questionText, interviewerGender);
   }, [sessionData?.questions?.length]);
 
