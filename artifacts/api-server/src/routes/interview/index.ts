@@ -752,7 +752,11 @@ router.post("/interview/heygen/token", optionalAuth, async (_req, res): Promise<
     });
     if (!resp.ok) {
       const text = await resp.text();
-      res.status(resp.status).json({ error: `HeyGen error: ${text}` });
+      if (resp.status === 410) {
+        res.status(410).json({ error: "HeyGen Streaming Avatar API was retired on March 31, 2026 (sunset). Please contact HeyGen support to migrate your credits to their LiveAvatar product." });
+        return;
+      }
+      res.status(resp.status).json({ error: `HeyGen error (${resp.status}): ${text}` });
       return;
     }
     const data = await resp.json() as { data?: { token?: string }; error?: string };

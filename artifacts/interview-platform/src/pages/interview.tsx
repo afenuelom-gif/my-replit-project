@@ -47,6 +47,7 @@ export default function Interview() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [isHeyGenSpeaking, setIsHeyGenSpeaking] = useState(false);
   const [heygenUnavailable, setHeygenUnavailable] = useState(false);
+  const [heygenErrorMsg, setHeygenErrorMsg] = useState<string | null>(null);
 
   // Refs for user webcam / recording
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -179,9 +180,11 @@ export default function Interview() {
       // HeyGen handles both video + audio; speaking state tracked via onSpeakingChange
       setStatusMessage("Interviewer speaking...");
       hasTTSStartedRef.current = true;
-      cardRef.current.speak(currentQ.questionText).catch(() => {
+      cardRef.current.speak(currentQ.questionText).catch((err: unknown) => {
         // HeyGen speak failed — fall back to TTS for this turn
         setHeygenUnavailable(true);
+        const msg = err instanceof Error ? err.message : String(err);
+        setHeygenErrorMsg(msg);
         if (isTTSSupported) speechSpeak(currentQ.questionText, activeInterviewer.voiceId);
         else setStatusMessage("Read the question above, then click the mic to answer");
       });
@@ -346,8 +349,22 @@ export default function Interview() {
       {/* HeyGen unavailable notice */}
       {heygenUnavailable && (
         <div className="bg-yellow-950/60 border-b border-yellow-700/40 px-6 py-2 flex items-center gap-2 text-xs text-yellow-300">
-          <span className="font-semibold">HeyGen streaming not configured</span>
-          <span className="text-yellow-400/70">— live avatar video unavailable. Set HEYGEN_API_KEY to enable animated interviewers.</span>
+          {heygenErrorMsg?.includes("410") || heygenErrorMsg?.toLowerCase().includes("sunset") || heygenErrorMsg?.toLowerCase().includes("deprecated") ? (
+            <>
+              <span className="font-semibold">HeyGen Streaming Avatar API was retired March 31, 2026</span>
+              <span className="text-yellow-400/70">— Please contact HeyGen to migrate your credits to their new LiveAvatar product. Audio continues via TTS.</span>
+            </>
+          ) : heygenErrorMsg?.toLowerCase().includes("not configured") || !heygenErrorMsg ? (
+            <>
+              <span className="font-semibold">HeyGen streaming not configured</span>
+              <span className="text-yellow-400/70">— Set HEYGEN_API_KEY to enable animated interviewers. Audio continues via TTS.</span>
+            </>
+          ) : (
+            <>
+              <span className="font-semibold">HeyGen avatar unavailable</span>
+              <span className="text-yellow-400/70">— Audio continues via TTS. Error: {heygenErrorMsg}</span>
+            </>
+          )}
         </div>
       )}
 
