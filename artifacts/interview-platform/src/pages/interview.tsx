@@ -9,7 +9,6 @@ import {
   useAnalyzePosture
 } from "@workspace/api-client-react";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
-import { useDIDStream } from "@/hooks/useDIDStream";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -37,7 +36,6 @@ export default function Interview() {
   const transcribeAnswer = useTranscribeAnswer();
   const analyzePosture = useAnalyzePosture();
   const { speak: speechSpeak, stop: speechStop, isSpeaking, isSupported: isTTSSupported } = useSpeechSynthesis();
-  const didStream = useDIDStream("female");
 
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isRecording, setIsRecording] = useState(false);
@@ -189,10 +187,6 @@ export default function Interview() {
       }
     }
 
-    const FEMALE_VOICE_IDS = new Set(["nova", "shimmer"]);
-    const interviewerGender: "male" | "female" = FEMALE_VOICE_IDS.has(activeInterviewer.voiceId ?? "") ? "female" : "male";
-    // speak() will queue the text if D-ID isn't connected yet and auto-execute once ready
-    didStream.speak(currentQ.questionText, interviewerGender);
   }, [sessionData?.questions?.length]);
 
   // Update status when TTS ends
@@ -208,8 +202,7 @@ export default function Interview() {
       if (ref.current) destroyPromises.push(Promise.resolve(ref.current.destroy()));
     }
     await Promise.allSettled(destroyPromises);
-    await didStream.destroy();
-  }, [didStream]);
+  }, []);
 
   const handleComplete = async () => {
     speechStop();
@@ -390,8 +383,6 @@ export default function Interview() {
                     if (!speaking) setStatusMessage("Your turn — click the mic to answer");
                   }
                 }}
-                didMediaStream={isActive ? didStream.mediaStream : null}
-                didStatus={didStream.status}
               />
             );
           })}

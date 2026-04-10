@@ -1127,4 +1127,52 @@ router.delete("/interview/did/streams/:streamId", optionalAuth, async (req, res)
   }
 });
 
+// ---------------------------------------------------------------------------
+// D-ID Talks API routes (non-streaming avatar video generation)
+// ---------------------------------------------------------------------------
+
+// POST /api/interview/did/talks — generate a talking-head video clip
+router.post("/interview/did/talks", optionalAuth, async (req, res): Promise<void> => {
+  const headers = getDIDHeaders();
+  if (!headers) { res.status(503).json({ error: "D-ID not configured — set DID_API_KEY" }); return; }
+
+  const { text, gender } = req.body as { text: string; gender?: string };
+  if (!text) { res.status(400).json({ error: "text is required" }); return; }
+
+  const sourceUrl = gender === "male" ? DID_MALE_PRESENTER : DID_FEMALE_PRESENTER;
+  const voiceId   = gender === "male" ? "en-US-GuyNeural" : "en-US-JennyNeural";
+
+  const body = {
+    source_url: sourceUrl,
+    script: {
+      type: "text",
+      input: text,
+      provider: { type: "microsoft", voice_id: voiceId },
+    },
+    config: { fluent: true, pad_audio: 0 },
+  };
+
+  try {
+    const { status, data } = await didProxy(`${DID_API_BASE}/talks`, "POST", headers, body);
+    res.status(status).json(data);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// GET /api/interview/did/talks/:id — poll talk generation status
+router.get("/interview/did/talks/:id", optionalAuth, async (req, res): Promise<void> => {
+  const headers = getDIDHeaders();
+  if (!headers) { res.status(503).json({ error: "D-ID not configured" }); return; }
+
+  const talkId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+  try {
+    const { status, data } = await didProxy(`${DID_API_BASE}/talks/${talkId}`, "GET", headers);
+    res.status(status).json(data);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 export default router;
