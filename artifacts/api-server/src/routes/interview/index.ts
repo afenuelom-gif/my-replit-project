@@ -61,14 +61,17 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
 
   await seedInterviewersIfNeeded();
 
-  const AVATAR_POOL = [
+  const FEMALE_AVATAR_POOL = [
     "/avatars/interviewer-1.png",
-    "/avatars/interviewer-2.png",
     "/avatars/interviewer-3.png",
-    "/avatars/interviewer-4.png",
     "/avatars/interviewer-5.png",
+  ];
+  const MALE_AVATAR_POOL = [
+    "/avatars/interviewer-2.png",
+    "/avatars/interviewer-4.png",
     "/avatars/interviewer-6.png",
   ];
+  const FEMALE_VOICE_IDS = new Set(["nova", "shimmer"]);
 
   const interviewerCount = Math.floor(Math.random() * 2) + 2;
 
@@ -91,18 +94,25 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
   let selectedInterviewers: Array<typeof interviewersTable.$inferSelect>;
 
   if (dynamicPersonas && dynamicPersonas.length >= 2) {
+    let femaleAvatarIdx = 0;
+    let maleAvatarIdx = 0;
     const inserted = await db
       .insert(interviewersTable)
       .values(
-        dynamicPersonas.map((p, i) => ({
-          name: p.name,
-          title: p.title,
-          company: p.company,
-          personality: p.personality,
-          voiceId: p.voiceId,
-          avatarUrl: AVATAR_POOL[i % AVATAR_POOL.length],
-          sessionId: session.id,
-        }))
+        dynamicPersonas.map((p) => {
+          const isFemale = FEMALE_VOICE_IDS.has(p.voiceId);
+          const pool = isFemale ? FEMALE_AVATAR_POOL : MALE_AVATAR_POOL;
+          const avatarUrl = pool[(isFemale ? femaleAvatarIdx++ : maleAvatarIdx++) % pool.length];
+          return {
+            name: p.name,
+            title: p.title,
+            company: p.company,
+            personality: p.personality,
+            voiceId: p.voiceId,
+            avatarUrl,
+            sessionId: session.id,
+          };
+        })
       )
       .returning();
     selectedInterviewers = inserted;

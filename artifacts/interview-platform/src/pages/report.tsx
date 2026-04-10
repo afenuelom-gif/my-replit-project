@@ -4,7 +4,50 @@ import { useGetReport, getGetReportQueryKey } from "@workspace/api-client-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, ChevronLeft, Target, MessageSquare, Code, Lightbulb, User, Camera } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Target, MessageSquare, Code, Lightbulb, User, Camera, Volume2 } from "lucide-react";
+
+interface FillerResult {
+  total: number;
+  rate: number;
+  wordCount: number;
+  breakdown: { word: string; count: number }[];
+}
+
+const FILLER_PATTERNS: { pattern: RegExp; label: string }[] = [
+  { pattern: /\bum+\b/gi,       label: "um" },
+  { pattern: /\buh+\b/gi,       label: "uh" },
+  { pattern: /\ber+\b/gi,       label: "er" },
+  { pattern: /\bhmm+\b/gi,      label: "hmm" },
+  { pattern: /\byou know\b/gi,  label: "you know" },
+  { pattern: /\bi mean\b/gi,    label: "I mean" },
+  { pattern: /\bkind of\b/gi,   label: "kind of" },
+  { pattern: /\bsort of\b/gi,   label: "sort of" },
+  { pattern: /\bbasically\b/gi, label: "basically" },
+  { pattern: /\bliterally\b/gi, label: "literally" },
+  { pattern: /\blike\b/gi,      label: "like" },
+];
+
+function analyzeFillerWords(answers: (string | null)[]): FillerResult {
+  const allText = answers.filter(Boolean).join(" ");
+  const wordCount = allText.trim() ? allText.trim().split(/\s+/).length : 0;
+
+  const breakdown: { word: string; count: number }[] = [];
+  let total = 0;
+
+  for (const { pattern, label } of FILLER_PATTERNS) {
+    const matches = allText.match(pattern);
+    const count = matches?.length ?? 0;
+    if (count > 0) {
+      breakdown.push({ word: label, count });
+      total += count;
+    }
+  }
+
+  breakdown.sort((a, b) => b.count - a.count);
+  const rate = wordCount > 0 ? Math.round((total / wordCount) * 1000) / 10 : 0;
+
+  return { total, rate, wordCount, breakdown };
+}
 
 export default function Report() {
   const params = useParams();
@@ -21,6 +64,14 @@ export default function Report() {
   if (!report) {
     return <div className="min-h-screen bg-background flex items-center justify-center text-white">Report not found.</div>;
   }
+
+  const filler = analyzeFillerWords(
+    (report.answerFeedback ?? []).map((fb) => fb.answerText ?? null)
+  );
+
+  const fillerLevel = filler.rate < 2 ? "low" : filler.rate < 5 ? "moderate" : "high";
+  const fillerColor = fillerLevel === "low" ? "text-green-400" : fillerLevel === "moderate" ? "text-yellow-400" : "text-red-400";
+  const fillerBg    = fillerLevel === "low" ? "bg-green-500/10 border-green-500/20" : fillerLevel === "moderate" ? "bg-yellow-500/10 border-yellow-500/20" : "bg-red-500/10 border-red-500/20";
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6 lg:p-12">
@@ -107,6 +158,48 @@ export default function Report() {
               </CardContent>
             </Card>
 
+            {/* Filler Word Analysis */}
+            {filler.wordCount > 0 && (
+              <Card className={`border ${fillerBg}`}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Volume2 className={`w-5 h-5 ${fillerColor}`} />
+                    <span className="text-white">Filler Word Usage</span>
+                    <span className={`ml-auto text-xs font-semibold px-2 py-1 rounded-full ${fillerBg} ${fillerColor} border`}>
+                      {fillerLevel === "low" ? "Minimal" : fillerLevel === "moderate" ? "Moderate" : "Excessive"}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-3xl font-bold ${fillerColor}`}>{filler.rate}</span>
+                    <span className="text-sm text-muted-foreground">per 100 words</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {filler.total} filler {filler.total === 1 ? "word" : "words"} detected across {filler.wordCount.toLocaleString()} words spoken.
+                  </p>
+                  {filler.breakdown.length > 0 && (
+                    <div className="pt-2 border-t border-white/5 space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Most Used</p>
+                      {filler.breakdown.slice(0, 5).map(({ word, count }) => (
+                        <div key={word} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground italic">"{word}"</span>
+                          <span className={`font-mono text-xs font-semibold ${fillerColor}`}>×{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {fillerLevel !== "low" && (
+                    <p className="text-xs text-muted-foreground pt-2 border-t border-white/5">
+                      {fillerLevel === "moderate"
+                        ? "Aim to pause and collect your thoughts instead of filling silence."
+                        : "Practice deliberate pausing — silence is more powerful than filler words in an interview."}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="bg-primary/10 border-primary/20">
               <CardHeader>
                 <CardTitle className="text-lg text-primary">Top Areas for Improvement</CardTitle>
@@ -131,6 +224,7 @@ export default function Report() {
                 </ul>
               </CardContent>
             </Card>
+
             {report.postureNotes && report.postureNotes.length > 0 && (
               <Card className="bg-card border-white/10">
                 <CardHeader>
