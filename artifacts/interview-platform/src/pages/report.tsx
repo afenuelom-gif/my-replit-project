@@ -1,10 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useGetReport, getGetReportQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, ChevronLeft, Target, MessageSquare, Code, Lightbulb, User, Camera, Volume2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  CheckCircle2, ChevronLeft, Target, MessageSquare, Code, Lightbulb,
+  User, Camera, Volume2, Share2, Mail, Printer, Copy, Check, ExternalLink,
+} from "lucide-react";
 
 interface FillerResult {
   total: number;
@@ -52,6 +62,7 @@ function analyzeFillerWords(answers: (string | null)[]): FillerResult {
 export default function Report() {
   const params = useParams();
   const sessionId = parseInt(params.sessionId || "0");
+  const [copied, setCopied] = useState(false);
 
   const { data: report, isLoading } = useGetReport(sessionId, {
     query: { enabled: !!sessionId, queryKey: getGetReportQueryKey(sessionId) }
@@ -73,10 +84,70 @@ export default function Report() {
   const fillerColor = fillerLevel === "low" ? "text-green-400" : fillerLevel === "moderate" ? "text-yellow-400" : "text-red-400";
   const fillerBg    = fillerLevel === "low" ? "bg-green-500/10 border-green-500/20" : fillerLevel === "moderate" ? "bg-yellow-500/10 border-yellow-500/20" : "bg-red-500/10 border-red-500/20";
 
+  const shareText = [
+    `🎯 My AI Interview Performance Report`,
+    `Overall Score: ${report.overallScore}/100`,
+    `Communication: ${report.communicationScore}% | Technical: ${report.technicalScore}% | Confidence: ${report.confidenceScore}%`,
+    ``,
+    `Just completed a simulated interview session. Continuously improving! 💪`,
+  ].join("\n");
+
+  const shortShareText = `I scored ${report.overallScore}/100 on my AI interview simulation! 🎯 Communication: ${report.communicationScore}% | Technical: ${report.technicalScore}% | Confidence: ${report.confidenceScore}% #InterviewPrep #CareerGrowth`;
+
+  const pageUrl = window.location.href;
+
+  function shareViaEmail() {
+    const subject = encodeURIComponent(`My Interview Performance Report — ${report!.overallScore}/100`);
+    const body = encodeURIComponent(
+      `Hi,\n\nI wanted to share my latest AI interview simulation results:\n\n${shareText}\n\nReport link: ${pageUrl}`
+    );
+    window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
+  }
+
+  function shareOnX() {
+    const text = encodeURIComponent(shortShareText);
+    window.open(`https://x.com/intent/tweet?text=${text}`, "_blank", "noopener,noreferrer");
+  }
+
+  function shareOnLinkedIn() {
+    const url = encodeURIComponent(pageUrl);
+    const text = encodeURIComponent(shortShareText);
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}&summary=${text}`, "_blank", "noopener,noreferrer");
+  }
+
+  function shareOnWhatsApp() {
+    const text = encodeURIComponent(`${shareText}\n\n${pageUrl}`);
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  }
+
+  async function shareNative() {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "My Interview Performance Report", text: shareText, url: pageUrl });
+      } catch {
+        // user dismissed
+      }
+    }
+  }
+
+  async function copyToClipboard() {
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n\n${pageUrl}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  }
+
+  function saveAsPDF() {
+    window.print();
+  }
+
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 lg:p-12">
+    <div className="min-h-screen bg-background text-foreground p-6 lg:p-12 print:p-4 print:bg-white">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-4 print:hidden">
           <div>
             <Link href="/">
               <Button variant="ghost" size="sm" className="mb-4 text-muted-foreground hover:text-white">
@@ -86,85 +157,135 @@ export default function Report() {
             <h1 className="text-3xl font-bold tracking-tight text-white">Interview Performance Report</h1>
             <p className="text-muted-foreground mt-1">Generated on {new Date(report.generatedAt).toLocaleString()}</p>
           </div>
-          
-          <div className="flex items-center gap-4 bg-card border border-white/10 rounded-2xl p-6">
-            <div className="text-right">
-              <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Overall Score</div>
-              <div className="text-4xl font-bold text-primary">{report.overallScore}<span className="text-xl text-muted-foreground">/100</span></div>
-            </div>
-            <div className="w-24 h-24 rounded-full border-8 border-primary/20 flex items-center justify-center relative">
-              <svg className="absolute inset-0 w-full h-full -rotate-90">
-                <circle
-                  className="text-primary"
-                  strokeWidth="8"
-                  stroke="currentColor"
-                  fill="transparent"
-                  r="38"
-                  cx="48"
-                  cy="48"
-                  strokeDasharray={`${report.overallScore * 2.38} 240`}
-                />
-              </svg>
-              <Target className="w-8 h-8 text-primary" />
+
+          <div className="flex items-center gap-3 pt-1">
+            {/* Share dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 gap-2">
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 bg-zinc-900 border-white/10 text-white">
+                <DropdownMenuItem onClick={shareViaEmail} className="gap-3 cursor-pointer hover:bg-white/10">
+                  <Mail className="w-4 h-4 text-blue-400" /> Email Report
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={shareOnX} className="gap-3 cursor-pointer hover:bg-white/10">
+                  <ExternalLink className="w-4 h-4 text-zinc-300" /> Share on X
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={shareOnLinkedIn} className="gap-3 cursor-pointer hover:bg-white/10">
+                  <ExternalLink className="w-4 h-4 text-blue-500" /> Share on LinkedIn
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={shareOnWhatsApp} className="gap-3 cursor-pointer hover:bg-white/10">
+                  <ExternalLink className="w-4 h-4 text-green-400" /> Share on WhatsApp
+                </DropdownMenuItem>
+                {typeof navigator !== "undefined" && "share" in navigator && (
+                  <DropdownMenuItem onClick={shareNative} className="gap-3 cursor-pointer hover:bg-white/10">
+                    <Share2 className="w-4 h-4 text-primary" /> More apps…
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem onClick={copyToClipboard} className="gap-3 cursor-pointer hover:bg-white/10">
+                  {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-zinc-400" />}
+                  {copied ? "Copied!" : "Copy Summary"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={saveAsPDF} className="gap-3 cursor-pointer hover:bg-white/10">
+                  <Printer className="w-4 h-4 text-zinc-400" /> Save as PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Score badge — visible in screen view next to share */}
+            <div className="flex items-center gap-4 bg-card border border-white/10 rounded-2xl p-6">
+              <div className="text-right">
+                <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Overall Score</div>
+                <div className="text-4xl font-bold text-primary">{report.overallScore}<span className="text-xl text-muted-foreground">/100</span></div>
+              </div>
+              <div className="w-24 h-24 rounded-full border-8 border-primary/20 flex items-center justify-center relative">
+                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                  <circle
+                    className="text-primary"
+                    strokeWidth="8"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r="38"
+                    cx="48"
+                    cy="48"
+                    strokeDasharray={`${report.overallScore * 2.38} 240`}
+                  />
+                </svg>
+                <Target className="w-8 h-8 text-primary" />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Summary & Scores */}
-          <div className="lg:col-span-1 space-y-8">
-            <Card className="bg-card border-white/10">
+        {/* Print-only header */}
+        <div className="hidden print:block mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Interview Performance Report</h1>
+          <p className="text-gray-500 text-sm mt-1">Generated on {new Date(report.generatedAt).toLocaleString()}</p>
+          <div className="mt-3 inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+            <span className="text-sm font-medium text-gray-600">Overall Score:</span>
+            <span className="text-2xl font-bold text-blue-600">{report.overallScore}/100</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:gap-4">
+          {/* Left Column */}
+          <div className="lg:col-span-1 space-y-8 print:space-y-4">
+            <Card className="bg-card border-white/10 print:bg-gray-50 print:border-gray-200">
               <CardHeader>
-                <CardTitle className="text-lg">Executive Summary</CardTitle>
+                <CardTitle className="text-lg print:text-gray-900">Executive Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground leading-relaxed">{report.summary}</p>
+                <p className="text-muted-foreground leading-relaxed print:text-gray-700">{report.summary}</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-white/10">
+            <Card className="bg-card border-white/10 print:bg-gray-50 print:border-gray-200">
               <CardHeader>
-                <CardTitle className="text-lg">Category Breakdown</CardTitle>
+                <CardTitle className="text-lg print:text-gray-900">Category Breakdown</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-400"/> Communication</span>
-                    <span className="font-mono">{report.communicationScore}%</span>
+                    <span className="flex items-center gap-2 print:text-gray-700"><MessageSquare className="w-4 h-4 text-blue-400"/> Communication</span>
+                    <span className="font-mono print:text-gray-700">{report.communicationScore}%</span>
                   </div>
-                  <Progress value={report.communicationScore} className="h-2 bg-white/5" />
+                  <Progress value={report.communicationScore} className="h-2 bg-white/5 print:bg-gray-200" />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="flex items-center gap-2"><Code className="w-4 h-4 text-green-400"/> Technical</span>
-                    <span className="font-mono">{report.technicalScore}%</span>
+                    <span className="flex items-center gap-2 print:text-gray-700"><Code className="w-4 h-4 text-green-400"/> Technical</span>
+                    <span className="font-mono print:text-gray-700">{report.technicalScore}%</span>
                   </div>
-                  <Progress value={report.technicalScore} className="h-2 bg-white/5" />
+                  <Progress value={report.technicalScore} className="h-2 bg-white/5 print:bg-gray-200" />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="flex items-center gap-2"><Lightbulb className="w-4 h-4 text-yellow-400"/> Confidence</span>
-                    <span className="font-mono">{report.confidenceScore}%</span>
+                    <span className="flex items-center gap-2 print:text-gray-700"><Lightbulb className="w-4 h-4 text-yellow-400"/> Confidence</span>
+                    <span className="font-mono print:text-gray-700">{report.confidenceScore}%</span>
                   </div>
-                  <Progress value={report.confidenceScore} className="h-2 bg-white/5" />
+                  <Progress value={report.confidenceScore} className="h-2 bg-white/5 print:bg-gray-200" />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="flex items-center gap-2"><User className="w-4 h-4 text-purple-400"/> Posture</span>
-                    <span className="font-mono">{report.postureScore}%</span>
+                    <span className="flex items-center gap-2 print:text-gray-700"><User className="w-4 h-4 text-purple-400"/> Posture</span>
+                    <span className="font-mono print:text-gray-700">{report.postureScore}%</span>
                   </div>
-                  <Progress value={report.postureScore} className="h-2 bg-white/5" />
+                  <Progress value={report.postureScore} className="h-2 bg-white/5 print:bg-gray-200" />
                 </div>
               </CardContent>
             </Card>
 
             {/* Filler Word Analysis */}
             {filler.wordCount > 0 && (
-              <Card className={`border ${fillerBg}`}>
+              <Card className={`border ${fillerBg} print:bg-gray-50 print:border-gray-200`}>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Volume2 className={`w-5 h-5 ${fillerColor}`} />
-                    <span className="text-white">Filler Word Usage</span>
+                    <span className="text-white print:text-gray-900">Filler Word Usage</span>
                     <span className={`ml-auto text-xs font-semibold px-2 py-1 rounded-full ${fillerBg} ${fillerColor} border`}>
                       {fillerLevel === "low" ? "Minimal" : fillerLevel === "moderate" ? "Moderate" : "Excessive"}
                     </span>
@@ -172,25 +293,25 @@ export default function Report() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-baseline gap-2">
-                    <span className={`text-3xl font-bold ${fillerColor}`}>{filler.rate}</span>
-                    <span className="text-sm text-muted-foreground">per 100 words</span>
+                    <span className={`text-3xl font-bold ${fillerColor} print:text-gray-900`}>{filler.rate}</span>
+                    <span className="text-sm text-muted-foreground print:text-gray-600">per 100 words</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground print:text-gray-600">
                     {filler.total} filler {filler.total === 1 ? "word" : "words"} detected across {filler.wordCount.toLocaleString()} words spoken.
                   </p>
                   {filler.breakdown.length > 0 && (
-                    <div className="pt-2 border-t border-white/5 space-y-1.5">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Most Used</p>
+                    <div className="pt-2 border-t border-white/5 print:border-gray-200 space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground print:text-gray-500 uppercase tracking-wider mb-2">Most Used</p>
                       {filler.breakdown.slice(0, 5).map(({ word, count }) => (
                         <div key={word} className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground italic">"{word}"</span>
-                          <span className={`font-mono text-xs font-semibold ${fillerColor}`}>×{count}</span>
+                          <span className="text-muted-foreground print:text-gray-600 italic">"{word}"</span>
+                          <span className={`font-mono text-xs font-semibold ${fillerColor} print:text-gray-700`}>×{count}</span>
                         </div>
                       ))}
                     </div>
                   )}
                   {fillerLevel !== "low" && (
-                    <p className="text-xs text-muted-foreground pt-2 border-t border-white/5">
+                    <p className="text-xs text-muted-foreground print:text-gray-600 pt-2 border-t border-white/5 print:border-gray-200">
                       {fillerLevel === "moderate"
                         ? "Aim to pause and collect your thoughts instead of filling silence."
                         : "Practice deliberate pausing — silence is more powerful than filler words in an interview."}
@@ -200,9 +321,9 @@ export default function Report() {
               </Card>
             )}
 
-            <Card className="bg-primary/10 border-primary/20">
+            <Card className="bg-primary/10 border-primary/20 print:bg-blue-50 print:border-blue-200">
               <CardHeader>
-                <CardTitle className="text-lg text-primary">Top Areas for Improvement</CardTitle>
+                <CardTitle className="text-lg text-primary print:text-blue-700">Top Areas for Improvement</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
@@ -216,7 +337,7 @@ export default function Report() {
                     const padded = [...base, ...defaults.slice(base.length)].slice(0, 3);
                     return padded;
                   })().map((s, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-white">
+                    <li key={i} className="flex gap-3 text-sm text-white print:text-gray-800">
                       <div className="min-w-[20px] pt-0.5"><CheckCircle2 className="w-4 h-4 text-primary" /></div>
                       <span>{s}</span>
                     </li>
@@ -226,11 +347,11 @@ export default function Report() {
             </Card>
 
             {report.postureNotes && report.postureNotes.length > 0 && (
-              <Card className="bg-card border-white/10">
+              <Card className="bg-card border-white/10 print:bg-gray-50 print:border-gray-200">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Camera className="w-5 h-5 text-purple-400" />
-                    Posture & Presence Notes
+                    <span className="print:text-gray-900">Posture & Presence Notes</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -244,7 +365,7 @@ export default function Report() {
                         return true;
                       });
                     })().map((note: string, i: number) => (
-                      <li key={i} className="flex gap-3 text-sm text-muted-foreground">
+                      <li key={i} className="flex gap-3 text-sm text-muted-foreground print:text-gray-700">
                         <div className="min-w-[20px] pt-0.5"><User className="w-4 h-4 text-purple-400" /></div>
                         <span>{note}</span>
                       </li>
@@ -256,40 +377,38 @@ export default function Report() {
           </div>
 
           {/* Right Column: Q&A Details */}
-          <div className="lg:col-span-2 space-y-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Question Analysis</h2>
+          <div className="lg:col-span-2 space-y-6 print:space-y-4">
+            <h2 className="text-xl font-semibold text-white print:text-gray-900 mb-4">Question Analysis</h2>
             {report.answerFeedback.map((fb, idx) => (
-              <Card key={fb.questionId} className="bg-card border-white/10 overflow-hidden">
-                <div className="p-1 bg-white/5 border-b border-white/10 flex items-center justify-between px-6 py-3">
-                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Question {idx + 1}</span>
-                  <span className={`px-2 py-1 rounded text-xs font-mono font-bold ${fb.score >= 80 ? 'bg-green-500/20 text-green-400' : fb.score >= 60 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+              <Card key={fb.questionId} className="bg-card border-white/10 overflow-hidden print:bg-white print:border-gray-200 print:break-inside-avoid">
+                <div className="p-1 bg-white/5 print:bg-gray-50 border-b border-white/10 print:border-gray-200 flex items-center justify-between px-6 py-3">
+                  <span className="text-sm font-medium text-muted-foreground print:text-gray-500 uppercase tracking-widest">Question {idx + 1}</span>
+                  <span className={`px-2 py-1 rounded text-xs font-mono font-bold ${fb.score >= 80 ? 'bg-green-500/20 text-green-400 print:bg-green-100 print:text-green-700' : fb.score >= 60 ? 'bg-yellow-500/20 text-yellow-400 print:bg-yellow-100 print:text-yellow-700' : 'bg-red-500/20 text-red-400 print:bg-red-100 print:text-red-700'}`}>
                     Score: {fb.score}/100
                   </span>
                 </div>
-                <CardContent className="p-6 space-y-6">
+                <CardContent className="p-6 print:p-4 space-y-6 print:space-y-3">
                   <div>
-                    <h3 className="text-lg font-medium text-white mb-2">{fb.questionText}</h3>
-                    <div className="p-4 bg-black/40 rounded-lg border border-white/5 text-muted-foreground text-sm italic">
+                    <h3 className="text-lg font-medium text-white print:text-gray-900 mb-2">{fb.questionText}</h3>
+                    <div className="p-4 bg-black/40 print:bg-gray-50 rounded-lg border border-white/5 print:border-gray-200 text-muted-foreground print:text-gray-700 text-sm italic">
                       "{fb.answerText || "No answer recorded."}"
                     </div>
                   </div>
-                  
                   <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-white">Feedback</h4>
-                    <p className="text-sm text-muted-foreground">{fb.feedback}</p>
+                    <h4 className="text-sm font-semibold text-white print:text-gray-900">Feedback</h4>
+                    <p className="text-sm text-muted-foreground print:text-gray-700">{fb.feedback}</p>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5 print:border-gray-200">
                     <div>
-                      <h4 className="text-xs font-semibold text-green-400 mb-2 uppercase tracking-wider">Strengths</h4>
+                      <h4 className="text-xs font-semibold text-green-400 print:text-green-700 mb-2 uppercase tracking-wider">Strengths</h4>
                       <ul className="space-y-1">
-                        {fb.strengths.map((s, i) => <li key={i} className="text-sm text-muted-foreground">• {s}</li>)}
+                        {fb.strengths.map((s, i) => <li key={i} className="text-sm text-muted-foreground print:text-gray-700">• {s}</li>)}
                       </ul>
                     </div>
                     <div>
-                      <h4 className="text-xs font-semibold text-yellow-400 mb-2 uppercase tracking-wider">To Improve</h4>
+                      <h4 className="text-xs font-semibold text-yellow-400 print:text-yellow-700 mb-2 uppercase tracking-wider">To Improve</h4>
                       <ul className="space-y-1">
-                        {fb.improvements.map((s, i) => <li key={i} className="text-sm text-muted-foreground">• {s}</li>)}
+                        {fb.improvements.map((s, i) => <li key={i} className="text-sm text-muted-foreground print:text-gray-700">• {s}</li>)}
                       </ul>
                     </div>
                   </div>

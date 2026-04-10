@@ -156,3 +156,27 @@
 .animate-sound-bar {
   animation: sound-bar 0.6s ease-in-out infinite;
 }
+
+/* ── Print / Save as PDF ──────────────────────────────────────── */
+@media print {
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+
+  body {
+    background: white !important;
+    color: #111 !important;
+    font-size: 12pt;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  nav,
+  button,
+  [role="button"] {
+    display: none !important;
+  }
+}
