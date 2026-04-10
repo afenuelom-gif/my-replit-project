@@ -968,6 +968,31 @@ function getDIDHeaders(): { Authorization: string; "content-type": string } | nu
   };
 }
 
+/**
+ * D-ID's session_id is a full AWS ALB Set-Cookie string like:
+ *   "AWSALB=xxx; Expires=...; AWSALBCORS=yyy; Expires=..."
+ * We need to forward it as a Cookie header so AWS routes subsequent
+ * requests (SDP / ICE / talk / delete) to the same backend server.
+ */
+function extractDIDCookie(sessionId: string): string {
+  const cookies: string[] = [];
+  for (const part of sessionId.split(";")) {
+    const t = part.trim();
+    if (t.startsWith("AWSALB=") || t.startsWith("AWSALBCORS=")) cookies.push(t);
+  }
+  return cookies.join("; ");
+}
+
+function didHeadersWithSession(
+  base: Record<string, string>,
+  sessionId?: string
+): Record<string, string> {
+  if (!sessionId) return base;
+  const cookie = extractDIDCookie(sessionId);
+  if (!cookie) return base;
+  return { ...base, Cookie: cookie };
+}
+
 async function didProxy(
   upstreamUrl: string,
   method: string,
@@ -985,6 +1010,24 @@ async function didProxy(
   return { status: resp.status, data };
 }
 
+/**
+ * In-memory record of the last D-ID stream created.
+ * D-ID free tier allows only 1 concurrent stream; we track the active one
+ * so we can delete it before opening a new session.
+ */
+let activeDIDStream: { id: string; sessionId: string } | null = null;
+
+/** Delete the currently tracked D-ID stream (no-op if none) */
+async function deleteTrackedDIDStream(headers: Record<string, string>): Promise<void> {
+  if (!activeDIDStream) return;
+  const { id, sessionId } = activeDIDStream;
+  activeDIDStream = null; // clear before await so a concurrent request doesn't double-delete
+  const headersWithCookie = didHeadersWithSession(headers, sessionId);
+  await didProxy(`${DID_API_BASE}/talks/streams/${id}`, "DELETE", headersWithCookie, {
+    session_id: sessionId,
+  }).catch(() => { /* best-effort */ });
+}
+
 // POST /api/interview/did/streams — create a new D-ID streaming session
 router.post("/interview/did/streams", optionalAuth, async (req, res): Promise<void> => {
   const headers = getDIDHeaders();
@@ -994,7 +1037,17 @@ router.post("/interview/did/streams", optionalAuth, async (req, res): Promise<vo
   const sourceUrl = gender === "male" ? DID_MALE_PRESENTER : DID_FEMALE_PRESENTER;
 
   try {
+    // Delete any stale stream from a previous session to free the concurrent-stream slot
+    await deleteTrackedDIDStream(headers);
+
     const { status, data } = await didProxy(`${DID_API_BASE}/talks/streams`, "POST", headers, { source_url: sourceUrl });
+
+    // Track the new stream so we can clean it up next time
+    if ((status === 200 || status === 201) && data && typeof data === "object") {
+      const d = data as { id?: string; session_id?: string };
+      if (d.id) activeDIDStream = { id: d.id, sessionId: d.session_id ?? "" };
+    }
+
     res.status(status).json(data);
   } catch (err) {
     res.status(500).json({ error: String(err) });
@@ -1003,11 +1056,12 @@ router.post("/interview/did/streams", optionalAuth, async (req, res): Promise<vo
 
 // POST /api/interview/did/streams/:streamId/sdp — send SDP answer from client
 router.post("/interview/did/streams/:streamId/sdp", optionalAuth, async (req, res): Promise<void> => {
-  const headers = getDIDHeaders();
-  if (!headers) { res.status(503).json({ error: "D-ID not configured" }); return; }
+  const base = getDIDHeaders();
+  if (!base) { res.status(503).json({ error: "D-ID not configured" }); return; }
 
   const { streamId } = req.params;
   const { answer, session_id } = req.body as { answer: unknown; session_id: string };
+  const headers = didHeadersWithSession(base, session_id);
 
   try {
     const { status, data } = await didProxy(`${DID_API_BASE}/talks/streams/${streamId}/sdp`, "POST", headers, { answer, session_id });
@@ -1019,11 +1073,12 @@ router.post("/interview/did/streams/:streamId/sdp", optionalAuth, async (req, re
 
 // POST /api/interview/did/streams/:streamId/ice — relay ICE candidate to D-ID
 router.post("/interview/did/streams/:streamId/ice", optionalAuth, async (req, res): Promise<void> => {
-  const headers = getDIDHeaders();
-  if (!headers) { res.status(503).json({ error: "D-ID not configured" }); return; }
+  const base = getDIDHeaders();
+  if (!base) { res.status(503).json({ error: "D-ID not configured" }); return; }
 
   const { streamId } = req.params;
   const { candidate, session_id } = req.body as { candidate: unknown; session_id: string };
+  const headers = didHeadersWithSession(base, session_id);
 
   try {
     const { status, data } = await didProxy(`${DID_API_BASE}/talks/streams/${streamId}/ice`, "POST", headers, { candidate, session_id });
@@ -1035,13 +1090,14 @@ router.post("/interview/did/streams/:streamId/ice", optionalAuth, async (req, re
 
 // POST /api/interview/did/streams/:streamId/talk — make the avatar speak
 router.post("/interview/did/streams/:streamId/talk", optionalAuth, async (req, res): Promise<void> => {
-  const headers = getDIDHeaders();
-  if (!headers) { res.status(503).json({ error: "D-ID not configured" }); return; }
+  const base = getDIDHeaders();
+  if (!base) { res.status(503).json({ error: "D-ID not configured" }); return; }
 
   const { streamId } = req.params;
   const { script, session_id, config } = req.body as {
     script: unknown; session_id: string; config?: unknown;
   };
+  const headers = didHeadersWithSession(base, session_id);
 
   try {
     const { status, data } = await didProxy(`${DID_API_BASE}/talks/streams/${streamId}/talk`, "POST", headers, { script, session_id, config });
@@ -1053,11 +1109,15 @@ router.post("/interview/did/streams/:streamId/talk", optionalAuth, async (req, r
 
 // DELETE /api/interview/did/streams/:streamId — close and clean up the stream
 router.delete("/interview/did/streams/:streamId", optionalAuth, async (req, res): Promise<void> => {
-  const headers = getDIDHeaders();
-  if (!headers) { res.status(503).json({ error: "D-ID not configured" }); return; }
+  const base = getDIDHeaders();
+  if (!base) { res.status(503).json({ error: "D-ID not configured" }); return; }
 
   const { streamId } = req.params;
   const { session_id } = req.body as { session_id?: string };
+  const headers = didHeadersWithSession(base, session_id);
+
+  // Clear server-side tracking if this is the currently tracked stream
+  if (activeDIDStream?.id === streamId) activeDIDStream = null;
 
   try {
     const { status, data } = await didProxy(`${DID_API_BASE}/talks/streams/${streamId}`, "DELETE", headers, { session_id: session_id ?? "" });

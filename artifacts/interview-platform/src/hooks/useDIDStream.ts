@@ -60,6 +60,7 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
           method: "DELETE",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ session_id: sessionId ?? "" }),
+          keepalive: true,
         });
       } catch {
       }
