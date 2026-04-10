@@ -160,6 +160,7 @@ export async function seedInterviewersIfNeeded(): Promise<void> {
       .from(interviewersTable)
       .where(isNull(interviewersTable.sessionId));
 
+    // Insert any missing interviewers
     if (existing.length < INTERVIEWERS.length) {
       for (const persona of INTERVIEWERS) {
         const existingByName = existing.find(e => e.name === persona.name);
@@ -167,10 +168,15 @@ export async function seedInterviewersIfNeeded(): Promise<void> {
           await db.insert(interviewersTable).values(persona);
         }
       }
-    } else {
-      // Backfill heygen_avatar_id for any interviewers that pre-date this migration
-      await patchHeyGenAvatarIds(existing);
     }
+
+    // Always backfill heygen_avatar_id for any rows that pre-date this migration
+    // (runs unconditionally so both the insert branch and the up-to-date branch are covered)
+    const allSeeded = await db
+      .select()
+      .from(interviewersTable)
+      .where(isNull(interviewersTable.sessionId));
+    await patchHeyGenAvatarIds(allSeeded);
   } catch (err) {
     console.error("Failed to seed interviewers:", err);
   }
