@@ -35,6 +35,21 @@ export async function patchFemaleInterviewerVoices(): Promise<void> {
   }
 }
 
+// Well-known HeyGen public streaming avatar IDs (available on most accounts)
+// Female voices: nova, shimmer
+// Male voices: onyx, echo, fable
+const HEYGEN_FEMALE_AVATARS = [
+  "Abigail_expressive_20250108",
+  "Kristin_public_2_20240108",
+  "Ann_Therapist_public",
+];
+const HEYGEN_MALE_AVATARS = [
+  "Eric_public_inshirt_20240828",
+  "Ethan_public_2_20240108",
+  "Bryan_public_4_20240108",
+];
+const FEMALE_VOICES = new Set(["nova", "shimmer"]);
+
 const INTERVIEWERS = [
   {
     name: "Sarah Chen",
@@ -43,6 +58,7 @@ const INTERVIEWERS = [
     personality: "Direct, methodical, and focused on problem-solving depth. Asks follow-up questions about technical decisions and architecture.",
     voiceId: "nova",
     avatarUrl: "/avatars/interviewer-1.png",
+    heygenAvatarId: HEYGEN_FEMALE_AVATARS[0],
   },
   {
     name: "Marcus Williams",
@@ -51,6 +67,7 @@ const INTERVIEWERS = [
     personality: "Warm and collaborative, focuses on product thinking, user empathy, and business impact. Asks about stakeholder management.",
     voiceId: "onyx",
     avatarUrl: "/avatars/interviewer-2.png",
+    heygenAvatarId: HEYGEN_MALE_AVATARS[0],
   },
   {
     name: "Elena Rodriguez",
@@ -59,6 +76,7 @@ const INTERVIEWERS = [
     personality: "Analytical and experienced, probes leadership capabilities, team dynamics, and scaling challenges.",
     voiceId: "shimmer",
     avatarUrl: "/avatars/interviewer-3.png",
+    heygenAvatarId: HEYGEN_FEMALE_AVATARS[1],
   },
   {
     name: "David Kim",
@@ -67,6 +85,7 @@ const INTERVIEWERS = [
     personality: "Detail-oriented and curious. Digs deep into code quality, testing practices, and system design.",
     voiceId: "echo",
     avatarUrl: "/avatars/interviewer-4.png",
+    heygenAvatarId: HEYGEN_MALE_AVATARS[1],
   },
   {
     name: "Priya Sharma",
@@ -75,6 +94,7 @@ const INTERVIEWERS = [
     personality: "Empathetic and people-focused. Explores cultural fit, conflict resolution, and career motivations.",
     voiceId: "shimmer",
     avatarUrl: "/avatars/interviewer-5.png",
+    heygenAvatarId: HEYGEN_FEMALE_AVATARS[2],
   },
   {
     name: "James O'Brien",
@@ -83,21 +103,40 @@ const INTERVIEWERS = [
     personality: "Strategic and visionary. Asks about big-picture thinking, innovation, and industry trends.",
     voiceId: "fable",
     avatarUrl: "/avatars/interviewer-6.png",
+    heygenAvatarId: HEYGEN_MALE_AVATARS[2],
   },
 ];
+
+// Patch existing interviewers to backfill heygen_avatar_id by name
+async function patchHeyGenAvatarIds(existing: Array<{ id: number; name: string; heygenAvatarId: string | null }>): Promise<void> {
+  for (const persona of INTERVIEWERS) {
+    const row = existing.find(e => e.name === persona.name && !e.heygenAvatarId);
+    if (row && persona.heygenAvatarId) {
+      await db
+        .update(interviewersTable)
+        .set({ heygenAvatarId: persona.heygenAvatarId })
+        .where(eq(interviewersTable.id, row.id));
+    }
+  }
+}
+
+export { HEYGEN_FEMALE_AVATARS, HEYGEN_MALE_AVATARS, FEMALE_VOICES };
 
 export async function seedInterviewersIfNeeded(): Promise<void> {
   try {
     const existing = await db.select().from(interviewersTable);
-    if (existing.length >= 6) {
-      return;
-    }
+    const seededOnly = existing.filter(e => e.sessionId === null);
 
-    for (const persona of INTERVIEWERS) {
-      const existingByName = existing.find(e => e.name === persona.name);
-      if (!existingByName) {
-        await db.insert(interviewersTable).values(persona);
+    if (seededOnly.length < 6) {
+      for (const persona of INTERVIEWERS) {
+        const existingByName = seededOnly.find(e => e.name === persona.name);
+        if (!existingByName) {
+          await db.insert(interviewersTable).values(persona);
+        }
       }
+    } else {
+      // Backfill heygen_avatar_id for existing seeded interviewers
+      await patchHeyGenAvatarIds(seededOnly);
     }
   } catch (err) {
     console.error("Failed to seed interviewers:", err);

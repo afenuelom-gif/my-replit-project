@@ -1,5 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useCallback, useEffect } from "react";
 import { useHeyGenAvatar } from "@/hooks/useHeyGenAvatar";
+import { AlertTriangle } from "lucide-react";
 
 export interface InterviewerCardHandle {
   speak: (text: string) => Promise<void>;
@@ -18,16 +19,12 @@ interface Interviewer {
 interface InterviewerCardProps {
   interviewer: Interviewer;
   isActive: boolean;
-  isTalkingTTS: boolean;
   onSpeakingChange?: (speaking: boolean) => void;
 }
 
 const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
-  ({ interviewer, isActive, isTalkingTTS, onSpeakingChange }, ref) => {
+  ({ interviewer, isActive, onSpeakingChange }, ref) => {
     const heygen = useHeyGenAvatar(interviewer.heygenAvatarId ?? null);
-
-    const heygenActive = heygen.status === "connected" || heygen.status === "connecting";
-    const isTalking = isTalkingTTS || (heygenActive && heygen.isSpeaking);
 
     // Propagate HeyGen speaking state changes to parent
     useEffect(() => {
@@ -48,15 +45,18 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
 
     useImperativeHandle(ref, () => ({ speak, stop, destroy }), [speak, stop, destroy]);
 
-    const showVideo = heygenActive && !!interviewer.heygenAvatarId;
+    const isConnected = heygen.status === "connected";
+    const isConnecting = heygen.status === "connecting";
+    const isError = heygen.status === "error";
+    const isSpeaking = heygen.isSpeaking;
 
     return (
       <div
-        className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-all duration-300 min-h-48 ${
-          isTalking
-            ? "border-primary scale-[1.03] shadow-[0_0_50px_rgba(0,195,255,0.55)]"
+        className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-colors duration-300 min-h-48 ${
+          isConnected && isSpeaking
+            ? "border-primary shadow-[0_0_30px_rgba(0,195,255,0.35)]"
             : isActive
-            ? "border-primary shadow-[0_0_30px_rgba(0,195,255,0.2)]"
+            ? "border-primary/60"
             : "border-white/5"
         }`}
       >
@@ -65,31 +65,33 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           ref={heygen.videoRef}
           autoPlay
           playsInline
-          className={`w-full h-full object-cover min-h-48 ${showVideo ? "block" : "hidden"}`}
+          className={`w-full h-full object-cover min-h-48 ${isConnected ? "block" : "hidden"}`}
         />
 
-        {/* Static avatar fallback */}
-        {!showVideo && (
-          <>
-            {interviewer.avatarUrl ? (
-              <img
-                src={interviewer.avatarUrl}
-                alt={interviewer.name}
-                className="w-full h-full object-cover min-h-48"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl font-bold text-white/20 min-h-48">
-                {interviewer.name.charAt(0)}
+        {/* Dark placeholder while idle / connecting / error (no static photo) */}
+        {!isConnected && (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-zinc-900 to-zinc-950 min-h-48 gap-3">
+            <div className="w-20 h-20 rounded-full bg-zinc-800 flex items-center justify-center text-3xl font-bold text-white/30 border border-white/10">
+              {interviewer.name.charAt(0)}
+            </div>
+
+            {isConnecting && (
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                <span className="text-xs text-yellow-300/80">Connecting avatar…</span>
               </div>
             )}
-          </>
-        )}
 
-        {/* HeyGen connecting indicator */}
-        {heygen.status === "connecting" && (
-          <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/70 px-2 py-1 rounded-full">
-            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
-            <span className="text-xs text-yellow-300">Connecting</span>
+            {isError && (
+              <div className="flex items-center gap-1.5 text-xs text-red-400/80">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Avatar unavailable</span>
+              </div>
+            )}
+
+            {!isConnecting && !isError && (
+              <span className="text-xs text-zinc-600">Initializing…</span>
+            )}
           </div>
         )}
 
@@ -97,29 +99,22 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pt-6 pb-3">
           <div className="flex items-center gap-2 mb-1">
             <div
-              className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                isActive ? "bg-primary animate-pulse" : "bg-zinc-600"
+              className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-300 ${
+                isConnected && isSpeaking
+                  ? "bg-primary"
+                  : isActive
+                  ? "bg-primary/60"
+                  : "bg-zinc-600"
               }`}
             />
             <span className="font-semibold text-sm text-white">{interviewer.name}</span>
           </div>
           <p className="text-xs text-zinc-400 leading-tight">{interviewer.title}</p>
 
-          {isTalking ? (
-            <div className="flex items-end gap-1 mt-2 h-8" aria-label="Speaking">
-              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-                <div
-                  key={i}
-                  className="w-1.5 bg-primary rounded-full animate-sound-bar origin-bottom"
-                  style={{ height: `${14 + (i % 4) * 6}px`, animationDelay: `${i * 0.08}s` }}
-                />
-              ))}
-              <span className="text-xs text-primary ml-2 font-semibold tracking-wide">
-                Speaking…
-              </span>
-            </div>
+          {isConnected && isSpeaking ? (
+            <p className="text-xs text-primary mt-2 font-medium">Speaking</p>
           ) : isActive ? (
-            <p className="text-xs text-primary/60 mt-2">Active</p>
+            <p className="text-xs text-primary/50 mt-2">Active</p>
           ) : (
             <p className="text-xs text-zinc-700 mt-2">Waiting</p>
           )}

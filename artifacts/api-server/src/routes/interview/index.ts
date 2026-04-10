@@ -39,7 +39,7 @@ import {
   shouldAskFollowUp,
   generateDynamicInterviewers,
 } from "../../lib/interviewAI.js";
-import { seedInterviewersIfNeeded } from "../../lib/seedInterviewers.js";
+import { seedInterviewersIfNeeded, HEYGEN_FEMALE_AVATARS, HEYGEN_MALE_AVATARS, FEMALE_VOICES } from "../../lib/seedInterviewers.js";
 
 const router: IRouter = Router();
 
@@ -71,7 +71,7 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
     "/avatars/interviewer-4.png",
     "/avatars/interviewer-6.png",
   ];
-  const FEMALE_VOICE_IDS = new Set(["nova", "shimmer"]);
+  const FEMALE_VOICE_IDS = FEMALE_VOICES;
 
   const interviewerCount = Math.floor(Math.random() * 2) + 2;
 
@@ -97,35 +97,6 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
     let femaleAvatarIdx = 0;
     let maleAvatarIdx = 0;
 
-    // Fetch HeyGen avatars for assignment (best-effort, non-blocking)
-    let heygenFemaleAvatars: string[] = [];
-    let heygenMaleAvatars: string[] = [];
-    const heygenApiKey = process.env.HEYGEN_API_KEY;
-    if (heygenApiKey) {
-      try {
-        const resp = await fetch("https://api.heygen.com/v2/avatars", {
-          headers: { "x-api-key": heygenApiKey, "accept": "application/json" },
-        });
-        if (resp.ok) {
-          const data = await resp.json() as {
-            data?: { avatars?: Array<{ avatar_id: string; gender?: string; avatar_name?: string }> };
-          };
-          const avatars = data?.data?.avatars ?? [];
-          // Filter streaming-compatible avatars: typically public avatars with known IDs
-          for (const av of avatars) {
-            const gender = (av.gender ?? "").toLowerCase();
-            if (gender === "female" || gender === "woman") {
-              heygenFemaleAvatars.push(av.avatar_id);
-            } else if (gender === "male" || gender === "man") {
-              heygenMaleAvatars.push(av.avatar_id);
-            }
-          }
-        }
-      } catch {
-        // silently ignore HeyGen avatar fetch errors
-      }
-    }
-
     const inserted = await db
       .insert(interviewersTable)
       .values(
@@ -133,9 +104,10 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
           const isFemale = FEMALE_VOICE_IDS.has(p.voiceId);
           const pool = isFemale ? FEMALE_AVATAR_POOL : MALE_AVATAR_POOL;
           const avatarUrl = pool[(isFemale ? femaleAvatarIdx++ : maleAvatarIdx++) % pool.length];
-          const heygenPool = isFemale ? heygenFemaleAvatars : heygenMaleAvatars;
+          // Assign gender-appropriate HeyGen avatar ID from fixed public pools
+          const heygenPool = isFemale ? HEYGEN_FEMALE_AVATARS : HEYGEN_MALE_AVATARS;
           const heygenIdx = isFemale ? femaleAvatarIdx - 1 : maleAvatarIdx - 1;
-          const heygenAvatarId = heygenPool.length > 0 ? heygenPool[heygenIdx % heygenPool.length] : null;
+          const heygenAvatarId = heygenPool[heygenIdx % heygenPool.length];
           return {
             name: p.name,
             title: p.title,

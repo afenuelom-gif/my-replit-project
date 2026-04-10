@@ -46,6 +46,7 @@ export default function Interview() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isHeyGenSpeaking, setIsHeyGenSpeaking] = useState(false);
+  const [heygenUnavailable, setHeygenUnavailable] = useState(false);
 
   // Refs for user webcam / recording
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -178,7 +179,12 @@ export default function Interview() {
       // HeyGen handles both video + audio; speaking state tracked via onSpeakingChange
       setStatusMessage("Interviewer speaking...");
       hasTTSStartedRef.current = true;
-      cardRef.current.speak(currentQ.questionText);
+      cardRef.current.speak(currentQ.questionText).catch(() => {
+        // HeyGen speak failed — fall back to TTS for this turn
+        setHeygenUnavailable(true);
+        if (isTTSSupported) speechSpeak(currentQ.questionText, activeInterviewer.voiceId);
+        else setStatusMessage("Read the question above, then click the mic to answer");
+      });
     } else if (isTTSSupported) {
       setStatusMessage("Interviewer speaking...");
       hasTTSStartedRef.current = true;
@@ -337,6 +343,14 @@ export default function Interview() {
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
       <canvas ref={canvasRef} className="hidden" />
       
+      {/* HeyGen unavailable notice */}
+      {heygenUnavailable && (
+        <div className="bg-yellow-950/60 border-b border-yellow-700/40 px-6 py-2 flex items-center gap-2 text-xs text-yellow-300">
+          <span className="font-semibold">HeyGen streaming not configured</span>
+          <span className="text-yellow-400/70">— live avatar video unavailable. Set HEYGEN_API_KEY to enable animated interviewers.</span>
+        </div>
+      )}
+
       {/* Header */}
       <header className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-black/50 backdrop-blur-md">
         <div className="flex items-center gap-4">
@@ -357,7 +371,6 @@ export default function Interview() {
           {/* Interviewers */}
           {sessionData?.interviewers.map(inv => {
             const isActive = inv.id === activeInterviewerId;
-            const isTalkingTTS = isActive && isSpeaking;
             const cardRef = getOrCreateCardRef(inv.id);
             return (
               <InterviewerCard
@@ -365,7 +378,6 @@ export default function Interview() {
                 ref={cardRef}
                 interviewer={inv}
                 isActive={isActive}
-                isTalkingTTS={isTalkingTTS}
                 onSpeakingChange={(speaking) => {
                   if (inv.id === activeInterviewerId) {
                     setIsHeyGenSpeaking(speaking);
