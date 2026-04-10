@@ -1,5 +1,5 @@
 import { db, interviewersTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, isNull } from "drizzle-orm";
 
 const DISALLOWED_FEMALE_VOICES = new Set(["alloy", "onyx", "echo", "fable"]);
 
@@ -35,22 +35,27 @@ export async function patchFemaleInterviewerVoices(): Promise<void> {
   }
 }
 
-// Well-known HeyGen public streaming avatar IDs (available on most accounts)
-// Female voices: nova, shimmer
-// Male voices: onyx, echo, fable
-const HEYGEN_FEMALE_AVATARS = [
+// Well-known HeyGen public streaming avatar IDs
+export const HEYGEN_FEMALE_AVATARS = [
   "Abigail_expressive_20250108",
   "Kristin_public_2_20240108",
   "Ann_Therapist_public",
+  "AnnKathy_public_20240108",
+  "Angela_public_expressive_20250108",
 ];
-const HEYGEN_MALE_AVATARS = [
+export const HEYGEN_MALE_AVATARS = [
   "Eric_public_inshirt_20240828",
   "Ethan_public_2_20240108",
   "Bryan_public_4_20240108",
+  "Tyler_public_2_20240108",
+  "Josh_IT_public_4_20240108",
 ];
-const FEMALE_VOICES = new Set(["nova", "shimmer"]);
+
+// Female voice IDs used to determine gender-appropriate HeyGen avatar assignment
+export const FEMALE_VOICES = new Set(["nova", "shimmer"]);
 
 const INTERVIEWERS = [
+  // Original 6
   {
     name: "Sarah Chen",
     title: "Senior Engineering Manager",
@@ -105,9 +110,37 @@ const INTERVIEWERS = [
     avatarUrl: "/avatars/interviewer-6.png",
     heygenAvatarId: HEYGEN_MALE_AVATARS[2],
   },
+  // Additional 3 for expanded pool
+  {
+    name: "Jordan Lee",
+    title: "Startup Founder",
+    company: "Launchpad",
+    personality: "Fast-paced and entrepreneurial. Tests resourcefulness, adaptability, and startup mindset. Loves hypotheticals.",
+    voiceId: "onyx",
+    avatarUrl: "/avatars/interviewer-2.png",
+    heygenAvatarId: HEYGEN_MALE_AVATARS[3],
+  },
+  {
+    name: "Yuki Tanaka",
+    title: "Data Science Lead",
+    company: "Insights AI",
+    personality: "Quantitative and evidence-driven. Probes analytical thinking, data literacy, and hypothesis-driven problem solving.",
+    voiceId: "nova",
+    avatarUrl: "/avatars/interviewer-3.png",
+    heygenAvatarId: HEYGEN_FEMALE_AVATARS[3],
+  },
+  {
+    name: "Robert Martinez",
+    title: "Head of Engineering",
+    company: "CloudBase",
+    personality: "Process-oriented and systems thinker. Focuses on reliability, scalability, and team collaboration in distributed systems.",
+    voiceId: "fable",
+    avatarUrl: "/avatars/interviewer-4.png",
+    heygenAvatarId: HEYGEN_MALE_AVATARS[4],
+  },
 ];
 
-// Patch existing interviewers to backfill heygen_avatar_id by name
+// Backfill heygen_avatar_id for existing seeded interviewers that don't have one yet
 async function patchHeyGenAvatarIds(existing: Array<{ id: number; name: string; heygenAvatarId: string | null }>): Promise<void> {
   for (const persona of INTERVIEWERS) {
     const row = existing.find(e => e.name === persona.name && !e.heygenAvatarId);
@@ -120,23 +153,23 @@ async function patchHeyGenAvatarIds(existing: Array<{ id: number; name: string; 
   }
 }
 
-export { HEYGEN_FEMALE_AVATARS, HEYGEN_MALE_AVATARS, FEMALE_VOICES };
-
 export async function seedInterviewersIfNeeded(): Promise<void> {
   try {
-    const existing = await db.select().from(interviewersTable);
-    const seededOnly = existing.filter(e => e.sessionId === null);
+    const existing = await db
+      .select()
+      .from(interviewersTable)
+      .where(isNull(interviewersTable.sessionId));
 
-    if (seededOnly.length < 6) {
+    if (existing.length < INTERVIEWERS.length) {
       for (const persona of INTERVIEWERS) {
-        const existingByName = seededOnly.find(e => e.name === persona.name);
+        const existingByName = existing.find(e => e.name === persona.name);
         if (!existingByName) {
           await db.insert(interviewersTable).values(persona);
         }
       }
     } else {
-      // Backfill heygen_avatar_id for existing seeded interviewers
-      await patchHeyGenAvatarIds(seededOnly);
+      // Backfill heygen_avatar_id for any interviewers that pre-date this migration
+      await patchHeyGenAvatarIds(existing);
     }
   } catch (err) {
     console.error("Failed to seed interviewers:", err);

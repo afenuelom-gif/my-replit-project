@@ -27,7 +27,10 @@ export function useHeyGenAvatar(avatarId: string | null | undefined): UseHeyGenA
 
   const fetchToken = useCallback(async (): Promise<string> => {
     const resp = await fetch("/api/interview/heygen/token", { method: "POST" });
-    if (!resp.ok) throw new Error("Failed to fetch HeyGen token");
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({})) as { error?: string };
+      throw new Error(data.error ?? `Token fetch failed: ${resp.status}`);
+    }
     const data = await resp.json() as { token: string };
     return data.token;
   }, []);
@@ -77,6 +80,7 @@ export function useHeyGenAvatar(avatarId: string | null | undefined): UseHeyGenA
       console.error("[HeyGen] init failed:", err);
       setStatus("error");
       initPromiseRef.current = null;
+      throw err; // propagate so callers can show the required error state
     }
   }, [avatarId, fetchToken]);
 
@@ -91,15 +95,16 @@ export function useHeyGenAvatar(avatarId: string | null | undefined): UseHeyGenA
 
   const speak = useCallback(async (text: string) => {
     if (!avatarId) return;
-    await ensureConnected();
-    if (!avatarRef.current) return;
     try {
+      await ensureConnected();
+      if (!avatarRef.current) throw new Error("HeyGen not connected");
       await avatarRef.current.speak({
         text,
         task_type: TaskType.REPEAT,
       } as Parameters<typeof avatarRef.current.speak>[0]);
     } catch (err) {
       console.error("[HeyGen] speak failed:", err);
+      throw err; // propagate so interview.tsx .catch() fires
     }
   }, [avatarId, ensureConnected]);
 
