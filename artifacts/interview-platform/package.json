@@ -75,6 +75,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "@clerk/react": "^6.2.0"
+    "@clerk/react": "^6.2.0",
+    "@heygen/streaming-avatar": "^2.1.0"
   }
 }

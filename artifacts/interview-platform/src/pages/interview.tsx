@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, createRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { 
   useGetSession, 
@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, MessagesSquare, XCircle } from "lucide-react";
+import InterviewerCard, { type InterviewerCardHandle } from "@/components/InterviewerCard";
 
 export default function Interview() {
   const params = useParams();
@@ -44,7 +45,9 @@ export default function Interview() {
   const [statusMessage, setStatusMessage] = useState("Waiting...");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
-  
+  const [isHeyGenSpeaking, setIsHeyGenSpeaking] = useState(false);
+
+  // Refs for user webcam / recording
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -54,6 +57,19 @@ export default function Interview() {
   const postureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerStartedRef = useRef(false);
   const hasTTSStartedRef = useRef(false);
+
+  // Interviewer card refs — keyed by interviewer ID
+  const cardRefsMap = useRef<Map<number, React.RefObject<InterviewerCardHandle>>>(new Map());
+
+  const getOrCreateCardRef = useCallback((id: number) => {
+    if (!cardRefsMap.current.has(id)) {
+      cardRefsMap.current.set(id, createRef<InterviewerCardHandle>());
+    }
+    return cardRefsMap.current.get(id)!;
+  }, []);
+
+  // Combined "any interviewer is speaking" state
+  const isAnySpeaking = isSpeaking || isHeyGenSpeaking;
 
   // Setup timer
   useEffect(() => {
@@ -146,7 +162,7 @@ export default function Interview() {
     }
   }, [sessionId, webcamEnabled]);
 
-  // Auto-play TTS for new questions via Web Speech API
+  // Auto-play question via HeyGen (preferred) or Web Speech API (fallback)
   useEffect(() => {
     const currentQ = sessionData?.questions[sessionData.questions.length - 1];
     if (!currentQ || currentQ.id === lastPlayedQuestionId) return;
@@ -155,7 +171,15 @@ export default function Interview() {
 
     setLastPlayedQuestionId(currentQ.id);
 
-    if (isTTSSupported) {
+    const cardRef = cardRefsMap.current.get(activeInterviewer.id);
+    const hasHeyGen = !!(activeInterviewer as { heygenAvatarId?: string | null }).heygenAvatarId;
+
+    if (hasHeyGen && cardRef?.current) {
+      // HeyGen handles both video + audio; speaking state tracked via onSpeakingChange
+      setStatusMessage("Interviewer speaking...");
+      hasTTSStartedRef.current = true;
+      cardRef.current.speak(currentQ.questionText);
+    } else if (isTTSSupported) {
       setStatusMessage("Interviewer speaking...");
       hasTTSStartedRef.current = true;
       speechSpeak(currentQ.questionText, activeInterviewer.voiceId);
@@ -164,15 +188,24 @@ export default function Interview() {
     }
   }, [sessionData?.questions?.length]);
 
-  // Update status when speech ends
+  // Update status when TTS ends
   useEffect(() => {
-    if (!isSpeaking && hasTTSStartedRef.current) {
+    if (!isSpeaking && hasTTSStartedRef.current && !isHeyGenSpeaking) {
       setStatusMessage("Your turn — click the mic to answer");
     }
   }, [isSpeaking]);
 
+  const destroyAllCards = useCallback(async () => {
+    const destroyPromises: Promise<void>[] = [];
+    for (const ref of cardRefsMap.current.values()) {
+      if (ref.current) destroyPromises.push(ref.current.destroy());
+    }
+    await Promise.allSettled(destroyPromises);
+  }, []);
+
   const handleComplete = async () => {
     speechStop();
+    await destroyAllCards();
     try {
       await completeSession.mutateAsync({ id: sessionId });
       setLocation(`/report/${sessionId}`);
@@ -184,6 +217,7 @@ export default function Interview() {
 
   const handleCancel = async () => {
     speechStop();
+    await destroyAllCards();
     setIsCancelling(true);
     try {
       const res = await fetch(`/api/interview/sessions/${sessionId}`, { method: "DELETE" });
@@ -323,56 +357,22 @@ export default function Interview() {
           {/* Interviewers */}
           {sessionData?.interviewers.map(inv => {
             const isActive = inv.id === activeInterviewerId;
-            const isTalking = isActive && isSpeaking;
+            const isTalkingTTS = isActive && isSpeaking;
+            const cardRef = getOrCreateCardRef(inv.id);
             return (
-              <div
+              <InterviewerCard
                 key={inv.id}
-                className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-all duration-300 min-h-48 ${
-                  isTalking
-                    ? 'border-primary animate-ring-pulse scale-[1.03] shadow-[0_0_50px_rgba(0,195,255,0.55)]'
-                    : isActive
-                    ? 'border-primary shadow-[0_0_30px_rgba(0,195,255,0.2)]'
-                    : 'border-white/5'
-                }`}
-              >
-                <div className="animate-avatar-breathe w-full h-full">
-                  {inv.avatarUrl ? (
-                    <img src={inv.avatarUrl} alt={inv.name} className="w-full h-full object-cover min-h-48" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl font-bold text-white/20 min-h-48">
-                      {inv.name.charAt(0)}
-                    </div>
-                  )}
-                </div>
-
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pt-6 pb-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isActive ? 'bg-primary animate-pulse' : 'bg-zinc-600'}`} />
-                    <span className="font-semibold text-sm text-white">{inv.name}</span>
-                  </div>
-                  <p className="text-xs text-zinc-400 leading-tight">{inv.title}</p>
-
-                  {isTalking ? (
-                    <div className="flex items-end gap-1 mt-2 h-8" aria-label="Speaking">
-                      {[0, 1, 2, 3, 4, 5, 6].map(i => (
-                        <div
-                          key={i}
-                          className="w-1.5 bg-primary rounded-full animate-sound-bar origin-bottom"
-                          style={{
-                            height: `${14 + (i % 4) * 6}px`,
-                            animationDelay: `${i * 0.08}s`,
-                          }}
-                        />
-                      ))}
-                      <span className="text-xs text-primary ml-2 font-semibold tracking-wide">Speaking…</span>
-                    </div>
-                  ) : isActive ? (
-                    <p className="text-xs text-primary/60 mt-2">Active</p>
-                  ) : (
-                    <p className="text-xs text-zinc-700 mt-2">Waiting</p>
-                  )}
-                </div>
-              </div>
+                ref={cardRef}
+                interviewer={inv}
+                isActive={isActive}
+                isTalkingTTS={isTalkingTTS}
+                onSpeakingChange={(speaking) => {
+                  if (inv.id === activeInterviewerId) {
+                    setIsHeyGenSpeaking(speaking);
+                    if (!speaking) setStatusMessage("Your turn — click the mic to answer");
+                  }
+                }}
+              />
             );
           })}
 
@@ -477,12 +477,19 @@ export default function Interview() {
         </div>
 
         <div className="flex items-center gap-4">
-          {isSpeaking && (
+          {isAnySpeaking && (
             <Button
               variant="outline"
               size="sm"
               className="border-primary/40 text-primary hover:bg-primary/10 gap-2"
-              onClick={() => speechStop()}
+              onClick={() => {
+                speechStop();
+                if (activeInterviewerId) {
+                  const ref = cardRefsMap.current.get(activeInterviewerId);
+                  ref?.current?.stop();
+                }
+                setIsHeyGenSpeaking(false);
+              }}
               data-testid="button-skip-tts"
               title="Skip to answering"
             >
@@ -524,7 +531,7 @@ export default function Interview() {
             className={`w-16 h-16 rounded-full transition-all ${isRecording ? 'animate-pulse ring-4 ring-red-500/50' : 'hover:scale-105'}`}
             onClick={handleToggleRecord}
             data-testid="button-toggle-audio"
-            disabled={isProcessing || isSpeaking || transcribeAnswer.isPending || getNextQuestion.isPending}
+            disabled={isProcessing || isAnySpeaking || transcribeAnswer.isPending || getNextQuestion.isPending}
             title={isRecording ? "Stop recording" : "Start recording your answer"}
           >
             {isProcessing || transcribeAnswer.isPending || getNextQuestion.isPending 

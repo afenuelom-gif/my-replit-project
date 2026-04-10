@@ -10,6 +10,7 @@ export const interviewersTable = pgTable("interviewers", {
   personality: text("personality").notNull(),
   voiceId: text("voice_id").notNull(),
   avatarUrl: text("avatar_url"),
+  heygenAvatarId: text("heygen_avatar_id"),
   sessionId: integer("session_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -56,11 +56,23 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `GET /api/users/me` — Get current user info (requires auth)
 - `GET /api/users/me/sessions` — Get user's interview history (requires auth)
 - `GET /api/dev/status` — Dev mode status (BYPASS_AUTH flag)
+- `POST /api/interview/heygen/token` — Get a short-lived HeyGen streaming avatar token
+
+## HeyGen Streaming Avatar Integration
+
+When `HEYGEN_API_KEY` is set as a Replit secret, the platform enables live AI avatar video streaming:
+
+- **Session creation**: Fetches available HeyGen avatars via `GET /v2/avatars`, assigns gender-appropriate avatar IDs to each dynamic interviewer, stores as `heygen_avatar_id` in DB
+- **Token endpoint**: Backend generates a short-lived streaming token via `POST /v1/streaming.create_token`
+- **Frontend hook**: `useHeyGenAvatar(avatarId)` — lazy WebRTC init via LiveKit, exposes `videoRef`, `speak(text)`, `stop()`, `destroy()`, `status`, `isSpeaking`
+- **InterviewerCard component**: Self-contained card with HeyGen video stream (or static avatar fallback). Exposes `speak/stop/destroy` via `useImperativeHandle` ref
+- **Graceful fallback**: If HeyGen API key not set, returns 503; frontend falls back to OpenAI TTS + static images seamlessly
+- **SDK**: `@heygen/streaming-avatar@^2.1.0` (uses LiveKit under the hood)
 
 ## Database Tables
 
 - `users` — Clerk user IDs, emails, session credits (for Stripe integration later)
-- `interviewers` — 6 interviewer personas with avatars, voices, personalities
+- `interviewers` — Dynamic interviewer personas with avatars, voices, personalities, `heygen_avatar_id`
 - `interview_sessions` — Session config (job role, desc, duration, status, userId FK)
 - `interview_questions` — All questions/answers per session
 - `posture_analysis` — Periodic webcam snapshots analyzed by vision AI

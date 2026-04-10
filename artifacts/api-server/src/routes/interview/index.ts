@@ -96,6 +96,36 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
   if (dynamicPersonas && dynamicPersonas.length >= 2) {
     let femaleAvatarIdx = 0;
     let maleAvatarIdx = 0;
+
+    // Fetch HeyGen avatars for assignment (best-effort, non-blocking)
+    let heygenFemaleAvatars: string[] = [];
+    let heygenMaleAvatars: string[] = [];
+    const heygenApiKey = process.env.HEYGEN_API_KEY;
+    if (heygenApiKey) {
+      try {
+        const resp = await fetch("https://api.heygen.com/v2/avatars", {
+          headers: { "x-api-key": heygenApiKey, "accept": "application/json" },
+        });
+        if (resp.ok) {
+          const data = await resp.json() as {
+            data?: { avatars?: Array<{ avatar_id: string; gender?: string; avatar_name?: string }> };
+          };
+          const avatars = data?.data?.avatars ?? [];
+          // Filter streaming-compatible avatars: typically public avatars with known IDs
+          for (const av of avatars) {
+            const gender = (av.gender ?? "").toLowerCase();
+            if (gender === "female" || gender === "woman") {
+              heygenFemaleAvatars.push(av.avatar_id);
+            } else if (gender === "male" || gender === "man") {
+              heygenMaleAvatars.push(av.avatar_id);
+            }
+          }
+        }
+      } catch {
+        // silently ignore HeyGen avatar fetch errors
+      }
+    }
+
     const inserted = await db
       .insert(interviewersTable)
       .values(
@@ -103,6 +133,9 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
           const isFemale = FEMALE_VOICE_IDS.has(p.voiceId);
           const pool = isFemale ? FEMALE_AVATAR_POOL : MALE_AVATAR_POOL;
           const avatarUrl = pool[(isFemale ? femaleAvatarIdx++ : maleAvatarIdx++) % pool.length];
+          const heygenPool = isFemale ? heygenFemaleAvatars : heygenMaleAvatars;
+          const heygenIdx = isFemale ? femaleAvatarIdx - 1 : maleAvatarIdx - 1;
+          const heygenAvatarId = heygenPool.length > 0 ? heygenPool[heygenIdx % heygenPool.length] : null;
           return {
             name: p.name,
             title: p.title,
@@ -110,6 +143,7 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
             personality: p.personality,
             voiceId: p.voiceId,
             avatarUrl,
+            heygenAvatarId,
             sessionId: session.id,
           };
         })
@@ -730,6 +764,35 @@ router.post("/interview/sessions/:id/transcribe", optionalAuth, async (req, res)
   const text = await transcribeAudio(audioBuffer, mimeType);
 
   res.json({ text });
+});
+
+// POST /api/interview/heygen/token — get a short-lived HeyGen streaming access token
+router.post("/interview/heygen/token", optionalAuth, async (_req, res): Promise<void> => {
+  const apiKey = process.env.HEYGEN_API_KEY;
+  if (!apiKey) {
+    res.status(503).json({ error: "HeyGen integration not configured" });
+    return;
+  }
+  try {
+    const resp = await fetch("https://api.heygen.com/v1/streaming.create_token", {
+      method: "POST",
+      headers: { "x-api-key": apiKey, "content-type": "application/json" },
+    });
+    if (!resp.ok) {
+      const text = await resp.text();
+      res.status(resp.status).json({ error: `HeyGen error: ${text}` });
+      return;
+    }
+    const data = await resp.json() as { data?: { token?: string }; error?: string };
+    const token = data?.data?.token;
+    if (!token) {
+      res.status(502).json({ error: "No token returned from HeyGen" });
+      return;
+    }
+    res.json({ token });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
 });
 
 export default router;
