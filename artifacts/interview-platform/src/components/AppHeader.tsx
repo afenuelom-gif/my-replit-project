@@ -10,7 +10,7 @@ export function AppHeader({ right }: AppHeaderProps) {
     <header className="w-full flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20 backdrop-blur-sm print:hidden">
       <Link href="/" className="flex items-center gap-3 group">
         <img
-          src="/logo.png"
+          src="/logo-icon.png"
           alt="IntervYou AI"
           className="h-9 w-9 rounded-xl object-cover shadow-md"
         />
