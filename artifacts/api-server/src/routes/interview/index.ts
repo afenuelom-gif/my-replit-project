@@ -925,7 +925,7 @@ router.get("/interview/heygen/video-status/:videoId", optionalAuth, async (req, 
     res.status(503).json({ error: "HeyGen not configured" });
     return;
   }
-  const { videoId } = req.params;
+  const videoId = String(req.params.videoId);
   try {
     const resp = await fetch(`https://api.heygen.com/v1/video_status.get?video_id=${encodeURIComponent(videoId)}`, {
       headers: { "x-api-key": apiKey },
@@ -945,6 +945,155 @@ router.get("/interview/heygen/video-status/:videoId", optionalAuth, async (req, 
       thumbnailUrl: raw?.data?.thumbnail_url ?? null,
       error: raw?.data?.error ?? null,
     });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// D-ID Talk Streams proxy routes (real-time WebRTC avatar streaming)
+// ---------------------------------------------------------------------------
+
+const DID_API_BASE = "https://api.d-id.com";
+
+const DID_FEMALE_PRESENTER = "https://d-id-public-bucket.s3.amazonaws.com/alice.jpg";
+const DID_MALE_PRESENTER   = "https://d-id-public-bucket.s3.amazonaws.com/or-roman.jpg";
+
+function getDIDHeaders(): { Authorization: string; "content-type": string } | null {
+  const apiKey = process.env.DID_API_KEY;
+  if (!apiKey) return null;
+  return {
+    Authorization: `Basic ${apiKey}`,
+    "content-type": "application/json",
+  };
+}
+
+// POST /api/interview/did/streams — create a new D-ID streaming session
+router.post("/interview/did/streams", optionalAuth, async (req, res): Promise<void> => {
+  const headers = getDIDHeaders();
+  if (!headers) { res.status(503).json({ error: "D-ID not configured — set DID_API_KEY" }); return; }
+
+  const gender = (req.body as { gender?: string }).gender;
+  const sourceUrl = gender === "male" ? DID_MALE_PRESENTER : DID_FEMALE_PRESENTER;
+
+  try {
+    const resp = await fetch(`${DID_API_BASE}/talks/streams`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ source_url: sourceUrl }),
+    });
+    const data = await resp.json() as Record<string, unknown>;
+    if (!resp.ok) {
+      res.status(resp.status).json({ error: (data as { description?: string }).description ?? resp.statusText });
+      return;
+    }
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// POST /api/interview/did/streams/:streamId/sdp — send SDP answer from client
+router.post("/interview/did/streams/:streamId/sdp", optionalAuth, async (req, res): Promise<void> => {
+  const headers = getDIDHeaders();
+  if (!headers) { res.status(503).json({ error: "D-ID not configured" }); return; }
+
+  const { streamId } = req.params;
+  const { answer, session_id } = req.body as { answer: unknown; session_id: string };
+
+  try {
+    const resp = await fetch(`${DID_API_BASE}/talks/streams/${streamId}/sdp`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ answer, session_id }),
+    });
+    const data = await resp.json() as Record<string, unknown>;
+    if (!resp.ok) {
+      res.status(resp.status).json({ error: (data as { description?: string }).description ?? resp.statusText });
+      return;
+    }
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// POST /api/interview/did/streams/:streamId/ice — relay ICE candidate to D-ID
+router.post("/interview/did/streams/:streamId/ice", optionalAuth, async (req, res): Promise<void> => {
+  const headers = getDIDHeaders();
+  if (!headers) { res.status(503).json({ error: "D-ID not configured" }); return; }
+
+  const { streamId } = req.params;
+  const { candidate, session_id } = req.body as { candidate: unknown; session_id: string };
+
+  try {
+    const resp = await fetch(`${DID_API_BASE}/talks/streams/${streamId}/ice`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ candidate, session_id }),
+    });
+    const data = await resp.json() as Record<string, unknown>;
+    if (!resp.ok) {
+      res.status(resp.status).json({ error: (data as { description?: string }).description ?? resp.statusText });
+      return;
+    }
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// POST /api/interview/did/streams/:streamId/talk — make the avatar speak
+router.post("/interview/did/streams/:streamId/talk", optionalAuth, async (req, res): Promise<void> => {
+  const headers = getDIDHeaders();
+  if (!headers) { res.status(503).json({ error: "D-ID not configured" }); return; }
+
+  const { streamId } = req.params;
+  const { script, session_id, config } = req.body as {
+    script: unknown; session_id: string; config?: unknown;
+  };
+
+  try {
+    const resp = await fetch(`${DID_API_BASE}/talks/streams/${streamId}/talk`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ script, session_id, config }),
+    });
+    const data = await resp.json() as Record<string, unknown>;
+    if (!resp.ok) {
+      res.status(resp.status).json({ error: (data as { description?: string }).description ?? resp.statusText });
+      return;
+    }
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// DELETE /api/interview/did/streams/:streamId — close and clean up the stream
+router.delete("/interview/did/streams/:streamId", optionalAuth, async (req, res): Promise<void> => {
+  const headers = getDIDHeaders();
+  if (!headers) { res.status(503).json({ error: "D-ID not configured" }); return; }
+
+  const { streamId } = req.params;
+  const { session_id } = req.body as { session_id?: string };
+
+  try {
+    const resp = await fetch(`${DID_API_BASE}/talks/streams/${streamId}`, {
+      method: "DELETE",
+      headers,
+      body: JSON.stringify({ session_id: session_id ?? "" }),
+    });
+    if (resp.status === 204 || resp.status === 200) {
+      res.json({ success: true });
+      return;
+    }
+    try {
+      const data = await resp.json() as Record<string, unknown>;
+      res.status(resp.ok ? 200 : resp.status).json(data);
+    } catch {
+      res.json({ success: true });
+    }
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
