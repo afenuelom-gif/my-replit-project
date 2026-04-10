@@ -97,8 +97,11 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
 
     useImperativeHandle(ref, () => ({ speak, stop, destroy }), [speak, stop, destroy]);
 
-    const didReady = DID_ENABLED && isActive && !!didMediaStream;
-    const didConnecting = DID_ENABLED && isActive &&
+    // Only show the live video once ICE is fully connected (markReady set status to "ready"/"speaking")
+    const didReady = DID_ENABLED && isActive && !!didMediaStream &&
+      (didStatus === "ready" || didStatus === "speaking");
+    // Show connecting spinner while ICE is still negotiating
+    const didConnecting = DID_ENABLED && isActive && !didReady &&
       (didStatus === "connecting" || didStatus === "connected");
 
     const heygenHasVideo = !DID_ENABLED && heygenVideo.status === "ready" && !!heygenVideo.videoUrl;

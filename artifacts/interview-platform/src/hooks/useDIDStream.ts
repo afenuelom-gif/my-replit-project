@@ -142,31 +142,55 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
       sessionIdRef.current = sessionId;
       console.log("[D-ID] Stream created:", streamId);
 
+      console.log("[D-ID] ICE servers provided:", JSON.stringify(ice_servers.map(s => ({
+        urls: s.urls,
+        hasCredentials: !!(s as {username?:string}).username
+      }))));
       const pc = new RTCPeerConnection({ iceServers: ice_servers });
       pcRef.current = pc;
 
-      // Buffer ICE candidates until SDP answer is sent — avoids race where
-      // candidates arrive at D-ID before they know our SDP answer
+      // ICE candidates are queued until SDP answer is sent, then drained
+      // sequentially (with retry on 429) to avoid D-ID rate-limit errors
       const iceCandidateQueue: RTCIceCandidateInit[] = [];
       let sdpAnswerSent = false;
+      let iceDrainRunning = false;
 
-      const sendCandidate = async (candidate: RTCIceCandidateInit) => {
-        if (!streamIdRef.current || !sessionIdRef.current) return;
-        try {
-          await fetch(`/api/interview/did/streams/${streamIdRef.current}/ice`, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ candidate, session_id: sessionIdRef.current }),
-          });
-        } catch { /* ignore */ }
+      const drainIceQueue = async () => {
+        if (iceDrainRunning) return;
+        iceDrainRunning = true;
+        while (iceCandidateQueue.length > 0) {
+          if (unmountedRef.current || !streamIdRef.current || !sessionIdRef.current) break;
+          const candidate = iceCandidateQueue.shift()!;
+          let attempts = 0;
+          while (attempts < 3) {
+            try {
+              const resp = await fetch(`/api/interview/did/streams/${streamIdRef.current}/ice`, {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ candidate, session_id: sessionIdRef.current }),
+              });
+              if (resp.status === 429) {
+                console.log("[D-ID] ICE 429 rate-limited, retrying in 300ms...");
+                await new Promise(r => setTimeout(r, 300));
+                attempts++;
+                continue;
+              }
+              break;
+            } catch {
+              break;
+            }
+          }
+          // Small gap between candidates to stay within D-ID's rate limit
+          await new Promise(r => setTimeout(r, 80));
+        }
+        iceDrainRunning = false;
       };
 
+      // ontrack: store the media stream but do NOT mark ready yet — the stream
+      // is not live for /talk until ICE actually connects (premature /talk → 403)
       pc.ontrack = (event) => {
-        console.log("[D-ID] ontrack fired, streams:", event.streams.length, "track:", event.track.kind);
-        if (event.streams[0]) {
-          setMediaStream(event.streams[0]);
-          markReady();
-        }
+        console.log("[D-ID] ontrack:", event.track.kind, "streams:", event.streams.length);
+        if (event.streams[0]) setMediaStream(event.streams[0]);
       };
 
       pc.onicecandidate = (event) => {
@@ -174,13 +198,9 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
           console.log("[D-ID] ICE gathering complete");
           return;
         }
-        const c = event.candidate.toJSON();
-        if (!sdpAnswerSent) {
-          console.log("[D-ID] ICE candidate queued (SDP not yet sent)");
-          iceCandidateQueue.push(c);
-        } else {
-          sendCandidate(c);
-        }
+        console.log("[D-ID] ICE candidate:", event.candidate.type, event.candidate.protocol);
+        iceCandidateQueue.push(event.candidate.toJSON());
+        if (sdpAnswerSent) drainIceQueue();
       };
 
       pc.ondatachannel = (event) => {
@@ -230,13 +250,10 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
         throw new Error(err.error ?? `SDP error ${sdpResp.status}`);
       }
 
-      // SDP sent — now flush any ICE candidates that were queued
+      // SDP sent — start draining any ICE candidates that accumulated during negotiation
       sdpAnswerSent = true;
-      console.log("[D-ID] SDP sent. Flushing", iceCandidateQueue.length, "queued ICE candidates");
-      for (const c of iceCandidateQueue) {
-        sendCandidate(c);
-      }
-      iceCandidateQueue.length = 0;
+      console.log("[D-ID] SDP sent. Draining", iceCandidateQueue.length, "queued ICE candidates");
+      drainIceQueue();
 
     } catch (err) {
       console.error("[D-ID] Connection error:", err);
