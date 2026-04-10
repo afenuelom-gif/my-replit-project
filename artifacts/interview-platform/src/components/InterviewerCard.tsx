@@ -97,12 +97,11 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
 
     useImperativeHandle(ref, () => ({ speak, stop, destroy }), [speak, stop, destroy]);
 
-    // Only show the live video once ICE is fully connected (markReady set status to "ready"/"speaking")
     const didReady = DID_ENABLED && isActive && !!didMediaStream &&
       (didStatus === "ready" || didStatus === "speaking");
-    // Show connecting spinner while ICE is still negotiating
     const didConnecting = DID_ENABLED && isActive && !didReady &&
       (didStatus === "connecting" || didStatus === "connected");
+    const didFailed = DID_ENABLED && didStatus === "error";
 
     const heygenHasVideo = !DID_ENABLED && heygenVideo.status === "ready" && !!heygenVideo.videoUrl;
     const heygenGenerating = !DID_ENABLED && heygenVideo.status === "generating";
@@ -135,31 +134,33 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
         )}
 
         {!showVideoArea && (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-zinc-900 to-zinc-950 min-h-48 gap-3">
-            <div className="w-20 h-20 rounded-full bg-zinc-800 flex items-center justify-center text-3xl font-bold text-white/30 border border-white/10">
-              {interviewer.name.charAt(0)}
-            </div>
-
-            {didConnecting && isActive && (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
-                <span className="text-xs text-primary/80">Connecting stream…</span>
+          <div className="relative w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-zinc-900 to-zinc-950 min-h-48 gap-3">
+            {/* Avatar photo or fallback initial */}
+            {interviewer.avatarUrl ? (
+              <img
+                src={interviewer.avatarUrl}
+                alt={interviewer.name}
+                className={`w-full h-full object-cover min-h-48 absolute inset-0 ${isActive ? "opacity-90" : "opacity-40"}`}
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-zinc-800 flex items-center justify-center text-3xl font-bold text-white/30 border border-white/10">
+                {interviewer.name.charAt(0)}
               </div>
             )}
 
-            {DID_ENABLED && !(didConnecting && isActive) && (
-              <span className="text-xs text-zinc-600">Waiting…</span>
+            {/* Status overlays on top of photo */}
+            {didConnecting && isActive && (
+              <div className="relative z-10 flex items-center gap-2 bg-black/60 rounded-full px-3 py-1 backdrop-blur-sm">
+                <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+                <span className="text-xs text-primary/90">Connecting stream…</span>
+              </div>
             )}
 
             {heygenGenerating && (
-              <div className="flex items-center gap-2">
+              <div className="relative z-10 flex items-center gap-2 bg-black/60 rounded-full px-3 py-1 backdrop-blur-sm">
                 <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
-                <span className="text-xs text-primary/80">Generating video…</span>
+                <span className="text-xs text-primary/90">Generating video…</span>
               </div>
-            )}
-
-            {!DID_ENABLED && !heygenGenerating && (
-              <span className="text-xs text-zinc-600">Waiting…</span>
             )}
           </div>
         )}
@@ -175,6 +176,13 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-primary/30 rounded-md px-2 py-1 backdrop-blur-sm">
             <Loader2 className="w-3 h-3 text-primary animate-spin" />
             <span className="text-xs text-primary">Connecting…</span>
+          </div>
+        )}
+
+        {didFailed && isActive && (
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-amber-700/40 rounded-md px-2 py-1 backdrop-blur-sm">
+            <Radio className="w-3 h-3 text-amber-400 animate-pulse" />
+            <span className="text-xs text-amber-300">Voice only</span>
           </div>
         )}
 

@@ -234,6 +234,15 @@ export function useDIDStream(gender: "male" | "female" = "female"): DIDStreamSta
         if (state === "connected" || state === "completed") markReady();
       };
 
+      // D-ID's official sample explicitly adds recvonly transceivers before
+      // setRemoteDescription to ensure the correct SDP media direction
+      pc.addTransceiver("video", { direction: "recvonly" });
+      pc.addTransceiver("audio", { direction: "recvonly" });
+
+      // Log the offer SDP so we can see D-ID's ICE candidates
+      const offerCandidates = (offer.sdp ?? "").match(/^a=candidate:.+$/mg) ?? [];
+      console.log("[D-ID] Offer ICE candidates from D-ID:", offerCandidates.length, offerCandidates);
+
       await pc.setRemoteDescription(offer);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
