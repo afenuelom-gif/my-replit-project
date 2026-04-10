@@ -46,8 +46,6 @@ export default function Interview() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isHeyGenSpeaking, setIsHeyGenSpeaking] = useState(false);
-  const [heygenUnavailable, setHeygenUnavailable] = useState(false);
-  const [heygenErrorMsg, setHeygenErrorMsg] = useState<string | null>(null);
 
   // Refs for user webcam / recording
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -164,7 +162,7 @@ export default function Interview() {
     }
   }, [sessionId, webcamEnabled]);
 
-  // Auto-play question via HeyGen (preferred) or Web Speech API (fallback)
+  // Auto-play question: TTS immediately + HeyGen video generation in background (via card)
   useEffect(() => {
     const currentQ = sessionData?.questions[sessionData.questions.length - 1];
     if (!currentQ || currentQ.id === lastPlayedQuestionId) return;
@@ -172,28 +170,23 @@ export default function Interview() {
     if (!activeInterviewer) return;
 
     setLastPlayedQuestionId(currentQ.id);
+    hasTTSStartedRef.current = true;
 
     const cardRef = cardRefsMap.current.get(activeInterviewer.id);
-    const hasHeyGen = !!(activeInterviewer as { heygenAvatarId?: string | null }).heygenAvatarId;
-
-    if (hasHeyGen && cardRef?.current) {
-      // HeyGen handles both video + audio; speaking state tracked via onSpeakingChange
+    if (cardRef?.current) {
+      // Card handles TTS (instant) + HeyGen video generation (async, non-blocking)
       setStatusMessage("Interviewer speaking...");
-      hasTTSStartedRef.current = true;
-      cardRef.current.speak(currentQ.questionText).catch((err: unknown) => {
-        // HeyGen speak failed — fall back to TTS for this turn
-        setHeygenUnavailable(true);
-        const msg = err instanceof Error ? err.message : String(err);
-        setHeygenErrorMsg(msg);
-        if (isTTSSupported) speechSpeak(currentQ.questionText, activeInterviewer.voiceId);
-        else setStatusMessage("Read the question above, then click the mic to answer");
+      cardRef.current.speak(currentQ.questionText).catch(() => {
+        setStatusMessage("Read the question above, then click the mic to answer");
       });
-    } else if (isTTSSupported) {
-      setStatusMessage("Interviewer speaking...");
-      hasTTSStartedRef.current = true;
-      speechSpeak(currentQ.questionText, activeInterviewer.voiceId);
     } else {
-      setStatusMessage("Read the question above, then click the mic to answer");
+      // Fallback: no card ref yet (shouldn't normally happen)
+      if (isTTSSupported) {
+        setStatusMessage("Interviewer speaking...");
+        speechSpeak(currentQ.questionText, activeInterviewer.voiceId);
+      } else {
+        setStatusMessage("Read the question above, then click the mic to answer");
+      }
     }
   }, [sessionData?.questions?.length]);
 
@@ -207,7 +200,7 @@ export default function Interview() {
   const destroyAllCards = useCallback(async () => {
     const destroyPromises: Promise<void>[] = [];
     for (const ref of cardRefsMap.current.values()) {
-      if (ref.current) destroyPromises.push(ref.current.destroy());
+      if (ref.current) destroyPromises.push(Promise.resolve(ref.current.destroy()));
     }
     await Promise.allSettled(destroyPromises);
   }, []);
@@ -346,25 +339,11 @@ export default function Interview() {
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
       <canvas ref={canvasRef} className="hidden" />
       
-      {/* HeyGen unavailable notice */}
-      {heygenUnavailable && (
-        <div className="bg-yellow-950/60 border-b border-yellow-700/40 px-6 py-2 flex items-center gap-2 text-xs text-yellow-300">
-          {heygenErrorMsg?.includes("410") || heygenErrorMsg?.toLowerCase().includes("sunset") || heygenErrorMsg?.toLowerCase().includes("deprecated") ? (
-            <>
-              <span className="font-semibold">HeyGen Streaming Avatar API was retired March 31, 2026</span>
-              <span className="text-yellow-400/70">— Please contact HeyGen to migrate your credits to their new LiveAvatar product. Audio continues via TTS.</span>
-            </>
-          ) : heygenErrorMsg?.toLowerCase().includes("not configured") || !heygenErrorMsg ? (
-            <>
-              <span className="font-semibold">HeyGen streaming not configured</span>
-              <span className="text-yellow-400/70">— Set HEYGEN_API_KEY to enable animated interviewers. Audio continues via TTS.</span>
-            </>
-          ) : (
-            <>
-              <span className="font-semibold">HeyGen avatar unavailable</span>
-              <span className="text-yellow-400/70">— Audio continues via TTS. Error: {heygenErrorMsg}</span>
-            </>
-          )}
+      {/* HeyGen video generation info bar — shown when interviewers have avatar IDs configured */}
+      {sessionData?.interviewers.some(i => (i as { heygenAvatarId?: string | null }).heygenAvatarId) && (
+        <div className="bg-zinc-900/60 border-b border-primary/10 px-6 py-1.5 flex items-center gap-2 text-xs text-zinc-500">
+          <span className="text-primary/60">✦</span>
+          <span>HeyGen avatar video generates in the background for each question — it will appear in your interviewer card when ready.</span>
         </div>
       )}
 

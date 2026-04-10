@@ -1,11 +1,12 @@
-import React, { forwardRef, useImperativeHandle, useCallback, useEffect } from "react";
-import { useHeyGenAvatar } from "@/hooks/useHeyGenAvatar";
-import { AlertTriangle } from "lucide-react";
+import React, { forwardRef, useImperativeHandle, useCallback, useEffect, useRef } from "react";
+import { AlertTriangle, Clapperboard, Loader2, Play } from "lucide-react";
+import { useHeyGenVideo } from "@/hooks/useHeyGenVideo";
+import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 
 export interface InterviewerCardHandle {
-  speak: (text: string) => Promise<void>;
-  stop: () => Promise<void>;
-  destroy: () => Promise<void>;
+  speak: (text: string, gender?: "male" | "female") => Promise<void>;
+  stop: () => void;
+  destroy: () => void;
 }
 
 interface Interviewer {
@@ -14,6 +15,7 @@ interface Interviewer {
   title: string;
   avatarUrl?: string | null;
   heygenAvatarId?: string | null;
+  voiceId?: string;
 }
 
 interface InterviewerCardProps {
@@ -22,76 +24,118 @@ interface InterviewerCardProps {
   onSpeakingChange?: (speaking: boolean) => void;
 }
 
+const FEMALE_VOICES = new Set(["nova", "shimmer"]);
+
 const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
   ({ interviewer, isActive, onSpeakingChange }, ref) => {
-    const heygen = useHeyGenAvatar(interviewer.heygenAvatarId ?? null);
+    const heygenVideo = useHeyGenVideo();
+    const { speak: ttsSpeak, stop: ttsStop, isSpeaking: ttsSpeaking } = useSpeechSynthesis();
+    const videoElRef = useRef<HTMLVideoElement | null>(null);
+    const activeTextRef = useRef<string | null>(null);
 
-    // Propagate HeyGen speaking state changes to parent
+    const gender: "male" | "female" = FEMALE_VOICES.has(interviewer.voiceId ?? "") ? "female" : "male";
+
+    // Auto-play video when it becomes ready, only if this question is still active
     useEffect(() => {
-      onSpeakingChange?.(heygen.isSpeaking);
-    }, [heygen.isSpeaking]);
+      if (heygenVideo.status === "ready" && heygenVideo.videoUrl && videoElRef.current) {
+        videoElRef.current.src = heygenVideo.videoUrl;
+        videoElRef.current.play().catch(() => {});
+      }
+    }, [heygenVideo.status, heygenVideo.videoUrl]);
+
+    // Propagate speaking state (TTS speaking as proxy since video fires its own events)
+    useEffect(() => {
+      onSpeakingChange?.(ttsSpeaking);
+    }, [ttsSpeaking]);
 
     const speak = useCallback(async (text: string) => {
-      await heygen.speak(text);
-    }, [heygen]);
+      // Always play TTS immediately for instant audio
+      ttsSpeak(text, interviewer.voiceId);
+      // Fire off background video generation if HeyGen is configured (non-blocking)
+      if (interviewer.heygenAvatarId) {
+        activeTextRef.current = text;
+        heygenVideo.generate(interviewer.id, text, gender);
+      }
+    }, [interviewer.id, interviewer.heygenAvatarId, interviewer.voiceId, gender, heygenVideo, ttsSpeak]);
 
-    const stop = useCallback(async () => {
-      await heygen.stop();
-    }, [heygen]);
+    const stop = useCallback(() => {
+      ttsStop();
+      if (videoElRef.current) {
+        videoElRef.current.pause();
+      }
+    }, [ttsStop]);
 
-    const destroy = useCallback(async () => {
-      await heygen.destroy();
-    }, [heygen]);
+    const destroy = useCallback(() => {
+      ttsStop();
+      heygenVideo.reset();
+      if (videoElRef.current) {
+        videoElRef.current.pause();
+        videoElRef.current.src = "";
+      }
+      activeTextRef.current = null;
+    }, [ttsStop, heygenVideo]);
 
     useImperativeHandle(ref, () => ({ speak, stop, destroy }), [speak, stop, destroy]);
 
-    const isConnected = heygen.status === "connected";
-    const isConnecting = heygen.status === "connecting";
-    const isError = heygen.status === "error";
-    const isSpeaking = heygen.isSpeaking;
+    const hasVideo = heygenVideo.status === "ready" && !!heygenVideo.videoUrl;
+    const isGenerating = heygenVideo.status === "generating";
 
     return (
       <div
         className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-colors duration-300 min-h-48 ${
-          isConnected && isSpeaking
-            ? "border-primary shadow-[0_0_30px_rgba(0,195,255,0.35)]"
-            : isActive
+          isActive
             ? "border-primary/60"
             : "border-white/5"
         }`}
       >
-        {/* HeyGen video stream */}
+        {/* Pre-generated HeyGen video */}
         <video
-          ref={heygen.videoRef}
-          autoPlay
+          ref={videoElRef}
           playsInline
-          className={`w-full h-full object-cover min-h-48 ${isConnected ? "block" : "hidden"}`}
+          controls={hasVideo}
+          className={`w-full h-full object-cover min-h-48 ${hasVideo ? "block" : "hidden"}`}
         />
 
-        {/* Dark placeholder while idle / connecting / error (no static photo) */}
-        {!isConnected && (
+        {/* Dark placeholder while video is not yet ready */}
+        {!hasVideo && (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-zinc-900 to-zinc-950 min-h-48 gap-3">
             <div className="w-20 h-20 rounded-full bg-zinc-800 flex items-center justify-center text-3xl font-bold text-white/30 border border-white/10">
               {interviewer.name.charAt(0)}
             </div>
 
-            {isConnecting && (
+            {isGenerating && (
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
-                <span className="text-xs text-yellow-300/80">Connecting avatar…</span>
+                <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+                <span className="text-xs text-primary/80">Generating video…</span>
               </div>
             )}
 
-            {isError && (
+            {heygenVideo.status === "error" && (
               <div className="flex items-center gap-1.5 text-xs text-red-400/80">
                 <AlertTriangle className="w-3.5 h-3.5" />
-                <span>Avatar unavailable</span>
+                <span>Video unavailable</span>
               </div>
             )}
 
-            {!isConnecting && !isError && (
-              <span className="text-xs text-zinc-600">Initializing…</span>
+            {heygenVideo.status === "idle" && (
+              <span className="text-xs text-zinc-600">Waiting…</span>
             )}
+          </div>
+        )}
+
+        {/* "Video ready" badge shown briefly over the video */}
+        {hasVideo && (
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-primary/30 rounded-md px-2 py-1 backdrop-blur-sm">
+            <Play className="w-3 h-3 text-primary" />
+            <span className="text-xs text-primary">Video ready</span>
+          </div>
+        )}
+
+        {/* Generating badge shown in top-right while generating */}
+        {isGenerating && (
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-yellow-700/40 rounded-md px-2 py-1 backdrop-blur-sm">
+            <Clapperboard className="w-3 h-3 text-yellow-400 animate-pulse" />
+            <span className="text-xs text-yellow-300">Generating…</span>
           </div>
         )}
 
@@ -100,20 +144,13 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           <div className="flex items-center gap-2 mb-1">
             <div
               className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-300 ${
-                isConnected && isSpeaking
-                  ? "bg-primary"
-                  : isActive
-                  ? "bg-primary/60"
-                  : "bg-zinc-600"
+                isActive ? "bg-primary/60" : "bg-zinc-600"
               }`}
             />
             <span className="font-semibold text-sm text-white">{interviewer.name}</span>
           </div>
           <p className="text-xs text-zinc-400 leading-tight">{interviewer.title}</p>
-
-          {isConnected && isSpeaking ? (
-            <p className="text-xs text-primary mt-2 font-medium">Speaking</p>
-          ) : isActive ? (
+          {isActive ? (
             <p className="text-xs text-primary/50 mt-2">Active</p>
           ) : (
             <p className="text-xs text-zinc-700 mt-2">Waiting</p>

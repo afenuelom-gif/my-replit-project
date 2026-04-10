@@ -771,4 +771,183 @@ router.post("/interview/heygen/token", optionalAuth, async (_req, res): Promise<
   }
 });
 
+// ---------------------------------------------------------------------------
+// HeyGen Video Generation API (non-streaming — still active after March 2026)
+// ---------------------------------------------------------------------------
+
+type HeyGenGender = "male" | "female";
+
+// In-memory caches — populated on first call per session
+const heygenVoiceCache: { male?: string; female?: string; fetchedAt?: number } = {};
+const heygenAvatarCache: { female: string[]; male: string[]; fetchedAt?: number } = { female: [], male: [] };
+const HEYGEN_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+async function getHeyGenVoice(apiKey: string, gender: HeyGenGender): Promise<string | undefined> {
+  const now = Date.now();
+  if (heygenVoiceCache.fetchedAt && now - heygenVoiceCache.fetchedAt < HEYGEN_CACHE_TTL_MS) {
+    return gender === "male" ? heygenVoiceCache.male : heygenVoiceCache.female;
+  }
+  try {
+    const resp = await fetch("https://api.heygen.com/v2/voices", {
+      headers: { "x-api-key": apiKey },
+    });
+    if (!resp.ok) return undefined;
+    const data = await resp.json() as { data?: { voices?: Array<{ voice_id: string; gender?: string; language?: string; name?: string }> } };
+    const voices = data?.data?.voices ?? [];
+    const isEnglish = (v: { language?: string }) =>
+      !v.language || v.language.toLowerCase().startsWith("en");
+    const female = voices.find(v => v.gender?.toLowerCase() === "female" && isEnglish(v));
+    const male = voices.find(v => v.gender?.toLowerCase() === "male" && isEnglish(v));
+    heygenVoiceCache.female = female?.voice_id;
+    heygenVoiceCache.male = male?.voice_id;
+    heygenVoiceCache.fetchedAt = now;
+    return gender === "male" ? heygenVoiceCache.male : heygenVoiceCache.female;
+  } catch {
+    return undefined;
+  }
+}
+
+async function getHeyGenVideoAvatar(apiKey: string, gender: HeyGenGender, slot: number): Promise<string | undefined> {
+  const now = Date.now();
+  const needsRefresh = !heygenAvatarCache.fetchedAt || now - heygenAvatarCache.fetchedAt > HEYGEN_CACHE_TTL_MS;
+  if (needsRefresh) {
+    try {
+      const resp = await fetch("https://api.heygen.com/v2/avatars", { headers: { "x-api-key": apiKey } });
+      if (!resp.ok) return undefined;
+      const data = await resp.json() as { data?: { avatars?: Array<{ avatar_id: string; gender?: string; premium?: boolean }> } };
+      const all = data?.data?.avatars ?? [];
+      // Prefer professional-looking (non-premium) avatars
+      const nonPremium = all.filter(a => !a.premium);
+      heygenAvatarCache.female = nonPremium
+        .filter(a => a.gender?.toLowerCase() === "female")
+        .map(a => a.avatar_id)
+        .filter((id, i, arr) => arr.indexOf(id) === i); // dedupe
+      heygenAvatarCache.male = nonPremium
+        .filter(a => a.gender?.toLowerCase() === "male")
+        .map(a => a.avatar_id)
+        .filter((id, i, arr) => arr.indexOf(id) === i);
+      heygenAvatarCache.fetchedAt = now;
+    } catch {
+      return undefined;
+    }
+  }
+  const pool = gender === "male" ? heygenAvatarCache.male : heygenAvatarCache.female;
+  if (!pool.length) return undefined;
+  // Use slot (interviewer ID) for consistent assignment across requests
+  return pool[slot % pool.length];
+}
+
+// GET /api/interview/heygen/video-avatars — list avatars available for video generation
+router.get("/interview/heygen/video-avatars", optionalAuth, async (_req, res): Promise<void> => {
+  const apiKey = process.env.HEYGEN_API_KEY;
+  if (!apiKey) { res.status(503).json({ error: "HeyGen not configured" }); return; }
+  try {
+    const resp = await fetch("https://api.heygen.com/v2/avatars", { headers: { "x-api-key": apiKey } });
+    const raw = await resp.json();
+    res.json(raw);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// GET /api/interview/heygen/voices — list available voices (for debugging / manual selection)
+router.get("/interview/heygen/voices", optionalAuth, async (_req, res): Promise<void> => {
+  const apiKey = process.env.HEYGEN_API_KEY;
+  if (!apiKey) { res.status(503).json({ error: "HeyGen not configured" }); return; }
+  try {
+    const resp = await fetch("https://api.heygen.com/v2/voices", { headers: { "x-api-key": apiKey } });
+    const raw = await resp.json();
+    res.json(raw);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// POST /api/interview/heygen/generate-video — kick off async video generation
+router.post("/interview/heygen/generate-video", optionalAuth, async (req, res): Promise<void> => {
+  const apiKey = process.env.HEYGEN_API_KEY;
+  if (!apiKey) {
+    res.status(503).json({ error: "HeyGen not configured" });
+    return;
+  }
+  const { interviewerId, text, gender } = req.body as {
+    interviewerId?: number; text?: string; gender?: HeyGenGender;
+  };
+  if (!interviewerId || !text) {
+    res.status(400).json({ error: "interviewerId and text are required" });
+    return;
+  }
+  try {
+    const resolvedGender: HeyGenGender = gender ?? "female";
+    const [voiceId, avatarId] = await Promise.all([
+      getHeyGenVoice(apiKey, resolvedGender),
+      getHeyGenVideoAvatar(apiKey, resolvedGender, interviewerId),
+    ]);
+    if (!voiceId) {
+      res.status(503).json({ error: "Could not fetch HeyGen voices — check API key" });
+      return;
+    }
+    if (!avatarId) {
+      res.status(503).json({ error: "Could not fetch HeyGen avatar list — check API key" });
+      return;
+    }
+    const voiceConfig = { type: "text", input_text: text, voice_id: voiceId };
+
+    const payload = {
+      video_inputs: [{
+        character: { type: "avatar", avatar_id: avatarId, avatar_style: "normal" },
+        voice: voiceConfig,
+      }],
+      dimension: { width: 640, height: 480 },
+    };
+
+    const resp = await fetch("https://api.heygen.com/v2/video/generate", {
+      method: "POST",
+      headers: { "x-api-key": apiKey, "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const raw = await resp.json() as { data?: { video_id?: string }; error?: { message?: string; code?: string } };
+    if (!resp.ok || !raw?.data?.video_id) {
+      const msg = raw?.error?.message ?? `HeyGen video generate error (${resp.status})`;
+      res.status(resp.status >= 400 ? resp.status : 502).json({ error: msg });
+      return;
+    }
+    res.json({ videoId: raw.data.video_id });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// GET /api/interview/heygen/video-status/:videoId — poll generation status
+router.get("/interview/heygen/video-status/:videoId", optionalAuth, async (req, res): Promise<void> => {
+  const apiKey = process.env.HEYGEN_API_KEY;
+  if (!apiKey) {
+    res.status(503).json({ error: "HeyGen not configured" });
+    return;
+  }
+  const { videoId } = req.params;
+  try {
+    const resp = await fetch(`https://api.heygen.com/v1/video_status.get?video_id=${encodeURIComponent(videoId)}`, {
+      headers: { "x-api-key": apiKey },
+    });
+    const raw = await resp.json() as {
+      data?: { status?: string; video_url?: string; thumbnail_url?: string; error?: string };
+      code?: number; message?: string;
+    };
+    if (!resp.ok) {
+      res.status(resp.status).json({ error: raw?.message ?? `Status check error (${resp.status})` });
+      return;
+    }
+    const status = raw?.data?.status ?? "processing";
+    res.json({
+      status,           // "processing" | "completed" | "failed" | "pending"
+      videoUrl: raw?.data?.video_url ?? null,
+      thumbnailUrl: raw?.data?.thumbnail_url ?? null,
+      error: raw?.data?.error ?? null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 export default router;
