@@ -376,12 +376,16 @@ export default function Interview() {
               data: { audioBase64: base64Audio, mimeType }
             });
             if (!transcribeRes.text?.trim()) {
-              setStatusMessage("We didn’t get a response. Please answer the question.");
+              setStatusMessage("Interviewer speaking...");
+              const activeCard = activeInterviewerId ? cardRefsMap.current.get(activeInterviewerId)?.current : null;
+              if (activeCard) {
+                await activeCard.speak("I didn't quite catch that. Could you please go ahead and answer the question?").catch(() => {});
+              }
+              setStatusMessage("Please answer the question above, then click the mic.");
               return;
             }
             const transcript = transcribeRes.text.trim();
-            const normalizedTranscript = transcript.toLowerCase().replace(/[^\w\s']/g, "").replace(/\s+/g, " ").trim();
-            
+
             if (currentQuestion) {
               const nextQ = await getNextQuestion.mutateAsync({
                 id: sessionId,
@@ -403,7 +407,12 @@ export default function Interview() {
             }
           } catch (e) {
             if (e instanceof Error && e.message.includes("NO_CLEAR_RESPONSE")) {
-              setStatusMessage("We didn’t get a response. Please answer the question.");
+              setStatusMessage("Interviewer speaking...");
+              const activeCard = activeInterviewerId ? cardRefsMap.current.get(activeInterviewerId)?.current : null;
+              if (activeCard) {
+                await activeCard.speak("I didn't quite catch that. Could you please go ahead and answer the question?").catch(() => {});
+              }
+              setStatusMessage("Please answer the question above, then click the mic.");
               return;
             }
             console.error("Failed to process answer", e);
