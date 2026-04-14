@@ -738,8 +738,10 @@ router.post("/interview/sessions/:id/transcribe", optionalAuth, async (req, res)
   res.json({ text });
 });
 
-// POST /api/interview/heygen/token — get a short-lived HeyGen streaming access token
-router.post("/interview/heygen/token", optionalAuth, async (_req, res): Promise<void> => {
+// POST /api/interview/heygen/token — removed (HeyGen streaming sunset March 2026)
+// D-ID streams/talks routes — removed (parked as future enhancement)
+
+export default router;
   const apiKey = process.env.HEYGEN_API_KEY;
   if (!apiKey) {
     res.status(503).json({ error: "HeyGen integration not configured" });

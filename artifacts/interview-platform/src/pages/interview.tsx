@@ -338,18 +338,6 @@ export default function Interview() {
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
       <canvas ref={canvasRef} className="hidden" />
       
-      {import.meta.env.VITE_DID_ENABLED === "true" ? (
-        <div className="bg-zinc-900/60 border-b border-green-900/30 px-6 py-1.5 flex items-center gap-2 text-xs text-zinc-500">
-          <span className="text-green-500/60">◉</span>
-          <span>D-ID live avatar streams are connecting — each interviewer card will show a live video once ready.</span>
-        </div>
-      ) : sessionData?.interviewers.some(i => (i as { heygenAvatarId?: string | null }).heygenAvatarId) && (
-        <div className="bg-zinc-900/60 border-b border-primary/10 px-6 py-1.5 flex items-center gap-2 text-xs text-zinc-500">
-          <span className="text-primary/60">✦</span>
-          <span>HeyGen avatar video generates in the background for each question — it will appear in your interviewer card when ready.</span>
-        </div>
-      )}
-
       {/* Header */}
       <header className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-black/50 backdrop-blur-md">
         <div className="flex items-center gap-4">
