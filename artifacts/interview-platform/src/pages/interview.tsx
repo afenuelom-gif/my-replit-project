@@ -226,24 +226,7 @@ export default function Interview() {
   useEffect(() => {
     if (!hasPlayedWelcome || pendingQuestionId == null) return;
     if (isSpeaking) return;
-    const pendingQuestion = sessionData?.questions.find(q => q.id === pendingQuestionId);
-    const activeInterviewer = pendingQuestion
-      ? sessionData?.interviewers.find(i => i.id === pendingQuestion.interviewerId)
-      : null;
-    if (!pendingQuestion || !activeInterviewer) return;
-    if (lastPlayedQuestionId === pendingQuestion.id) return;
-    setLastPlayedQuestionId(pendingQuestion.id);
     setPendingQuestionId(null);
-    hasTTSStartedRef.current = true;
-    setStatusMessage("Interviewer speaking...");
-    const cardRef = cardRefsMap.current.get(activeInterviewer.id);
-    if (cardRef?.current) {
-      cardRef.current.speak(pendingQuestion.questionText).catch(() => {
-        setStatusMessage("Read the question above, then click the mic to answer");
-      });
-    } else {
-      ttsSpeak(pendingQuestion.questionText, activeInterviewer.id);
-    }
   }, [hasPlayedWelcome, pendingQuestionId, isSpeaking, sessionData, lastPlayedQuestionId, ttsSpeak]);
 
   // Update status when TTS ends
