@@ -586,35 +586,35 @@ export default function Interview() {
       </main>
 
       {/* Bottom Control Bar */}
-      <footer className="border-t border-white/10 bg-black/80 backdrop-blur-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <footer className="border-t border-white/10 bg-black/80 backdrop-blur-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
         <div className="flex-1 max-w-3xl">
           <div className="text-xs text-primary mb-1 font-mono uppercase tracking-wider">Current Question</div>
-          <div className="text-base sm:text-lg font-medium text-white/90 line-clamp-3">
+          <div className="text-base sm:text-lg font-medium text-white/90 line-clamp-3 min-h-[4.5rem]">
             {currentQuestion?.questionText || "Starting interview — please wait..."}
           </div>
           <div className="mt-2 text-xs text-zinc-500">{statusMessage}</div>
         </div>
 
         <div className="flex items-center gap-4">
-          {isAnySpeaking && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-primary/40 text-primary hover:bg-primary/10 gap-2"
-              onClick={() => {
-                ttsStop();
-                if (activeInterviewerId) {
-                  const ref = cardRefsMap.current.get(activeInterviewerId);
-                  ref?.current?.stop();
-                }
-                setIsHeyGenSpeaking(false);
-              }}
-              data-testid="button-skip-tts"
-              title="Skip to answering"
-            >
-              Skip
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className={`border-primary/40 text-primary hover:bg-primary/10 gap-2 transition-opacity duration-300 ${
+              isAnySpeaking ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+            onClick={() => {
+              ttsStop();
+              if (activeInterviewerId) {
+                const ref = cardRefsMap.current.get(activeInterviewerId);
+                ref?.current?.stop();
+              }
+              setIsHeyGenSpeaking(false);
+            }}
+            data-testid="button-skip-tts"
+            title="Skip to answering"
+          >
+            Skip
+          </Button>
 
           <Button
             variant="outline"

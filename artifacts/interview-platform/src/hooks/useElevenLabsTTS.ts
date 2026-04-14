@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, type MutableRefObject } from "react";
 
 function browserFallbackSpeak(text: string): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -16,9 +16,45 @@ function browserFallbackSpeak(text: string): Promise<void> {
   });
 }
 
+async function playWithNormalization(
+  audio: HTMLAudioElement,
+  audioCtxRef: MutableRefObject<AudioContext | null>
+): Promise<void> {
+  try {
+    if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+      audioCtxRef.current = new AudioContext();
+    }
+    const audioCtx = audioCtxRef.current;
+    if (audioCtx.state === "suspended") {
+      await audioCtx.resume();
+    }
+
+    const source = audioCtx.createMediaElementSource(audio);
+    const compressor = audioCtx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-24, audioCtx.currentTime);
+    compressor.knee.setValueAtTime(30, audioCtx.currentTime);
+    compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+    compressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
+    compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(1.4, audioCtx.currentTime);
+
+    source.connect(compressor);
+    compressor.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    await audio.play();
+  } catch (err) {
+    console.warn("Web Audio API setup failed, falling back to plain play:", err);
+    await audio.play();
+  }
+}
+
 export function useElevenLabsTTS(sessionId: number) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const isBrowserTTSRef = useRef(false);
 
   const stop = useCallback(() => {
@@ -71,7 +107,7 @@ export function useElevenLabsTTS(sessionId: number) {
           audioRef.current = null;
           setIsSpeaking(false);
         };
-        await audio.play();
+        await playWithNormalization(audio, audioCtxRef);
       } catch (e) {
         console.warn("ElevenLabs TTS error, falling back to browser speech:", e);
         isBrowserTTSRef.current = true;

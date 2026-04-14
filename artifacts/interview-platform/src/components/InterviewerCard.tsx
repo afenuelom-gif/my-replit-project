@@ -102,22 +102,26 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
-          {isSpeakingNow && (
-            <div className="absolute bottom-14 left-0 right-0 flex justify-center pointer-events-none">
-              <div className="bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2 flex items-center gap-3 border border-white/10">
-                <Volume2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                <SpeakingWaveform active={ttsSpeaking} />
-              </div>
+          <div
+            className={`absolute bottom-14 left-0 right-0 flex justify-center pointer-events-none transition-opacity duration-300 ${
+              isSpeakingNow ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <div className="bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2 flex items-center gap-3 border border-white/10">
+              <Volume2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+              <SpeakingWaveform active={ttsSpeaking} />
             </div>
-          )}
+          </div>
         </div>
 
-        {isSpeakingNow && (
-          <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-primary/40 rounded-md px-2 py-1 backdrop-blur-sm">
-            <Volume2 className="w-3 h-3 text-primary" />
-            <span className="text-xs text-primary">Speaking…</span>
-          </div>
-        )}
+        <div
+          className={`absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-primary/40 rounded-md px-2 py-1 backdrop-blur-sm transition-opacity duration-300 ${
+            isSpeakingNow ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <Volume2 className="w-3 h-3 text-primary" />
+          <span className="text-xs text-primary">Speaking…</span>
+        </div>
 
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pt-6 pb-3">
           <div className="flex items-center gap-2 mb-1">
