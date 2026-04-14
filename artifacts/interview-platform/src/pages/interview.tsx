@@ -185,11 +185,6 @@ export default function Interview() {
 
     const cardRef = cardRefsMap.current.get(activeInterviewer.id);
 
-    if (!hasPlayedWelcome) {
-      setHasPlayedWelcome(true);
-      setStatusMessage("Hello, welcome to our interview practice session. Let's get started!");
-    }
-
     setLastPlayedQuestionId(currentQ.id);
     hasTTSStartedRef.current = true;
     if (isFinalThankYouRef.current) {
@@ -198,9 +193,21 @@ export default function Interview() {
 
     if (cardRef?.current) {
       setStatusMessage("Interviewer speaking...");
-      cardRef.current.speak(currentQ.questionText).catch(() => {
-        setStatusMessage("Read the question above, then click the mic to answer");
-      });
+      if (!hasPlayedWelcome) {
+        setHasPlayedWelcome(true);
+        const introText = "Hello, welcome to our interview practice session. Let's get started!";
+        cardRef.current.speak(introText)
+          .then(() => cardRef.current!.speak(currentQ.questionText))
+          .catch(() => {
+            cardRef.current?.speak(currentQ.questionText).catch(() => {
+              setStatusMessage("Read the question above, then click the mic to answer");
+            });
+          });
+      } else {
+        cardRef.current.speak(currentQ.questionText).catch(() => {
+          setStatusMessage("Read the question above, then click the mic to answer");
+        });
+      }
     } else {
       setStatusMessage("Read the question above, then click the mic to answer");
     }
