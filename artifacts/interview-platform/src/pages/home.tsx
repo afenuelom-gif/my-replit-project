@@ -121,7 +121,7 @@ export default function Home({ authMenu }: HomeProps) {
                     Interview Duration
                   </Label>
                   <div className="flex gap-2">
-                    {[5, 30, 35, 40, 45].map((mins) => (
+                    {[2, 30, 35, 40, 45].map((mins) => (
                       <button
                         key={mins}
                         type="button"
