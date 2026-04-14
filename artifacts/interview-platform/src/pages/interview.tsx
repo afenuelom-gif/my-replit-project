@@ -190,7 +190,7 @@ export default function Interview() {
       setLastPlayedQuestionId(currentQ.id);
       hasTTSStartedRef.current = true;
       setStatusMessage("Interviewer speaking...");
-      const combinedText = `Hello, welcome to our interview practice session. Let's get started! ${currentQ.questionText}`;
+      const combinedText = `Welcome to IntervYou AI. I'll be your interviewer today and we'll begin right away. ${currentQ.questionText}`;
 
       if (cardRef?.current) {
         cardRef.current.speak(combinedText).catch(() => {
