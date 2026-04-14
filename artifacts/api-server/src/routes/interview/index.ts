@@ -300,6 +300,49 @@ router.post("/interview/sessions/:id/next-question", optionalAuth, async (req, r
 
   const interviewerIds: number[] = JSON.parse(session.interviewerIds as string);
 
+  const elapsedMinutes = (Date.now() - session.createdAt.getTime()) / 60000;
+  const timeUp = elapsedMinutes >= session.durationMinutes;
+  if (timeUp) {
+    const thankYouQuestion = `Thank you for interviewing with IntervYou AI. Please review your performance report!`;
+    const interviewer = await db
+      .select()
+      .from(interviewersTable)
+      .where(eq(interviewersTable.id, interviewerIds[session.currentInterviewerIndex % interviewerIds.length]))
+      .then((rows) => rows[0]);
+
+    if (!interviewer) {
+      res.status(500).json({ error: "Interviewer not found" });
+      return;
+    }
+
+    const [newQuestion] = await db
+      .insert(questionsTable)
+      .values({
+        sessionId: session.id,
+        questionText: thankYouQuestion,
+        interviewerId: interviewer.id,
+        isFollowUp: false,
+        questionIndex: session.questionCount,
+      })
+      .returning();
+
+    await db
+      .update(sessionsTable)
+      .set({
+        questionCount: session.questionCount + 1,
+        currentInterviewerIndex: session.currentInterviewerIndex % interviewerIds.length,
+      })
+      .where(eq(sessionsTable.id, session.id));
+
+    res.json({
+      done: false,
+      question: newQuestion,
+      interviewerId: interviewer.id,
+      sessionStatus: "active",
+    });
+    return;
+  }
+
   const isFollowUp = shouldAskFollowUp(session.questionCount, body.data.answerText.length);
 
   const currentIdx = session.currentInterviewerIndex % interviewerIds.length;
