@@ -45,6 +45,10 @@ export const CreateSessionBody = zod.object({
     .string()
     .nullish()
     .describe("Optional full job description text"),
+  resumeText: zod
+    .string()
+    .nullish()
+    .describe("Optional resume text content"),
   durationMinutes: zod
     .number()
     .default(createSessionBodyDurationMinutesDefault)

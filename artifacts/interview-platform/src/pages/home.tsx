@@ -23,12 +23,23 @@ export default function Home({ authMenu }: HomeProps) {
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [resumeFileName, setResumeFileName] = useState<string | null>(null);
+  const [jdUploadError, setJdUploadError] = useState<string | null>(null);
+  const [resumeUploadError, setResumeUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
+
+  const isSupportedTextFile = (file: File) => file.name.toLowerCase().endsWith(".txt");
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setJdUploadError(null);
+
+    if (!isSupportedTextFile(file)) {
+      setJdUploadError("Only .txt files are supported. Please save your document as a .txt file and re-upload.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -36,18 +47,26 @@ export default function Home({ authMenu }: HomeProps) {
       setJobDescription(text);
       setUploadedFileName(file.name);
     };
-    reader.readAsText(file);
+    reader.readAsText(file, "utf-8");
   };
 
   const clearFile = () => {
     setUploadedFileName(null);
     setJobDescription("");
+    setJdUploadError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setResumeUploadError(null);
+
+    if (!isSupportedTextFile(file)) {
+      setResumeUploadError("Only .txt files are supported. Please save your resume as a .txt file and re-upload.");
+      if (resumeInputRef.current) resumeInputRef.current.value = "";
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -55,14 +74,15 @@ export default function Home({ authMenu }: HomeProps) {
       setResumeText(text);
       setResumeFileName(file.name);
     };
-    reader.readAsText(file);
+    reader.readAsText(file, "utf-8");
   };
 
-  const uploadAccept = ".txt,.doc,.docx,.pdf";
+  const uploadAccept = ".txt";
 
   const clearResume = () => {
     setResumeText("");
     setResumeFileName(null);
+    setResumeUploadError(null);
     if (resumeInputRef.current) resumeInputRef.current.value = "";
   };
 
@@ -195,9 +215,13 @@ export default function Home({ authMenu }: HomeProps) {
                       onChange={handleFileUpload}
                       data-testid="input-jobDescriptionFile"
                     />
-                    <div className="text-xs text-zinc-500 truncate">
-                      {uploadedFileName ? uploadedFileName : "Upload .doc, .docx, .pdf, or .txt"}
-                    </div>
+                    {jdUploadError ? (
+                      <div className="text-xs text-red-400">{jdUploadError}</div>
+                    ) : (
+                      <div className="text-xs text-zinc-500 truncate">
+                        {uploadedFileName ? uploadedFileName : "Upload a .txt file"}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -230,9 +254,13 @@ export default function Home({ authMenu }: HomeProps) {
                       onChange={handleResumeUpload}
                       data-testid="input-resumeFile"
                     />
-                    <div className="text-xs text-zinc-500 truncate">
-                      {resumeFileName ? resumeFileName : "Upload .doc, .docx, .pdf, or .txt"}
-                    </div>
+                    {resumeUploadError ? (
+                      <div className="text-xs text-red-400">{resumeUploadError}</div>
+                    ) : (
+                      <div className="text-xs text-zinc-500 truncate">
+                        {resumeFileName ? resumeFileName : "Upload a .txt file"}
+                      </div>
+                    )}
                   </div>
                 </div>
 
