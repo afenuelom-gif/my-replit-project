@@ -116,7 +116,7 @@ const INTERVIEWERS = [
     title: "Startup Founder",
     company: "Launchpad",
     personality: "Fast-paced and entrepreneurial. Tests resourcefulness, adaptability, and startup mindset. Loves hypotheticals.",
-    voiceId: "onyx",
+    voiceId: "fable",
     avatarUrl: "/avatars/interviewer-2.png",
     heygenAvatarId: HEYGEN_MALE_AVATARS[3],
   },
