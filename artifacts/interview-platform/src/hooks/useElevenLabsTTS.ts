@@ -45,9 +45,9 @@ function setupAudioGraph(
     gain.connect(audioCtx.destination);
 
     return () => {
-      try { source.disconnect(); } catch { /* already disconnected */ }
-      try { compressor.disconnect(); } catch { /* already disconnected */ }
-      try { gain.disconnect(); } catch { /* already disconnected */ }
+      try { source.disconnect(); } catch { }
+      try { compressor.disconnect(); } catch { }
+      try { gain.disconnect(); } catch { }
     };
   } catch (err) {
     console.warn("Web Audio API setup failed, using plain playback:", err);
@@ -61,7 +61,6 @@ export function useElevenLabsTTS(sessionId: number) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const audioCleanupRef = useRef<(() => void) | null>(null);
   const isBrowserTTSRef = useRef(false);
-  const playbackResolveRef = useRef<(() => void) | null>(null);
 
   const stop = useCallback(() => {
     if (audioRef.current) {
@@ -76,10 +75,6 @@ export function useElevenLabsTTS(sessionId: number) {
     if (isBrowserTTSRef.current) {
       window.speechSynthesis?.cancel();
       isBrowserTTSRef.current = false;
-    }
-    if (playbackResolveRef.current) {
-      playbackResolveRef.current();
-      playbackResolveRef.current = null;
     }
     setIsSpeaking(false);
   }, []);
@@ -113,16 +108,12 @@ export function useElevenLabsTTS(sessionId: number) {
           `data:audio/${format ?? "mpeg"};base64,${audioBase64}`
         );
         audioRef.current = audio;
-
         audioCleanupRef.current = setupAudioGraph(audio, audioCtxRef);
-
         await new Promise<void>((resolve) => {
-          playbackResolveRef.current = resolve;
           const finish = () => {
             audioCleanupRef.current?.();
             audioCleanupRef.current = null;
             audioRef.current = null;
-            playbackResolveRef.current = null;
             setIsSpeaking(false);
             resolve();
           };
@@ -149,10 +140,6 @@ export function useElevenLabsTTS(sessionId: number) {
       }
       audioCleanupRef.current?.();
       audioCleanupRef.current = null;
-      if (playbackResolveRef.current) {
-        playbackResolveRef.current();
-        playbackResolveRef.current = null;
-      }
       if (isBrowserTTSRef.current) {
         window.speechSynthesis?.cancel();
       }

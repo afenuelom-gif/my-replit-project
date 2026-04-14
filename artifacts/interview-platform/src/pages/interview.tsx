@@ -210,7 +210,9 @@ export default function Interview() {
       };
 
       if (cardRef?.current) {
-        cardRef.current.speak(introText).then(playFirstQuestion).catch(() => {
+        cardRef.current.speak(introText).then(() => {
+          playFirstQuestion();
+        }).catch(() => {
           playFirstQuestion();
         });
       } else {
@@ -229,8 +231,9 @@ export default function Interview() {
     if (cardRef?.current) {
       setStatusMessage("Interviewer speaking...");
       cardRef.current.speak(currentQ.questionText)
-        .finally(() => { setTtsPlayingLatch(false); })
+        .then(() => { setTtsPlayingLatch(false); })
         .catch(() => {
+          setTtsPlayingLatch(false);
           setStatusMessage("Read the question above, then click the mic to answer");
         });
     } else {
