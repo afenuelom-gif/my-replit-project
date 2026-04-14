@@ -297,6 +297,7 @@ export default function Interview() {
   };
 
   const handleCancel = async () => {
+    isEndingManuallyRef.current = true;
     for (const ref of cardRefsMap.current.values()) {
       ref.current?.stop();
     }
