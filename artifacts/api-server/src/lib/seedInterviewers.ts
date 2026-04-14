@@ -3,6 +3,8 @@ import { eq, inArray, isNull } from "drizzle-orm";
 
 const DISALLOWED_FEMALE_VOICES = new Set(["alloy", "onyx", "echo", "fable"]);
 
+const FEMALE_NAME_CORRECTIONS = new Set(["maya patel"]);
+
 const FEMALE_VOICE_CORRECTIONS: Array<{ id: number; voice: "nova" | "shimmer" }> = [
   { id: 9,  voice: "nova"    },
   { id: 12, voice: "shimmer" },
@@ -32,6 +34,31 @@ export async function patchFemaleInterviewerVoices(): Promise<void> {
     }
   } catch (err) {
     console.error("Failed to patch female interviewer voices:", err);
+  }
+}
+
+export async function patchFemaleNamedInterviewers(): Promise<void> {
+  try {
+    const rows = await db
+      .select({ id: interviewersTable.id, name: interviewersTable.name, voiceId: interviewersTable.voiceId, avatarUrl: interviewersTable.avatarUrl, heygenAvatarId: interviewersTable.heygenAvatarId })
+      .from(interviewersTable)
+      .where(isNull(interviewersTable.sessionId));
+
+    for (const row of rows) {
+      if (!FEMALE_NAME_CORRECTIONS.has(row.name.toLowerCase())) continue;
+      if (row.voiceId !== "shimmer") {
+        await db
+          .update(interviewersTable)
+          .set({
+            voiceId: "shimmer",
+            avatarUrl: "/avatars/interviewer-3.png",
+            heygenAvatarId: HEYGEN_FEMALE_AVATARS[1],
+          })
+          .where(eq(interviewersTable.id, row.id));
+      }
+    }
+  } catch (err) {
+    console.error("Failed to patch named female interviewers:", err);
   }
 }
 
@@ -100,6 +127,15 @@ const INTERVIEWERS = [
     voiceId: "shimmer",
     avatarUrl: "/avatars/interviewer-5.png",
     heygenAvatarId: HEYGEN_FEMALE_AVATARS[2],
+  },
+  {
+    name: "Maya Patel",
+    title: "Product Manager",
+    company: "Launchpad",
+    personality: "Warm and analytical. Focuses on product sense, collaboration, and decision-making tradeoffs.",
+    voiceId: "shimmer",
+    avatarUrl: "/avatars/interviewer-3.png",
+    heygenAvatarId: HEYGEN_FEMALE_AVATARS[1],
   },
   {
     name: "James O'Brien",
@@ -177,6 +213,7 @@ export async function seedInterviewersIfNeeded(): Promise<void> {
       .from(interviewersTable)
       .where(isNull(interviewersTable.sessionId));
     await patchHeyGenAvatarIds(allSeeded);
+    await patchFemaleNamedInterviewers();
   } catch (err) {
     console.error("Failed to seed interviewers:", err);
   }
