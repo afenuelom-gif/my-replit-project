@@ -458,6 +458,7 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType: string): Pr
       file,
       model: "gpt-4o-mini-transcribe",
       response_format: "json",
+      language: "en",
     });
     return transcription.text;
   }
@@ -466,6 +467,7 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType: string): Pr
   const formData = new FormData();
   formData.append("file", new Blob([audioBuffer], { type: mimeType }), `audio.${ext}`);
   formData.append("model_id", "scribe_v1");
+  formData.append("language_code", "en");
 
   const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
     method: "POST",
