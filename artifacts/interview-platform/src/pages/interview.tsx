@@ -375,13 +375,19 @@ export default function Interview() {
               id: sessionId,
               data: { audioBase64: base64Audio, mimeType }
             });
+            const transcript = transcribeRes.text.trim();
+            const normalizedTranscript = transcript.toLowerCase().replace(/[^\w\s']/g, "").replace(/\s+/g, " ").trim();
+            if (!normalizedTranscript || normalizedTranscript.length < 3) {
+              setStatusMessage("I couldn't hear a clear answer. Please try again.");
+              return;
+            }
             
             if (currentQuestion) {
               const nextQ = await getNextQuestion.mutateAsync({
                 id: sessionId,
                 data: {
                   questionId: currentQuestion.id,
-                  answerText: transcribeRes.text
+                  answerText: transcript
                 }
               });
               
