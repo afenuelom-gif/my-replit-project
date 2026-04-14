@@ -8,7 +8,7 @@ import {
   useTranscribeAnswer,
   useAnalyzePosture
 } from "@workspace/api-client-react";
-import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
+import { useElevenLabsTTS } from "@/hooks/useElevenLabsTTS";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -35,7 +35,7 @@ export default function Interview() {
   const getNextQuestion = useGetNextQuestion();
   const transcribeAnswer = useTranscribeAnswer();
   const analyzePosture = useAnalyzePosture();
-  const { speak: speechSpeak, stop: speechStop, isSpeaking, isSupported: isTTSSupported } = useSpeechSynthesis();
+  const { speak: ttsSpeak, stop: ttsStop, isSpeaking } = useElevenLabsTTS(sessionId);
 
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [timeExpired, setTimeExpired] = useState(false);
@@ -189,8 +189,9 @@ export default function Interview() {
       const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
       if (!activeInterviewer) return;
       setHasPlayedWelcome(true);
+      setPendingQuestionId(currentQ.id);
       setStatusMessage("Interviewer speaking...");
-      speechSpeak("Hello, welcome to our interview practice session. Lets get started", activeInterviewer.voiceId);
+      ttsSpeak("Hello, welcome to our interview practice session. Let's get started!", activeInterviewer.id);
       return;
     }
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
@@ -209,12 +210,8 @@ export default function Interview() {
         setStatusMessage("Read the question above, then click the mic to answer");
       });
     } else {
-      if (isTTSSupported) {
-        setStatusMessage("Interviewer speaking...");
-        speechSpeak(currentQ.questionText, activeInterviewer.voiceId);
-      } else {
-        setStatusMessage("Read the question above, then click the mic to answer");
-      }
+      setStatusMessage("Interviewer speaking...");
+      ttsSpeak(currentQ.questionText, activeInterviewer.id);
     }
 
   }, [sessionData?.questions?.length]);
@@ -230,9 +227,17 @@ export default function Interview() {
     if (lastPlayedQuestionId === pendingQuestion.id) return;
     setLastPlayedQuestionId(pendingQuestion.id);
     setPendingQuestionId(null);
+    hasTTSStartedRef.current = true;
     setStatusMessage("Interviewer speaking...");
-    speechSpeak(pendingQuestion.questionText, activeInterviewer.voiceId);
-  }, [hasPlayedWelcome, pendingQuestionId, isSpeaking, sessionData, lastPlayedQuestionId, speechSpeak]);
+    const cardRef = cardRefsMap.current.get(activeInterviewer.id);
+    if (cardRef?.current) {
+      cardRef.current.speak(pendingQuestion.questionText).catch(() => {
+        setStatusMessage("Read the question above, then click the mic to answer");
+      });
+    } else {
+      ttsSpeak(pendingQuestion.questionText, activeInterviewer.id);
+    }
+  }, [hasPlayedWelcome, pendingQuestionId, isSpeaking, sessionData, lastPlayedQuestionId, ttsSpeak]);
 
   // Update status when TTS ends
   useEffect(() => {
@@ -277,7 +282,7 @@ export default function Interview() {
   }, []);
 
   const handleComplete = async () => {
-    speechStop();
+    ttsStop();
     await destroyAllCards();
     try {
       await completeSession.mutateAsync({ id: sessionId });
@@ -296,34 +301,31 @@ export default function Interview() {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
-    // Stop any ongoing TTS/HeyGen
-    speechStop();
+    // Stop any ongoing TTS
+    ttsStop();
     if (activeInterviewerId) {
       cardRefsMap.current.get(activeInterviewerId)?.current?.stop();
     }
     isEndingManuallyRef.current = true;
     setIsEndingManually(true);
-    // Play closing TTS
+    // Play closing TTS via the active interviewer's card
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === activeInterviewerId)
       ?? sessionData?.interviewers[0];
-    const cardRef = activeInterviewer ? cardRefsMap.current.get(activeInterviewer.id) : undefined;
-    if (cardRef?.current) {
-      closingTTSStartedRef.current = true;
-      cardRef.current.speak(CLOSING_LINE).catch(() => {
-        // If card TTS fails, navigate directly
-        handleComplete();
-      });
-    } else if (isTTSSupported) {
-      closingTTSStartedRef.current = true;
-      speechSpeak(CLOSING_LINE, activeInterviewer?.voiceId);
-    } else {
-      // No TTS available — navigate immediately
+    if (!activeInterviewer) {
       handleComplete();
+      return;
+    }
+    const cardRef = cardRefsMap.current.get(activeInterviewer.id);
+    closingTTSStartedRef.current = true;
+    if (cardRef?.current) {
+      cardRef.current.speak(CLOSING_LINE).catch(() => handleComplete());
+    } else {
+      ttsSpeak(CLOSING_LINE, activeInterviewer.id).then(() => {}).catch(() => handleComplete());
     }
   };
 
   const handleCancel = async () => {
-    speechStop();
+    ttsStop();
     await destroyAllCards();
     setIsCancelling(true);
     try {
@@ -480,6 +482,7 @@ export default function Interview() {
                 ref={cardRef}
                 interviewer={inv}
                 isActive={isActive}
+                sessionId={sessionId}
                 onSpeakingChange={(speaking) => {
                   if (inv.id === activeInterviewerId) {
                     setIsHeyGenSpeaking(speaking);
@@ -599,7 +602,7 @@ export default function Interview() {
               size="sm"
               className="border-primary/40 text-primary hover:bg-primary/10 gap-2"
               onClick={() => {
-                speechStop();
+                ttsStop();
                 if (activeInterviewerId) {
                   const ref = cardRefsMap.current.get(activeInterviewerId);
                   ref?.current?.stop();

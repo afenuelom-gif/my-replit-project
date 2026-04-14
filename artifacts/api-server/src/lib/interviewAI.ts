@@ -402,35 +402,79 @@ Return ONLY valid JSON, no markdown.`,
   }
 }
 
-export async function generateTTS(text: string, voiceId: string): Promise<Buffer> {
-  const validVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"] as const;
-  type Voice = typeof validVoices[number];
-  const voice: Voice = (validVoices.includes(voiceId as Voice) ? voiceId : "nova") as Voice;
+const ELEVENLABS_VOICE_MAP: Record<string, string> = {
+  nova:    "21m00Tcm4TlvDq8ikWAM",
+  shimmer: "EXAVITQu4vr4xnSDxMaL",
+  alloy:   "MF3mGyEYCl7XYWbV9V6O",
+  onyx:    "pNInz6obpgDQGcFmaJgB",
+  echo:    "TxGEqnHWrfWFTfGW9XjX",
+  fable:   "ErXwobaYiN019PkySvjV",
+};
 
-  const response = await openai.audio.speech.create({
-    model: "tts-1",
-    voice,
-    input: text,
-    response_format: "mp3",
-  });
+export async function generateTTS(text: string, voiceId: string): Promise<Buffer> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) throw new Error("ELEVENLABS_API_KEY is not set");
+
+  const elevenVoiceId = ELEVENLABS_VOICE_MAP[voiceId] ?? ELEVENLABS_VOICE_MAP.nova;
+
+  const response = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${elevenVoiceId}`,
+    {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+        "Accept": "audio/mpeg",
+      },
+      body: JSON.stringify({
+        text,
+        model_id: "eleven_turbo_v2_5",
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "unknown error");
+    throw new Error(`ElevenLabs TTS failed (${response.status}): ${errText}`);
+  }
 
   const arrayBuffer = await response.arrayBuffer();
   return Buffer.from(arrayBuffer);
 }
 
 export async function transcribeAudio(audioBuffer: Buffer, mimeType: string): Promise<string> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) {
+    // Fallback to OpenAI transcription if ElevenLabs key is missing
+    const ext = mimeType.includes("webm") ? "webm" : mimeType.includes("mp4") ? "mp4" : mimeType.includes("wav") ? "wav" : "webm";
+    const file = new File([new Uint8Array(audioBuffer)], `audio.${ext}`, { type: mimeType });
+    const transcription = await openai.audio.transcriptions.create({
+      file,
+      model: "gpt-4o-mini-transcribe",
+      response_format: "json",
+    });
+    return transcription.text;
+  }
+
   const ext = mimeType.includes("webm") ? "webm" : mimeType.includes("mp4") ? "mp4" : mimeType.includes("wav") ? "wav" : "webm";
-  const filename = `audio.${ext}`;
+  const formData = new FormData();
+  formData.append("file", new Blob([audioBuffer], { type: mimeType }), `audio.${ext}`);
+  formData.append("model_id", "scribe_v1");
 
-  const file = new File([new Uint8Array(audioBuffer)], filename, { type: mimeType });
-
-  const transcription = await openai.audio.transcriptions.create({
-    file,
-    model: "gpt-4o-mini-transcribe",
-    response_format: "json",
+  const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+    method: "POST",
+    headers: { "xi-api-key": apiKey },
+    body: formData,
   });
 
-  return transcription.text;
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "unknown error");
+    throw new Error(`ElevenLabs STT failed (${response.status}): ${errText}`);
+  }
+
+  const result = await response.json() as { text?: string; transcription?: string };
+  return result.text ?? result.transcription ?? "";
 }
 
 

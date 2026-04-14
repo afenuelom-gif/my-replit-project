@@ -3,7 +3,7 @@ import React, {
   useEffect,
 } from "react";
 import { Volume2 } from "lucide-react";
-import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
+import { useElevenLabsTTS } from "@/hooks/useElevenLabsTTS";
 
 export interface InterviewerCardHandle {
   speak: (text: string, gender?: "male" | "female") => Promise<void>;
@@ -22,10 +22,10 @@ interface Interviewer {
 interface InterviewerCardProps {
   interviewer: Interviewer;
   isActive: boolean;
+  sessionId: number;
   onSpeakingChange?: (speaking: boolean) => void;
 }
 
-/** Staggered animated waveform bars driven by CSS keyframes */
 const WAVEFORM_HEIGHTS = [40, 70, 55, 85, 45, 75, 60, 90, 50, 65, 80, 48, 72];
 const WAVEFORM_DELAYS  = [0, 0.15, 0.3, 0.1, 0.4, 0.25, 0.05, 0.35, 0.2, 0.45, 0.08, 0.28, 0.18];
 
@@ -50,8 +50,8 @@ function SpeakingWaveform({ active }: { active: boolean }) {
 }
 
 const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
-  ({ interviewer, isActive, onSpeakingChange }, ref) => {
-    const { speak: ttsSpeak, stop: ttsStop, isSpeaking: ttsSpeaking } = useSpeechSynthesis();
+  ({ interviewer, isActive, sessionId, onSpeakingChange }, ref) => {
+    const { speak: ttsSpeak, stop: ttsStop, isSpeaking: ttsSpeaking } = useElevenLabsTTS(sessionId);
 
     const isSpeakingNow = isActive && ttsSpeaking;
 
@@ -60,8 +60,8 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
     }, [isSpeakingNow]);
 
     const speak = useCallback(async (text: string) => {
-      ttsSpeak(text, interviewer.voiceId);
-    }, [interviewer.voiceId, ttsSpeak]);
+      await ttsSpeak(text, interviewer.id);
+    }, [interviewer.id, ttsSpeak]);
 
     const stop = useCallback(() => {
       ttsStop();
@@ -83,7 +83,6 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
             : "border-white/5"
         }`}
       >
-        {/* ── Portrait / initial letter ──────────────────────────────── */}
         <div className="relative w-full h-full min-h-48">
           {interviewer.avatarUrl ? (
             <img
@@ -101,10 +100,8 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
             </div>
           )}
 
-          {/* Dark vignette */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
-          {/* Speaking waveform overlay */}
           {isSpeakingNow && (
             <div className="absolute bottom-14 left-0 right-0 flex justify-center pointer-events-none">
               <div className="bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2 flex items-center gap-3 border border-white/10">
@@ -115,7 +112,6 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           )}
         </div>
 
-        {/* ── Speaking status badge ──────────────────────────────────── */}
         {isSpeakingNow && (
           <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-primary/40 rounded-md px-2 py-1 backdrop-blur-sm">
             <Volume2 className="w-3 h-3 text-primary" />
@@ -123,7 +119,6 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           </div>
         )}
 
-        {/* ── Name / title bar ──────────────────────────────────────── */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pt-6 pb-3">
           <div className="flex items-center gap-2 mb-1">
             <div
