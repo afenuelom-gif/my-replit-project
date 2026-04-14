@@ -58,6 +58,8 @@ export default function Home({ authMenu }: HomeProps) {
     reader.readAsText(file);
   };
 
+  const uploadAccept = ".txt,.doc,.docx,.pdf";
+
   const clearResume = () => {
     setResumeText("");
     setResumeFileName(null);
@@ -177,7 +179,7 @@ export default function Home({ authMenu }: HomeProps) {
                       onClick={() => resumeInputRef.current?.click()}
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      Upload .txt resume
+                      Upload resume
                     </Button>
                     {resumeFileName && (
                       <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-md">
@@ -192,27 +194,13 @@ export default function Home({ authMenu }: HomeProps) {
                   <input
                     ref={resumeInputRef}
                     type="file"
-                    accept=".txt"
+                    accept={uploadAccept}
                     className="hidden"
                     onChange={handleResumeUpload}
                     data-testid="input-resumeFile"
                   />
 
-                  <Textarea
-                    id="resumeText"
-                    placeholder="...or paste your resume here to personalize the interview"
-                    value={resumeText}
-                    onChange={(e) => {
-                      setResumeText(e.target.value);
-                      setResumeFileName(null);
-                    }}
-                    className="min-h-[120px] bg-black/50 border-white/10 text-white placeholder:text-muted-foreground focus-visible:ring-primary resize-none"
-                    data-testid="input-resumeText"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="jobDescription" className="text-sm font-medium text-white flex items-center gap-2">
+                  <Label className="text-sm font-medium text-white flex items-center gap-2">
                     <FileText className="w-4 h-4 text-primary" />
                     Job Description (Optional)
                   </Label>
@@ -226,7 +214,7 @@ export default function Home({ authMenu }: HomeProps) {
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      Upload .txt file
+                      Upload job description
                     </Button>
                     {uploadedFileName && (
                       <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-md">
@@ -241,23 +229,15 @@ export default function Home({ authMenu }: HomeProps) {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".txt"
+                    accept={uploadAccept}
                     className="hidden"
                     onChange={handleFileUpload}
                     data-testid="input-jobDescriptionFile"
                   />
 
-                  <Textarea
-                    id="jobDescription"
-                    placeholder="...or paste the job description here to tailor the interview questions"
-                    value={jobDescription}
-                    onChange={(e) => {
-                      setJobDescription(e.target.value);
-                      setUploadedFileName(null);
-                    }}
-                    className="min-h-[120px] bg-black/50 border-white/10 text-white placeholder:text-muted-foreground focus-visible:ring-primary resize-none"
-                    data-testid="input-jobDescription"
-                  />
+                  <div className="text-xs text-zinc-500">
+                    {uploadedFileName ? `Selected: ${uploadedFileName}` : "Upload a .doc, .docx, .pdf, or .txt file"}
+                  </div>
                 </div>
 
                 <Button
