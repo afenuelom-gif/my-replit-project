@@ -188,6 +188,7 @@ export default function Interview() {
     if (!hasPlayedWelcome) {
       setHasPlayedWelcome(true);
       setStatusMessage("Hello, welcome to our interview practice session. Let's get started!");
+      return;
     }
 
     setLastPlayedQuestionId(currentQ.id);
