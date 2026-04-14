@@ -375,12 +375,12 @@ export default function Interview() {
               id: sessionId,
               data: { audioBase64: base64Audio, mimeType }
             });
-            const transcript = transcribeRes.text.trim();
-            const normalizedTranscript = transcript.toLowerCase().replace(/[^\w\s']/g, "").replace(/\s+/g, " ").trim();
-            if (!normalizedTranscript || normalizedTranscript.length < 3) {
-              setStatusMessage("I couldn't hear a clear answer. Please try again.");
+            if (!transcribeRes.text?.trim()) {
+              setStatusMessage("We didn’t get a response. Please answer the question.");
               return;
             }
+            const transcript = transcribeRes.text.trim();
+            const normalizedTranscript = transcript.toLowerCase().replace(/[^\w\s']/g, "").replace(/\s+/g, " ").trim();
             
             if (currentQuestion) {
               const nextQ = await getNextQuestion.mutateAsync({
@@ -402,6 +402,10 @@ export default function Interview() {
               }
             }
           } catch (e) {
+            if (e instanceof Error && e.message.includes("NO_CLEAR_RESPONSE")) {
+              setStatusMessage("We didn’t get a response. Please answer the question.");
+              return;
+            }
             console.error("Failed to process answer", e);
             setStatusMessage("Error processing answer. Please try again.");
           } finally {

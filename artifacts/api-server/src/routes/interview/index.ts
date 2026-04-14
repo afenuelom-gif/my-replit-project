@@ -771,6 +771,23 @@ router.post("/interview/sessions/:id/transcribe", optionalAuth, async (req, res)
   const audioBuffer = Buffer.from(body.data.audioBase64, "base64");
   const text = await transcribeAudio(audioBuffer, mimeType);
 
+  const normalized = text
+    .toLowerCase()
+    .replace(/[^\w\s']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = normalized ? normalized.split(" ") : [];
+  const lowInformation = words.length < 3 || normalized.length < 10;
+  const fillerOnly = ["uh", "um", "hmm", "mm", "ah", "er", "like", "you know"].includes(normalized);
+  if (!normalized || lowInformation || fillerOnly) {
+    res.status(422).json({
+      error: "NO_CLEAR_RESPONSE",
+      message: "We didn’t get a response. Please answer the question.",
+      text: "",
+    });
+    return;
+  }
+
   res.json({ text });
 });
 
