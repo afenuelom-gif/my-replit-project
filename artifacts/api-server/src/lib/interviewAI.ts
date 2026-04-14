@@ -429,7 +429,9 @@ export async function generateTTS(text: string, voiceId: string): Promise<Buffer
       body: JSON.stringify({
         text,
         model_id: "eleven_turbo_v2_5",
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+        voice_settings: elevenVoiceId === ELEVENLABS_VOICE_MAP.onyx
+          ? { stability: 0.72, similarity_boost: 0.4, style: 0.15, use_speaker_boost: false }
+          : { stability: 0.5, similarity_boost: 0.75 },
       }),
     }
   );
