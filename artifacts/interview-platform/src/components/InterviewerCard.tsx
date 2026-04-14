@@ -75,7 +75,7 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
 
     return (
       <div
-        className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-colors duration-300 min-h-48 ${
+        className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-colors duration-300 h-72 ${
           isSpeakingNow
             ? "border-primary shadow-[0_0_18px_2px_rgba(99,102,241,0.35)]"
             : isActive
@@ -83,17 +83,17 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
             : "border-white/5"
         }`}
       >
-        <div className="relative w-full h-full min-h-48">
+        <div className="relative w-full h-full">
           {interviewer.avatarUrl ? (
             <img
               src={interviewer.avatarUrl}
               alt={interviewer.name}
-              className={`w-full h-full object-contain object-center min-h-48 absolute inset-0 transition-opacity duration-500 ${
+              className={`w-full h-full object-contain object-center absolute inset-0 transition-opacity duration-500 ${
                 isActive ? "opacity-95" : "opacity-35"
               }`}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-900 to-zinc-950 min-h-48">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-900 to-zinc-950">
               <div className="w-20 h-20 rounded-full bg-zinc-800 flex items-center justify-center text-3xl font-bold text-white/30 border border-white/10">
                 {interviewer.name.charAt(0)}
               </div>
