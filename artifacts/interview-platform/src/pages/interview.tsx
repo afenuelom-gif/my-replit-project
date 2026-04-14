@@ -187,18 +187,6 @@ export default function Interview() {
 
     if (!hasPlayedWelcome) {
       setHasPlayedWelcome(true);
-      hasTTSStartedRef.current = true;
-      setStatusMessage("Interviewer speaking...");
-      const introText = "Hello, welcome to our interview practice session. Let's get started!";
-
-      if (cardRef?.current) {
-        cardRef.current.speak(introText).catch(() => {
-          setStatusMessage("Read the question above, then click the mic to answer");
-        });
-      } else {
-        setStatusMessage("Read the question above, then click the mic to answer");
-      }
-      return;
     }
 
     setLastPlayedQuestionId(currentQ.id);
@@ -215,7 +203,7 @@ export default function Interview() {
     } else {
       setStatusMessage("Read the question above, then click the mic to answer");
     }
-  }, [sessionData?.questions?.length, lastPlayedQuestionId, hasPlayedWelcome]);
+  }, [sessionData?.questions?.length]);
 
   // After final thank-you TTS finishes, navigate to report
   useEffect(() => {
