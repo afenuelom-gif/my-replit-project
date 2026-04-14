@@ -193,7 +193,12 @@ export default function Interview() {
       const introText = "Hello, welcome to our interview practice session. Let's get started!";
 
       if (cardRef?.current) {
-        cardRef.current.speak(introText).catch(() => {
+        cardRef.current.speak(introText).then(() => {
+          const qCardRef = cardRefsMap.current.get(activeInterviewer.id);
+          qCardRef?.current?.speak(currentQ.questionText).catch(() => {
+            setStatusMessage("Read the question above, then click the mic to answer");
+          });
+        }).catch(() => {
           setStatusMessage("Read the question above, then click the mic to answer");
         });
       } else {
