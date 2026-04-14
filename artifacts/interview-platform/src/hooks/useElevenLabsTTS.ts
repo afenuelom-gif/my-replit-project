@@ -16,17 +16,17 @@ function browserFallbackSpeak(text: string): Promise<void> {
   });
 }
 
-function setupAudioGraph(
+async function setupAudioGraph(
   audio: HTMLAudioElement,
   audioCtxRef: MutableRefObject<AudioContext | null>
-): () => void {
+): Promise<() => void> {
   try {
     if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
       audioCtxRef.current = new AudioContext();
     }
     const audioCtx = audioCtxRef.current;
     if (audioCtx.state === "suspended") {
-      audioCtx.resume();
+      await audioCtx.resume();
     }
 
     const source = audioCtx.createMediaElementSource(audio);
@@ -108,7 +108,7 @@ export function useElevenLabsTTS(sessionId: number) {
           `data:audio/${format ?? "mpeg"};base64,${audioBase64}`
         );
         audioRef.current = audio;
-        audioCleanupRef.current = setupAudioGraph(audio, audioCtxRef);
+        audioCleanupRef.current = await setupAudioGraph(audio, audioCtxRef);
         await new Promise<void>((resolve) => {
           const finish = () => {
             audioCleanupRef.current?.();
