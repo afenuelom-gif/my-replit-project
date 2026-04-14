@@ -43,6 +43,7 @@ export default function Interview() {
   const [webcamEnabled, setWebcamEnabled] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPlayedQuestionId, setLastPlayedQuestionId] = useState<number | null>(null);
+  const [hasPlayedWelcome, setHasPlayedWelcome] = useState(false);
   const [statusMessage, setStatusMessage] = useState("Waiting...");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -183,6 +184,14 @@ export default function Interview() {
   useEffect(() => {
     const currentQ = sessionData?.questions[sessionData.questions.length - 1];
     if (!currentQ || currentQ.id === lastPlayedQuestionId) return;
+    if (!hasPlayedWelcome) {
+      const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
+      if (!activeInterviewer) return;
+      setHasPlayedWelcome(true);
+      setStatusMessage("Interviewer speaking...");
+      speechSpeak("Hello, welcome to our interview practice session. Lets get started", activeInterviewer.voiceId);
+      return;
+    }
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
     if (!activeInterviewer) return;
 
