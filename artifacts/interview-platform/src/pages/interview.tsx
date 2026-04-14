@@ -188,8 +188,6 @@ export default function Interview() {
     if (!hasPlayedWelcome) {
       setHasPlayedWelcome(true);
       setStatusMessage("Hello, welcome to our interview practice session. Let's get started!");
-    } else {
-      setStatusMessage("Interviewer speaking...");
     }
 
     setLastPlayedQuestionId(currentQ.id);
@@ -199,6 +197,7 @@ export default function Interview() {
     }
 
     if (cardRef?.current) {
+      setStatusMessage("Interviewer speaking...");
       cardRef.current.speak(currentQ.questionText).catch(() => {
         setStatusMessage("Read the question above, then click the mic to answer");
       });
