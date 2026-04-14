@@ -72,7 +72,7 @@ export default function Interview() {
     return cardRefsMap.current.get(id)!;
   }, []);
 
-  const introInProgressRef = useRef(false);
+  const introHandledRef = useRef(false);
   const [ttsPlayingLatch, setTtsPlayingLatch] = useState(false);
   const isAnySpeaking = isHeyGenSpeaking || ttsPlayingLatch;
 
@@ -181,42 +181,26 @@ export default function Interview() {
   useEffect(() => {
     const currentQ = sessionData?.questions[sessionData.questions.length - 1];
     if (!currentQ || currentQ.id === lastPlayedQuestionId) return;
-    if (introInProgressRef.current) return;
 
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
     if (!activeInterviewer) return;
 
     const cardRef = cardRefsMap.current.get(activeInterviewer.id);
 
-    if (!hasPlayedWelcome) {
+    if (!hasPlayedWelcome && !introHandledRef.current) {
+      introHandledRef.current = true;
       setHasPlayedWelcome(true);
-      introInProgressRef.current = true;
+      setLastPlayedQuestionId(currentQ.id);
+      hasTTSStartedRef.current = true;
       setStatusMessage("Interviewer speaking...");
       const introText = "Hello, welcome to our interview practice session. Let's get started!";
 
-      const playFirstQuestion = () => {
-        introInProgressRef.current = false;
-        setLastPlayedQuestionId(currentQ.id);
-        hasTTSStartedRef.current = true;
-        setStatusMessage("Interviewer speaking...");
-        const qCardRef = cardRefsMap.current.get(activeInterviewer.id);
-        if (qCardRef?.current) {
-          qCardRef.current.speak(currentQ.questionText).catch(() => {
-            setStatusMessage("Read the question above, then click the mic to answer");
-          });
-        } else {
-          setStatusMessage("Read the question above, then click the mic to answer");
-        }
-      };
-
       if (cardRef?.current) {
-        cardRef.current.speak(introText).then(() => {
-          playFirstQuestion();
-        }).catch(() => {
-          playFirstQuestion();
+        cardRef.current.speak(introText).catch(() => {
+          setStatusMessage("Read the question above, then click the mic to answer");
         });
       } else {
-        playFirstQuestion();
+        setStatusMessage("Read the question above, then click the mic to answer");
       }
       return;
     }
@@ -231,7 +215,6 @@ export default function Interview() {
     if (cardRef?.current) {
       setStatusMessage("Interviewer speaking...");
       cardRef.current.speak(currentQ.questionText)
-        .then(() => { setTtsPlayingLatch(false); })
         .catch(() => {
           setTtsPlayingLatch(false);
           setStatusMessage("Read the question above, then click the mic to answer");
