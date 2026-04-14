@@ -189,7 +189,6 @@ export default function Interview() {
       const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
       if (!activeInterviewer) return;
       setHasPlayedWelcome(true);
-      setPendingQuestionId(currentQ.id);
       setStatusMessage("Interviewer speaking...");
       speechSpeak("Hello, welcome to our interview practice session. Lets get started", activeInterviewer.voiceId);
       return;
