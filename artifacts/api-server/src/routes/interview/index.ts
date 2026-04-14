@@ -771,18 +771,28 @@ router.post("/interview/sessions/:id/transcribe", optionalAuth, async (req, res)
   const audioBuffer = Buffer.from(body.data.audioBase64, "base64");
   const text = await transcribeAudio(audioBuffer, mimeType);
 
-  const normalized = text
+  // Strip parenthetical/bracketed sound descriptions like (whirring sound), [noise], (clicking), etc.
+  const stripped = text
+    .replace(/\([^)]*\)/g, "")   // remove (anything in parens)
+    .replace(/\[[^\]]*\]/g, "")  // remove [anything in brackets]
+    .trim();
+
+  const normalized = stripped
     .toLowerCase()
     .replace(/[^\w\s']/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  const words = normalized ? normalized.split(" ") : [];
-  const lowInformation = words.length < 3 || normalized.length < 10;
-  const fillerOnly = ["uh", "um", "hmm", "mm", "ah", "er", "like", "you know"].includes(normalized);
-  if (!normalized || lowInformation || fillerOnly) {
+
+  const words = normalized ? normalized.split(" ").filter(w => w.length > 0) : [];
+  const FILLER = new Set(["uh", "um", "hmm", "mm", "ah", "er", "oh", "okay", "ok", "yeah", "yes", "no", "like"]);
+  const meaningfulWords = words.filter(w => !FILLER.has(w));
+
+  const isEmptyOrNoise = !normalized || words.length < 3 || meaningfulWords.length < 2;
+
+  if (isEmptyOrNoise) {
     res.status(422).json({
       error: "NO_CLEAR_RESPONSE",
-      message: "We didn’t get a response. Please answer the question.",
+      message: "We didn't get a response. Please answer the question.",
       text: "",
     });
     return;
