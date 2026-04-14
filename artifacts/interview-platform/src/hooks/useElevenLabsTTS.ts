@@ -19,7 +19,7 @@ function browserFallbackSpeak(text: string): Promise<void> {
 async function playWithNormalization(
   audio: HTMLAudioElement,
   audioCtxRef: MutableRefObject<AudioContext | null>
-): Promise<void> {
+): Promise<() => void> {
   try {
     if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
       audioCtxRef.current = new AudioContext();
@@ -45,9 +45,17 @@ async function playWithNormalization(
     gain.connect(audioCtx.destination);
 
     await audio.play();
+
+    const cleanup = () => {
+      try { source.disconnect(); } catch { /* already disconnected */ }
+      try { compressor.disconnect(); } catch { /* already disconnected */ }
+      try { gain.disconnect(); } catch { /* already disconnected */ }
+    };
+    return cleanup;
   } catch (err) {
     console.warn("Web Audio API setup failed, falling back to plain play:", err);
     await audio.play();
+    return () => {};
   }
 }
 
@@ -55,6 +63,7 @@ export function useElevenLabsTTS(sessionId: number) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioCleanupRef = useRef<(() => void) | null>(null);
   const isBrowserTTSRef = useRef(false);
 
   const stop = useCallback(() => {
@@ -62,6 +71,10 @@ export function useElevenLabsTTS(sessionId: number) {
       audioRef.current.pause();
       audioRef.current.src = "";
       audioRef.current = null;
+    }
+    if (audioCleanupRef.current) {
+      audioCleanupRef.current();
+      audioCleanupRef.current = null;
     }
     if (isBrowserTTSRef.current) {
       window.speechSynthesis?.cancel();
@@ -100,14 +113,18 @@ export function useElevenLabsTTS(sessionId: number) {
         );
         audioRef.current = audio;
         audio.onended = () => {
+          audioCleanupRef.current?.();
+          audioCleanupRef.current = null;
           audioRef.current = null;
           setIsSpeaking(false);
         };
         audio.onerror = () => {
+          audioCleanupRef.current?.();
+          audioCleanupRef.current = null;
           audioRef.current = null;
           setIsSpeaking(false);
         };
-        await playWithNormalization(audio, audioCtxRef);
+        audioCleanupRef.current = await playWithNormalization(audio, audioCtxRef);
       } catch (e) {
         console.warn("ElevenLabs TTS error, falling back to browser speech:", e);
         isBrowserTTSRef.current = true;
@@ -125,6 +142,8 @@ export function useElevenLabsTTS(sessionId: number) {
         audioRef.current.pause();
         audioRef.current = null;
       }
+      audioCleanupRef.current?.();
+      audioCleanupRef.current = null;
       if (isBrowserTTSRef.current) {
         window.speechSynthesis?.cancel();
       }

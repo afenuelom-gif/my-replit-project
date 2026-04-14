@@ -115,7 +115,7 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
         </div>
 
         <div
-          className={`absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-primary/40 rounded-md px-2 py-1 backdrop-blur-sm transition-opacity duration-300 ${
+          className={`absolute top-2 right-2 flex items-center gap-1.5 bg-black/70 border border-primary/40 rounded-md px-2 py-1 backdrop-blur-sm transition-opacity duration-300 pointer-events-none ${
             isSpeakingNow ? "opacity-100" : "opacity-0"
           }`}
         >
