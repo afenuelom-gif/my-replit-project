@@ -215,7 +215,7 @@ export default function Interview() {
     } else {
       setStatusMessage("Read the question above, then click the mic to answer");
     }
-  }, [sessionData?.questions?.length]);
+  }, [sessionData?.questions?.length, lastPlayedQuestionId, hasPlayedWelcome]);
 
   // After final thank-you TTS finishes, navigate to report
   useEffect(() => {
