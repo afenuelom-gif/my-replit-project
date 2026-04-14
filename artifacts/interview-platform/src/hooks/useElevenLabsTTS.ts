@@ -71,7 +71,14 @@ export function useElevenLabsTTS(sessionId: number) {
           };
           audio.onended = finish;
           audio.onerror = finish;
-          audio.play().catch(finish);
+
+          const startPlay = () => audio.play().catch(finish);
+
+          if (audio.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) {
+            startPlay();
+          } else {
+            audio.addEventListener("canplaythrough", startPlay, { once: true });
+          }
         });
       } catch (e) {
         console.warn("ElevenLabs TTS error, falling back to browser speech:", e);
