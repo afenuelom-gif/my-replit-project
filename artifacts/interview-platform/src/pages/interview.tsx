@@ -192,7 +192,7 @@ export default function Interview() {
       setStatusMessage("Interviewer speaking...");
 
       if (cardRef?.current) {
-        cardRef.current.speak(currentQ.questionText).catch(() => {
+        cardRef.current.speak(`Let's begin. ${currentQ.questionText}`).catch(() => {
           setStatusMessage("Read the question above, then click the mic to answer");
         });
       } else {
@@ -209,7 +209,7 @@ export default function Interview() {
 
     if (cardRef?.current) {
       setStatusMessage("Interviewer speaking...");
-      cardRef.current.speak(currentQ.questionText).catch(() => {
+      cardRef.current.speak(`Let's continue. ${currentQ.questionText}`).catch(() => {
         setStatusMessage("Read the question above, then click the mic to answer");
       });
     } else {
