@@ -197,8 +197,12 @@ export default function Interview() {
         setHasPlayedWelcome(true);
         const introText = "Hello, welcome to our interview practice session. Let's get started!";
         cardRef.current.speak(introText)
-          .then(() => cardRef.current!.speak(currentQ.questionText))
+          .then(() => {
+            if (isEndingManuallyRef.current || isFinalThankYouRef.current) return;
+            return cardRef.current!.speak(currentQ.questionText);
+          })
           .catch(() => {
+            if (isEndingManuallyRef.current || isFinalThankYouRef.current) return;
             cardRef.current?.speak(currentQ.questionText).catch(() => {
               setStatusMessage("Read the question above, then click the mic to answer");
             });
@@ -263,16 +267,18 @@ export default function Interview() {
   const CLOSING_LINE = "Thank you for interviewing with IntervYou AI. Please review your performance report!";
 
   const handleEndWithThankYou = () => {
+    // Mark as ending FIRST so any in-flight TTS chains bail out
+    isEndingManuallyRef.current = true;
+    setIsEndingManually(true);
     // Stop any active recording gracefully
     if (isRecording && mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
-    if (activeInterviewerId) {
-      cardRefsMap.current.get(activeInterviewerId)?.current?.stop();
+    // Stop ALL cards immediately so nothing overlaps
+    for (const ref of cardRefsMap.current.values()) {
+      ref.current?.stop();
     }
-    isEndingManuallyRef.current = true;
-    setIsEndingManually(true);
     // Play closing TTS via the active interviewer's card
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === activeInterviewerId)
       ?? sessionData?.interviewers[0];
