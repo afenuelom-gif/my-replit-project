@@ -164,79 +164,75 @@ export default function Home({ authMenu }: HomeProps) {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-white flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-primary" />
-                    Resume (Optional)
-                  </Label>
-
-                  <div className="flex gap-2 mb-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
-                      onClick={() => resumeInputRef.current?.click()}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload resume
-                    </Button>
-                    {resumeFileName && (
-                      <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-md">
-                        <span className="truncate max-w-[180px]">{resumeFileName}</span>
-                        <button type="button" onClick={clearResume} className="text-primary hover:text-white">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <input
-                    ref={resumeInputRef}
-                    type="file"
-                    accept={uploadAccept}
-                    className="hidden"
-                    onChange={handleResumeUpload}
-                    data-testid="input-resumeFile"
-                  />
-
-                  <Label className="text-sm font-medium text-white flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-primary" />
-                    Job Description (Optional)
-                  </Label>
-
-                  <div className="flex gap-2 mb-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload job description
-                    </Button>
-                    {uploadedFileName && (
-                      <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-md">
-                        <span className="truncate max-w-[180px]">{uploadedFileName}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-white flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-primary" />
+                      Job Description (Optional)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload job description
+                      </Button>
+                      {uploadedFileName && (
                         <button type="button" onClick={clearFile} className="text-primary hover:text-white">
-                          <X className="w-3 h-3" />
+                          <X className="w-4 h-4" />
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={uploadAccept}
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      data-testid="input-jobDescriptionFile"
+                    />
+                    <div className="text-xs text-zinc-500 truncate">
+                      {uploadedFileName ? uploadedFileName : "Upload .doc, .docx, .pdf, or .txt"}
+                    </div>
                   </div>
 
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept={uploadAccept}
-                    className="hidden"
-                    onChange={handleFileUpload}
-                    data-testid="input-jobDescriptionFile"
-                  />
-
-                  <div className="text-xs text-zinc-500">
-                    {uploadedFileName ? `Selected: ${uploadedFileName}` : "Upload a .doc, .docx, .pdf, or .txt file"}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-white flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-primary" />
+                      Resume (Optional)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
+                        onClick={() => resumeInputRef.current?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload resume
+                      </Button>
+                      {resumeFileName && (
+                        <button type="button" onClick={clearResume} className="text-primary hover:text-white">
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      ref={resumeInputRef}
+                      type="file"
+                      accept={uploadAccept}
+                      className="hidden"
+                      onChange={handleResumeUpload}
+                      data-testid="input-resumeFile"
+                    />
+                    <div className="text-xs text-zinc-500 truncate">
+                      {resumeFileName ? resumeFileName : "Upload .doc, .docx, .pdf, or .txt"}
+                    </div>
                   </div>
                 </div>
 
