@@ -51,6 +51,7 @@ export default function Interview() {
   const [isHeyGenSpeaking, setIsHeyGenSpeaking] = useState(false);
   const [isFinalThankYou, setIsFinalThankYou] = useState(false);
   const [isEndingManually, setIsEndingManually] = useState(false);
+  const [welcomePending, setWelcomePending] = useState(false);
 
   // Refs for user webcam / recording
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -190,8 +191,10 @@ export default function Interview() {
       if (!activeInterviewer) return;
       setHasPlayedWelcome(true);
       setPendingQuestionId(currentQ.id);
+      setWelcomePending(true);
       setStatusMessage("Interviewer speaking...");
-      ttsSpeak("Hello, welcome to our interview practice session. Let's get started!", activeInterviewer.id);
+      ttsSpeak("Hello, welcome to our interview practice session. Let's get started!", activeInterviewer.id)
+        .finally(() => setWelcomePending(false));
       return;
     }
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
@@ -218,7 +221,7 @@ export default function Interview() {
 
   useEffect(() => {
     if (!hasPlayedWelcome || pendingQuestionId == null) return;
-    if (isSpeaking) return;
+    if (isSpeaking || welcomePending) return;
     const pendingQuestion = sessionData?.questions.find(q => q.id === pendingQuestionId);
     const activeInterviewer = pendingQuestion
       ? sessionData?.interviewers.find(i => i.id === pendingQuestion.interviewerId)
@@ -237,7 +240,7 @@ export default function Interview() {
     } else {
       ttsSpeak(pendingQuestion.questionText, activeInterviewer.id);
     }
-  }, [hasPlayedWelcome, pendingQuestionId, isSpeaking, sessionData, lastPlayedQuestionId, ttsSpeak]);
+  }, [hasPlayedWelcome, pendingQuestionId, isSpeaking, welcomePending, sessionData, lastPlayedQuestionId, ttsSpeak]);
 
   // Update status when TTS ends
   useEffect(() => {
