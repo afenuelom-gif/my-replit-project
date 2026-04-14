@@ -196,33 +196,23 @@ export default function Interview() {
 
       const playFirstQuestion = () => {
         introInProgressRef.current = false;
+        setLastPlayedQuestionId(currentQ.id);
+        hasTTSStartedRef.current = true;
+        setStatusMessage("Interviewer speaking...");
         const qCardRef = cardRefsMap.current.get(activeInterviewer.id);
         if (qCardRef?.current) {
-          setLastPlayedQuestionId(currentQ.id);
-          hasTTSStartedRef.current = true;
-          setStatusMessage("Interviewer speaking...");
           qCardRef.current.speak(currentQ.questionText).catch(() => {
             setStatusMessage("Read the question above, then click the mic to answer");
           });
         } else {
-          setTimeout(() => {
-            const retryRef = cardRefsMap.current.get(activeInterviewer.id);
-            setLastPlayedQuestionId(currentQ.id);
-            hasTTSStartedRef.current = true;
-            if (retryRef?.current) {
-              setStatusMessage("Interviewer speaking...");
-              retryRef.current.speak(currentQ.questionText).catch(() => {
-                setStatusMessage("Read the question above, then click the mic to answer");
-              });
-            } else {
-              setStatusMessage("Read the question above, then click the mic to answer");
-            }
-          }, 100);
+          setStatusMessage("Read the question above, then click the mic to answer");
         }
       };
 
       if (cardRef?.current) {
-        cardRef.current.speak(introText).finally(playFirstQuestion);
+        cardRef.current.speak(introText).then(playFirstQuestion).catch(() => {
+          playFirstQuestion();
+        });
       } else {
         playFirstQuestion();
       }
