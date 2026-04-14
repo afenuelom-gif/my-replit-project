@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, type MutableRefObject } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 function browserFallbackSpeak(text: string): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -16,50 +16,9 @@ function browserFallbackSpeak(text: string): Promise<void> {
   });
 }
 
-async function setupAudioGraph(
-  audio: HTMLAudioElement,
-  audioCtxRef: MutableRefObject<AudioContext | null>
-): Promise<() => void> {
-  try {
-    if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
-      audioCtxRef.current = new AudioContext();
-    }
-    const audioCtx = audioCtxRef.current;
-    if (audioCtx.state === "suspended") {
-      await audioCtx.resume();
-    }
-
-    const source = audioCtx.createMediaElementSource(audio);
-    const compressor = audioCtx.createDynamicsCompressor();
-    compressor.threshold.setValueAtTime(-18, audioCtx.currentTime);
-    compressor.knee.setValueAtTime(20, audioCtx.currentTime);
-    compressor.ratio.setValueAtTime(3, audioCtx.currentTime);
-    compressor.attack.setValueAtTime(0.01, audioCtx.currentTime);
-    compressor.release.setValueAtTime(0.4, audioCtx.currentTime);
-
-    const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(1.15, audioCtx.currentTime);
-
-    source.connect(compressor);
-    compressor.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    return () => {
-      try { source.disconnect(); } catch { }
-      try { compressor.disconnect(); } catch { }
-      try { gain.disconnect(); } catch { }
-    };
-  } catch (err) {
-    console.warn("Web Audio API setup failed, using plain playback:", err);
-    return () => {};
-  }
-}
-
 export function useElevenLabsTTS(sessionId: number) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const audioCleanupRef = useRef<(() => void) | null>(null);
   const isBrowserTTSRef = useRef(false);
 
   const stop = useCallback(() => {
@@ -67,10 +26,6 @@ export function useElevenLabsTTS(sessionId: number) {
       audioRef.current.pause();
       audioRef.current.src = "";
       audioRef.current = null;
-    }
-    if (audioCleanupRef.current) {
-      audioCleanupRef.current();
-      audioCleanupRef.current = null;
     }
     if (isBrowserTTSRef.current) {
       window.speechSynthesis?.cancel();
@@ -108,11 +63,8 @@ export function useElevenLabsTTS(sessionId: number) {
           `data:audio/${format ?? "mpeg"};base64,${audioBase64}`
         );
         audioRef.current = audio;
-        audioCleanupRef.current = await setupAudioGraph(audio, audioCtxRef);
         await new Promise<void>((resolve) => {
           const finish = () => {
-            audioCleanupRef.current?.();
-            audioCleanupRef.current = null;
             audioRef.current = null;
             setIsSpeaking(false);
             resolve();
@@ -138,8 +90,6 @@ export function useElevenLabsTTS(sessionId: number) {
         audioRef.current.pause();
         audioRef.current = null;
       }
-      audioCleanupRef.current?.();
-      audioCleanupRef.current = null;
       if (isBrowserTTSRef.current) {
         window.speechSynthesis?.cancel();
       }
