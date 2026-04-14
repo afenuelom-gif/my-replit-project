@@ -228,6 +228,7 @@ export default function Interview() {
       : null;
     if (!pendingQuestion || !activeInterviewer) return;
     if (lastPlayedQuestionId === pendingQuestion.id) return;
+    if (welcomePending) return;
     setLastPlayedQuestionId(pendingQuestion.id);
     setPendingQuestionId(null);
     hasTTSStartedRef.current = true;
