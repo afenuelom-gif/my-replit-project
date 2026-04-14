@@ -88,7 +88,7 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
             <img
               src={interviewer.avatarUrl}
               alt={interviewer.name}
-              className={`w-full h-full object-cover min-h-48 absolute inset-0 transition-opacity duration-500 ${
+              className={`w-full h-full object-contain object-center min-h-48 absolute inset-0 transition-opacity duration-500 ${
                 isActive ? "opacity-95" : "opacity-35"
               }`}
             />
@@ -103,14 +103,12 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
           <div
-            className={`absolute bottom-14 left-0 right-0 flex justify-center pointer-events-none transition-opacity duration-300 ${
+            className={`absolute bottom-2 right-2 flex items-center gap-1.5 bg-black/70 border border-primary/30 rounded-md px-2 py-1 backdrop-blur-sm transition-opacity duration-300 pointer-events-none ${
               isSpeakingNow ? "opacity-100" : "opacity-0"
             }`}
           >
-            <div className="bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2 flex items-center gap-3 border border-white/10">
-              <Volume2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-              <SpeakingWaveform active={ttsSpeaking} />
-            </div>
+            <Volume2 className="w-3 h-3 text-primary flex-shrink-0" />
+            <SpeakingWaveform active={ttsSpeaking} />
           </div>
         </div>
 
