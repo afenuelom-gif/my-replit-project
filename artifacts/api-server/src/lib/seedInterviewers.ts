@@ -88,7 +88,7 @@ const INTERVIEWERS = [
     title: "Technical Lead",
     company: "BuildFast",
     personality: "Detail-oriented and curious. Digs deep into code quality, testing practices, and system design.",
-    voiceId: "echo",
+    voiceId: "fable",
     avatarUrl: "/avatars/interviewer-4.png",
     heygenAvatarId: HEYGEN_MALE_AVATARS[1],
   },

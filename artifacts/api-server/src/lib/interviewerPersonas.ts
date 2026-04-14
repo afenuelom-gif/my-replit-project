@@ -37,7 +37,7 @@ export const INTERVIEWER_PERSONAS: InterviewerPersona[] = [
     title: "Technical Lead",
     company: "BuildFast",
     personality: "Detail-oriented and curious. Digs deep into code quality, testing practices, and system design.",
-    voiceId: "echo",
+    voiceId: "fable",
     avatarPrompt: "Professional headshot of a Korean-American man in his early 30s, wearing a casual button-down shirt, thoughtful expression, blurred tech office background, studio lighting, photorealistic",
   },
   {
