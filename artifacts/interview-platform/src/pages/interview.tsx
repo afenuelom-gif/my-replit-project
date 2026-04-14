@@ -72,7 +72,6 @@ export default function Interview() {
     return cardRefsMap.current.get(id)!;
   }, []);
 
-  const introHandledRef = useRef(false);
   const [ttsPlayingLatch, setTtsPlayingLatch] = useState(false);
   const isAnySpeaking = isHeyGenSpeaking || ttsPlayingLatch;
 
@@ -187,8 +186,7 @@ export default function Interview() {
 
     const cardRef = cardRefsMap.current.get(activeInterviewer.id);
 
-    if (!hasPlayedWelcome && !introHandledRef.current) {
-      introHandledRef.current = true;
+    if (!hasPlayedWelcome) {
       setHasPlayedWelcome(true);
       setLastPlayedQuestionId(currentQ.id);
       hasTTSStartedRef.current = true;
@@ -196,7 +194,14 @@ export default function Interview() {
       const introText = "Hello, welcome to our interview practice session. Let's get started!";
 
       if (cardRef?.current) {
-        cardRef.current.speak(introText).catch(() => {
+        cardRef.current.speak(introText).then(() => {
+          const qCardRef = cardRefsMap.current.get(activeInterviewer.id);
+          if (qCardRef?.current) {
+            qCardRef.current.speak(currentQ.questionText).catch(() => {
+              setStatusMessage("Read the question above, then click the mic to answer");
+            });
+          }
+        }).catch(() => {
           setStatusMessage("Read the question above, then click the mic to answer");
         });
       } else {
