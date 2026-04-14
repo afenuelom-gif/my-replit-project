@@ -191,16 +191,15 @@ export default function Interview() {
       const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
       if (!activeInterviewer) return;
       setHasPlayedWelcome(true);
-      setPendingQuestionId(currentQ.id);
-      setWelcomePending(true);
       setStatusMessage("Interviewer speaking...");
       const cardRef = cardRefsMap.current.get(activeInterviewer.id);
       const introText = "Hello, welcome to our interview practice session. Let's get started!";
       if (cardRef?.current) {
-        cardRef.current.speak(introText).finally(() => setWelcomePending(false));
+        cardRef.current.speak(introText);
       } else {
-        ttsSpeak(introText, activeInterviewer.id).finally(() => setWelcomePending(false));
+        ttsSpeak(introText, activeInterviewer.id);
       }
+      setLastPlayedQuestionId(currentQ.id);
       return;
     }
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
