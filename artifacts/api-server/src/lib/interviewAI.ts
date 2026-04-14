@@ -15,6 +15,7 @@ const openai = new OpenAI({
 export interface QuestionContext {
   jobRole: string;
   jobDescription: string | null;
+  resumeText: string | null;
   previousQA: Array<{ question: string; answer: string | null }>;
   interviewerPersonality: string;
   interviewerName: string;
@@ -22,10 +23,29 @@ export interface QuestionContext {
 }
 
 export async function generateNextQuestion(ctx: QuestionContext, isFollowUp: boolean): Promise<string> {
+  const resumeSection = ctx.resumeText
+    ? `
+Candidate's resume:
+${ctx.resumeText}
+
+IMPORTANT resume rules:
+- You MAY reference the candidate's past experience but ONLY if it is directly relevant or transferable to the ${ctx.jobRole} role
+- Do NOT ask about experiences, roles, or skills on the resume that are unrelated to this position
+- When a candidate is transitioning from another field, focus on transferable skills and motivations for the switch rather than irrelevant prior work`
+    : "";
+
+  const jdSection = ctx.jobDescription
+    ? `
+Job description:
+${ctx.jobDescription}
+
+Use the job description to ask targeted questions about the specific skills, tools, responsibilities, or competencies listed. Weave these requirements naturally into your questions.`
+    : "";
+
   const systemPrompt = `You are ${ctx.interviewerName}, a professional interviewer. Your personality: ${ctx.interviewerPersonality}
 
 You are interviewing a candidate for the role of: ${ctx.jobRole}
-${ctx.jobDescription ? `Job description: ${ctx.jobDescription}` : ""}
+${jdSection}${resumeSection}
 
 Rules:
 - Ask one clear, focused interview question

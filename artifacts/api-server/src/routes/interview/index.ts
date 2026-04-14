@@ -83,6 +83,7 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
       userId: req.userId ?? null,
       jobRole,
       jobDescription: jobDescription ?? null,
+      resumeText: resumeText ?? null,
       durationMinutes: durationMinutes ?? 35,
       status: "active",
       interviewerIds: "[]",
@@ -375,6 +376,7 @@ router.post("/interview/sessions/:id/next-question", optionalAuth, async (req, r
     {
       jobRole: session.jobRole,
       jobDescription: session.jobDescription ?? null,
+      resumeText: session.resumeText ?? null,
       previousQA,
       interviewerPersonality: interviewer.personality,
       interviewerName: interviewer.name,

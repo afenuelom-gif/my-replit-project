@@ -7,6 +7,7 @@ export const sessionsTable = pgTable("interview_sessions", {
   userId: text("user_id"),
   jobRole: text("job_role").notNull(),
   jobDescription: text("job_description"),
+  resumeText: text("resume_text"),
   durationMinutes: integer("duration_minutes").notNull().default(35),
   status: text("status").notNull().default("active"),
   interviewerIds: text("interviewer_ids").notNull(),
