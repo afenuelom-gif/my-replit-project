@@ -44,6 +44,7 @@ export default function Interview() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPlayedQuestionId, setLastPlayedQuestionId] = useState<number | null>(null);
   const [hasPlayedWelcome, setHasPlayedWelcome] = useState(false);
+  const [pendingQuestionId, setPendingQuestionId] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState("Waiting...");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -188,6 +189,7 @@ export default function Interview() {
       const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
       if (!activeInterviewer) return;
       setHasPlayedWelcome(true);
+      setPendingQuestionId(currentQ.id);
       setStatusMessage("Interviewer speaking...");
       speechSpeak("Hello, welcome to our interview practice session. Lets get started", activeInterviewer.voiceId);
       return;
@@ -217,6 +219,21 @@ export default function Interview() {
     }
 
   }, [sessionData?.questions?.length]);
+
+  useEffect(() => {
+    if (!hasPlayedWelcome || pendingQuestionId == null) return;
+    if (isSpeaking) return;
+    const pendingQuestion = sessionData?.questions.find(q => q.id === pendingQuestionId);
+    const activeInterviewer = pendingQuestion
+      ? sessionData?.interviewers.find(i => i.id === pendingQuestion.interviewerId)
+      : null;
+    if (!pendingQuestion || !activeInterviewer) return;
+    if (lastPlayedQuestionId === pendingQuestion.id) return;
+    setLastPlayedQuestionId(pendingQuestion.id);
+    setPendingQuestionId(null);
+    setStatusMessage("Interviewer speaking...");
+    speechSpeak(pendingQuestion.questionText, activeInterviewer.voiceId);
+  }, [hasPlayedWelcome, pendingQuestionId, isSpeaking, sessionData, lastPlayedQuestionId, speechSpeak]);
 
   // Update status when TTS ends
   useEffect(() => {
