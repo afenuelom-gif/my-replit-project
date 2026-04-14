@@ -300,16 +300,6 @@ router.post("/interview/sessions/:id/next-question", optionalAuth, async (req, r
 
   const interviewerIds: number[] = JSON.parse(session.interviewerIds as string);
 
-  const maxQuestions = Math.floor((session.durationMinutes * 60) / 180);
-  if (session.questionCount >= maxQuestions) {
-    await db
-      .update(sessionsTable)
-      .set({ status: "completed" })
-      .where(eq(sessionsTable.id, session.id));
-    res.json({ done: true, sessionStatus: "completed" });
-    return;
-  }
-
   const isFollowUp = shouldAskFollowUp(session.questionCount, body.data.answerText.length);
 
   const currentIdx = session.currentInterviewerIndex % interviewerIds.length;
