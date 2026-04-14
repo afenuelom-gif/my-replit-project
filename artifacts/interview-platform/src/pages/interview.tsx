@@ -72,8 +72,7 @@ export default function Interview() {
     return cardRefsMap.current.get(id)!;
   }, []);
 
-  const [ttsPlayingLatch, setTtsPlayingLatch] = useState(false);
-  const isAnySpeaking = isHeyGenSpeaking || ttsPlayingLatch;
+  const isAnySpeaking = isHeyGenSpeaking;
 
   // Setup timer
   useEffect(() => {
@@ -194,14 +193,7 @@ export default function Interview() {
       const introText = "Hello, welcome to our interview practice session. Let's get started!";
 
       if (cardRef?.current) {
-        cardRef.current.speak(introText).then(() => {
-          const qCardRef = cardRefsMap.current.get(activeInterviewer.id);
-          if (qCardRef?.current) {
-            qCardRef.current.speak(currentQ.questionText).catch(() => {
-              setStatusMessage("Read the question above, then click the mic to answer");
-            });
-          }
-        }).catch(() => {
+        cardRef.current.speak(introText).catch(() => {
           setStatusMessage("Read the question above, then click the mic to answer");
         });
       } else {
@@ -214,18 +206,14 @@ export default function Interview() {
     hasTTSStartedRef.current = true;
     if (isFinalThankYouRef.current) {
       closingTTSStartedRef.current = true;
-      setTtsPlayingLatch(true);
     }
 
     if (cardRef?.current) {
       setStatusMessage("Interviewer speaking...");
-      cardRef.current.speak(currentQ.questionText)
-        .catch(() => {
-          setTtsPlayingLatch(false);
-          setStatusMessage("Read the question above, then click the mic to answer");
-        });
+      cardRef.current.speak(currentQ.questionText).catch(() => {
+        setStatusMessage("Read the question above, then click the mic to answer");
+      });
     } else {
-      setTtsPlayingLatch(false);
       setStatusMessage("Read the question above, then click the mic to answer");
     }
   }, [sessionData?.questions?.length]);
@@ -299,14 +287,10 @@ export default function Interview() {
     }
     const cardRef = cardRefsMap.current.get(activeInterviewer.id);
     closingTTSStartedRef.current = true;
-    setTtsPlayingLatch(true);
     if (cardRef?.current) {
       cardRef.current.stop();
-      cardRef.current.speak(CLOSING_LINE)
-        .finally(() => { setTtsPlayingLatch(false); })
-        .catch(() => handleComplete());
+      cardRef.current.speak(CLOSING_LINE).catch(() => handleComplete());
     } else {
-      setTtsPlayingLatch(false);
       handleComplete();
     }
   };
