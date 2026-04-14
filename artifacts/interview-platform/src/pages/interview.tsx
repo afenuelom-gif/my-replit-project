@@ -190,9 +190,10 @@ export default function Interview() {
       setLastPlayedQuestionId(currentQ.id);
       hasTTSStartedRef.current = true;
       setStatusMessage("Interviewer speaking...");
+      const introText = "Hello, welcome to our interview practice session. Let's get started!";
 
       if (cardRef?.current) {
-        cardRef.current.speak(currentQ.questionText).catch(() => {
+        cardRef.current.speak(introText).catch(() => {
           setStatusMessage("Read the question above, then click the mic to answer");
         });
       } else {
