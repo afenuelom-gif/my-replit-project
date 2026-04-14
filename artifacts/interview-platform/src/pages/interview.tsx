@@ -8,7 +8,6 @@ import {
   useTranscribeAnswer,
   useAnalyzePosture
 } from "@workspace/api-client-react";
-import { useElevenLabsTTS } from "@/hooks/useElevenLabsTTS";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -35,8 +34,6 @@ export default function Interview() {
   const getNextQuestion = useGetNextQuestion();
   const transcribeAnswer = useTranscribeAnswer();
   const analyzePosture = useAnalyzePosture();
-  const { speak: ttsSpeak, stop: ttsStop, isSpeaking } = useElevenLabsTTS(sessionId);
-
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [timeExpired, setTimeExpired] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -44,14 +41,12 @@ export default function Interview() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPlayedQuestionId, setLastPlayedQuestionId] = useState<number | null>(null);
   const [hasPlayedWelcome, setHasPlayedWelcome] = useState(false);
-  const [pendingQuestionId, setPendingQuestionId] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState("Waiting...");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isHeyGenSpeaking, setIsHeyGenSpeaking] = useState(false);
   const [isFinalThankYou, setIsFinalThankYou] = useState(false);
   const [isEndingManually, setIsEndingManually] = useState(false);
-  const [outroPending, setOutroPending] = useState(false);
 
   // Refs for user webcam / recording
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -77,8 +72,9 @@ export default function Interview() {
     return cardRefsMap.current.get(id)!;
   }, []);
 
-  // Combined "any interviewer is speaking" state
-  const isAnySpeaking = isSpeaking || isHeyGenSpeaking;
+  const introInProgressRef = useRef(false);
+  const [ttsPlayingLatch, setTtsPlayingLatch] = useState(false);
+  const isAnySpeaking = isHeyGenSpeaking || ttsPlayingLatch;
 
   // Setup timer
   useEffect(() => {
@@ -182,61 +178,76 @@ export default function Interview() {
     }
   }, [sessionId, webcamEnabled]);
 
-  // Auto-play question: TTS via card (instant) + D-ID speak from page level (single stream)
   useEffect(() => {
     const currentQ = sessionData?.questions[sessionData.questions.length - 1];
     if (!currentQ || currentQ.id === lastPlayedQuestionId) return;
+    if (introInProgressRef.current) return;
+
+    const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
+    if (!activeInterviewer) return;
+
+    const cardRef = cardRefsMap.current.get(activeInterviewer.id);
+
     if (!hasPlayedWelcome) {
-      const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
-      if (!activeInterviewer) return;
       setHasPlayedWelcome(true);
-      setPendingQuestionId(currentQ.id);
+      introInProgressRef.current = true;
       setStatusMessage("Interviewer speaking...");
-      const cardRef = cardRefsMap.current.get(activeInterviewer.id);
       const introText = "Hello, welcome to our interview practice session. Let's get started!";
+
+      const playFirstQuestion = () => {
+        introInProgressRef.current = false;
+        const qCardRef = cardRefsMap.current.get(activeInterviewer.id);
+        if (qCardRef?.current) {
+          setLastPlayedQuestionId(currentQ.id);
+          hasTTSStartedRef.current = true;
+          setStatusMessage("Interviewer speaking...");
+          qCardRef.current.speak(currentQ.questionText).catch(() => {
+            setStatusMessage("Read the question above, then click the mic to answer");
+          });
+        } else {
+          setTimeout(() => {
+            const retryRef = cardRefsMap.current.get(activeInterviewer.id);
+            setLastPlayedQuestionId(currentQ.id);
+            hasTTSStartedRef.current = true;
+            if (retryRef?.current) {
+              setStatusMessage("Interviewer speaking...");
+              retryRef.current.speak(currentQ.questionText).catch(() => {
+                setStatusMessage("Read the question above, then click the mic to answer");
+              });
+            } else {
+              setStatusMessage("Read the question above, then click the mic to answer");
+            }
+          }, 100);
+        }
+      };
+
       if (cardRef?.current) {
-        cardRef.current.speak(introText).finally(() => setPendingQuestionId(currentQ.id));
+        cardRef.current.speak(introText).finally(playFirstQuestion);
       } else {
-        ttsSpeak(introText, activeInterviewer.id).finally(() => setPendingQuestionId(currentQ.id));
+        playFirstQuestion();
       }
       return;
     }
-    const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
-    if (!activeInterviewer) return;
 
     setLastPlayedQuestionId(currentQ.id);
     hasTTSStartedRef.current = true;
     if (isFinalThankYouRef.current) {
       closingTTSStartedRef.current = true;
+      setTtsPlayingLatch(true);
     }
 
-    const cardRef = cardRefsMap.current.get(activeInterviewer.id);
     if (cardRef?.current) {
       setStatusMessage("Interviewer speaking...");
-      cardRef.current.speak(currentQ.questionText).catch(() => {
-        setStatusMessage("Read the question above, then click the mic to answer");
-      });
+      cardRef.current.speak(currentQ.questionText)
+        .finally(() => { setTtsPlayingLatch(false); })
+        .catch(() => {
+          setStatusMessage("Read the question above, then click the mic to answer");
+        });
     } else {
-      setStatusMessage("Interviewer speaking...");
-      ttsSpeak(currentQ.questionText, activeInterviewer.id);
+      setTtsPlayingLatch(false);
+      setStatusMessage("Read the question above, then click the mic to answer");
     }
-
   }, [sessionData?.questions?.length]);
-
-  useEffect(() => {
-    if (!hasPlayedWelcome || pendingQuestionId == null) return;
-    if (isSpeaking) return;
-    setPendingQuestionId(null);
-  }, [hasPlayedWelcome, pendingQuestionId, isSpeaking, sessionData, lastPlayedQuestionId, ttsSpeak]);
-
-  // Update status when TTS ends
-  useEffect(() => {
-    if (!isSpeaking && hasTTSStartedRef.current && !isHeyGenSpeaking) {
-      if (!isFinalThankYou && !isEndingManually) {
-        setStatusMessage("Your turn — click the mic to answer");
-      }
-    }
-  }, [isSpeaking, isFinalThankYou, isEndingManually]);
 
   // After final thank-you TTS finishes, navigate to report
   useEffect(() => {
@@ -272,7 +283,9 @@ export default function Interview() {
   }, []);
 
   const handleComplete = async () => {
-    ttsStop();
+    for (const ref of cardRefsMap.current.values()) {
+      ref.current?.stop();
+    }
     await destroyAllCards();
     try {
       await completeSession.mutateAsync({ id: sessionId });
@@ -291,14 +304,11 @@ export default function Interview() {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
-    // Stop any ongoing TTS
-    ttsStop();
     if (activeInterviewerId) {
       cardRefsMap.current.get(activeInterviewerId)?.current?.stop();
     }
     isEndingManuallyRef.current = true;
     setIsEndingManually(true);
-    setOutroPending(true);
     // Play closing TTS via the active interviewer's card
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === activeInterviewerId)
       ?? sessionData?.interviewers[0];
@@ -308,16 +318,22 @@ export default function Interview() {
     }
     const cardRef = cardRefsMap.current.get(activeInterviewer.id);
     closingTTSStartedRef.current = true;
+    setTtsPlayingLatch(true);
     if (cardRef?.current) {
       cardRef.current.stop();
-      cardRef.current.speak(CLOSING_LINE).finally(() => setOutroPending(false)).catch(() => handleComplete());
+      cardRef.current.speak(CLOSING_LINE)
+        .finally(() => { setTtsPlayingLatch(false); })
+        .catch(() => handleComplete());
     } else {
-      ttsSpeak(CLOSING_LINE, activeInterviewer.id).finally(() => setOutroPending(false)).catch(() => handleComplete());
+      setTtsPlayingLatch(false);
+      handleComplete();
     }
   };
 
   const handleCancel = async () => {
-    ttsStop();
+    for (const ref of cardRefsMap.current.values()) {
+      ref.current?.stop();
+    }
     await destroyAllCards();
     setIsCancelling(true);
     try {
@@ -595,7 +611,6 @@ export default function Interview() {
               isAnySpeaking ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
             onClick={() => {
-              ttsStop();
               if (activeInterviewerId) {
                 const ref = cardRefsMap.current.get(activeInterviewerId);
                 ref?.current?.stop();

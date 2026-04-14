@@ -30,25 +30,17 @@ async function playWithNormalization(
     }
 
     const source = audioCtx.createMediaElementSource(audio);
-    const compressor = audioCtx.createDynamicsCompressor();
-    compressor.threshold.setValueAtTime(-24, audioCtx.currentTime);
-    compressor.knee.setValueAtTime(30, audioCtx.currentTime);
-    compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
-    compressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
-    compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
 
     const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(1.4, audioCtx.currentTime);
+    gain.gain.setValueAtTime(1.15, audioCtx.currentTime);
 
-    source.connect(compressor);
-    compressor.connect(gain);
+    source.connect(gain);
     gain.connect(audioCtx.destination);
 
     await audio.play();
 
     const cleanup = () => {
       try { source.disconnect(); } catch { /* already disconnected */ }
-      try { compressor.disconnect(); } catch { /* already disconnected */ }
       try { gain.disconnect(); } catch { /* already disconnected */ }
     };
     return cleanup;

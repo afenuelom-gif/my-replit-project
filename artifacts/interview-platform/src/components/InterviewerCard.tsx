@@ -88,9 +88,9 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
             <img
               src={interviewer.avatarUrl}
               alt={interviewer.name}
-              className={`w-full h-full object-cover min-h-48 absolute inset-0 transition-all duration-500 ${
+              className={`w-full h-full object-cover min-h-48 absolute inset-0 transition-opacity duration-500 ${
                 isActive ? "opacity-95" : "opacity-35"
-              } ${isSpeakingNow ? "scale-[1.02]" : "scale-100"}`}
+              }`}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-900 to-zinc-950 min-h-48">
