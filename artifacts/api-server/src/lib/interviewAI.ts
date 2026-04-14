@@ -276,6 +276,7 @@ function pickVoice(gender: string, usedFemale: number, usedMale: number): string
 export async function generateDynamicInterviewers(
   jobRole: string,
   jobDescription: string | null,
+  resumeText: string | null,
   count: number
 ): Promise<Array<{
   name: string;
@@ -312,7 +313,7 @@ Return ONLY valid JSON array, no markdown.`,
         },
         {
           role: "user",
-          content: `Job role: ${jobRole}${jobDescription ? `\nJob description: ${jobDescription.slice(0, 500)}` : ""}`,
+          content: `Job role: ${jobRole}${jobDescription ? `\nJob description: ${jobDescription.slice(0, 500)}` : ""}${resumeText ? `\nResume: ${resumeText.slice(0, 1200)}` : ""}`,
         },
       ],
     });

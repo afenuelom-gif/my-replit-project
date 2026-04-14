@@ -55,7 +55,7 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
     return;
   }
 
-  const { jobRole, jobDescription, durationMinutes: rawDuration } = parsed.data;
+  const { jobRole, jobDescription, resumeText, durationMinutes: rawDuration } = parsed.data;
   const VALID_DURATIONS = [2, 30, 35, 40, 45];
   const durationMinutes = VALID_DURATIONS.includes(rawDuration) ? rawDuration : 35;
 
@@ -75,7 +75,7 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
 
   const interviewerCount = Math.floor(Math.random() * 2) + 2;
 
-  const dynamicPersonas = await generateDynamicInterviewers(jobRole, jobDescription ?? null, interviewerCount);
+  const dynamicPersonas = await generateDynamicInterviewers(jobRole, jobDescription ?? null, resumeText ?? null, interviewerCount);
 
   const [session] = await db
     .insert(sessionsTable)

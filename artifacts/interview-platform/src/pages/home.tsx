@@ -19,9 +19,12 @@ export default function Home({ authMenu }: HomeProps) {
 
   const [jobRole, setJobRole] = useState("");
   const [jobDescription, setJobDescription] = useState("");
+  const [resumeText, setResumeText] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [resumeFileName, setResumeFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const resumeInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -42,6 +45,25 @@ export default function Home({ authMenu }: HomeProps) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      setResumeText(text);
+      setResumeFileName(file.name);
+    };
+    reader.readAsText(file);
+  };
+
+  const clearResume = () => {
+    setResumeText("");
+    setResumeFileName(null);
+    if (resumeInputRef.current) resumeInputRef.current.value = "";
+  };
+
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!jobRole) return;
@@ -51,6 +73,7 @@ export default function Home({ authMenu }: HomeProps) {
         data: {
           jobRole,
           jobDescription: jobDescription || undefined,
+          resumeText: resumeText || undefined,
           durationMinutes,
         },
       });
@@ -137,6 +160,55 @@ export default function Home({ authMenu }: HomeProps) {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-white flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-primary" />
+                    Resume (Optional)
+                  </Label>
+
+                  <div className="flex gap-2 mb-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
+                      onClick={() => resumeInputRef.current?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload .txt resume
+                    </Button>
+                    {resumeFileName && (
+                      <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-md">
+                        <span className="truncate max-w-[180px]">{resumeFileName}</span>
+                        <button type="button" onClick={clearResume} className="text-primary hover:text-white">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <input
+                    ref={resumeInputRef}
+                    type="file"
+                    accept=".txt"
+                    className="hidden"
+                    onChange={handleResumeUpload}
+                    data-testid="input-resumeFile"
+                  />
+
+                  <Textarea
+                    id="resumeText"
+                    placeholder="...or paste your resume here to personalize the interview"
+                    value={resumeText}
+                    onChange={(e) => {
+                      setResumeText(e.target.value);
+                      setResumeFileName(null);
+                    }}
+                    className="min-h-[120px] bg-black/50 border-white/10 text-white placeholder:text-muted-foreground focus-visible:ring-primary resize-none"
+                    data-testid="input-resumeText"
+                  />
                 </div>
 
                 <div className="space-y-2">
