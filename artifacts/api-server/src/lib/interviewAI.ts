@@ -87,6 +87,18 @@ Evaluate the candidate's answer and return a JSON object with:
 - strengths (array of 1-3 short strength bullet points)
 - improvements (array of 1-3 short improvement suggestions)
 
+SCORING RUBRIC — apply strictly:
+- 0–10: Nonsense, gibberish, filler words, completely off-topic, or blank/empty answer. No relevant content whatsoever.
+- 11–30: Extremely vague or only tangentially related; no domain knowledge demonstrated.
+- 31–50: Partial relevance but missing key concepts; weak or generic response.
+- 51–70: On-topic and mostly correct; shows basic understanding but lacks depth or examples.
+- 71–89: Solid answer with role-relevant terminology, clear structure, and at least one concrete example.
+- 90–100: Exceptional — specific, detailed, well-structured; directly addresses the question with strong domain knowledge.
+
+A score above 50 REQUIRES that the answer uses role-relevant vocabulary and demonstrates understanding of the concepts asked about.
+A score above 80 REQUIRES at least one specific, concrete example or demonstration of depth.
+Repeated filler words, random syllables, or completely irrelevant content MUST score 0–5.
+
 Return ONLY valid JSON, no markdown.`,
       },
       {
@@ -100,13 +112,13 @@ Return ONLY valid JSON, no markdown.`,
   try {
     const parsed = JSON.parse(raw) as AnswerEvaluation;
     return {
-      score: Math.min(100, Math.max(0, Number(parsed.score) || 50)),
+      score: Math.min(100, Math.max(0, Number(parsed.score) || 0)),
       feedback: parsed.feedback ?? "Good attempt.",
       strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
       improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
     };
   } catch {
-    return { score: 60, feedback: "Unable to evaluate at this time.", strengths: [], improvements: [] };
+    return { score: 0, feedback: "Unable to evaluate at this time.", strengths: [], improvements: [] };
   }
 }
 
@@ -146,11 +158,35 @@ export async function generateReport(
 
 Based on the Q&A below, return a JSON object with:
 - overallScore (integer 0-100)
-- communicationScore (integer 0-100, rate clarity and structure of answers)
-- technicalScore (integer 0-100, rate technical/domain knowledge demonstrated)
-- confidenceScore (integer 0-100, rate confidence and delivery based on answer content)
+- communicationScore (integer 0-100)
+- technicalScore (integer 0-100)
+- confidenceScore (integer 0-100)
 - summary (string, 3-4 sentence overall assessment — if posture score was low, mention it briefly)
 - suggestions (array of exactly 3 actionable improvement suggestions — include posture/body language if score was below 70)
+
+SCORING RUBRIC — apply all three categories strictly:
+
+communicationScore — measures clarity, sentence structure, coherence, and whether the answer actually addresses the question asked:
+- 0: Incoherent, empty, gibberish, or single-word answers with zero substance.
+- 1–30: Severely unclear or rambling; fails to address the question.
+- 31–50: Partially addresses the question but lacks structure or clarity.
+- 51–70: Logically structured and mostly on-topic; communicates ideas adequately.
+- 71–100: Clear, well-organised, articulate answers that directly address every question asked.
+
+technicalScore — measures domain knowledge, use of role-relevant terminology, and alignment with the job role/description provided:
+- 0: No domain knowledge demonstrated; answers are generic, nonsensical, or completely unrelated to the role.
+- 1–30: Extremely superficial; barely any role-relevant vocabulary or concepts.
+- 31–50: Some relevant terms used but incorrectly or without depth; missing key concepts for the role.
+- 51–70: Correct use of role-relevant terminology; shows basic understanding of the domain.
+- 71–100: Strong domain knowledge; correctly uses technical concepts and vocabulary specific to ${jobRole}; answers are grounded in the job description.
+A score above 50 REQUIRES correct use of terminology and concepts specific to the ${jobRole} role. Irrelevant, nonsensical, or off-topic content scores 0.
+
+confidenceScore — measures assertive phrasing, directness, absence of excessive hedging, and decisive language in the answers (NOT posture or body language — those are captured separately):
+- 0: Entirely passive, evasive, or non-committal language throughout.
+- 1–30: Heavy hedging ("I think maybe", "I'm not sure but"), very indirect answers.
+- 31–50: Some hedging but occasionally direct; inconsistent decisiveness.
+- 51–70: Generally direct and assertive; minor hedging present.
+- 71–100: Consistently assertive, decisive phrasing; answers stated with conviction and no unnecessary qualifiers.
 
 Return ONLY valid JSON, no markdown.`,
       },
@@ -172,10 +208,10 @@ Return ONLY valid JSON, no markdown.`,
       suggestions: string[];
     };
     return {
-      overallScore: Math.min(100, Math.max(0, Number(parsed.overallScore) || 65)),
-      communicationScore: Math.min(100, Math.max(0, Number(parsed.communicationScore) || 65)),
-      technicalScore: Math.min(100, Math.max(0, Number(parsed.technicalScore) || 65)),
-      confidenceScore: Math.min(100, Math.max(0, Number(parsed.confidenceScore) || 65)),
+      overallScore: Math.min(100, Math.max(0, Number(parsed.overallScore) || 0)),
+      communicationScore: Math.min(100, Math.max(0, Number(parsed.communicationScore) || 0)),
+      technicalScore: Math.min(100, Math.max(0, Number(parsed.technicalScore) || 0)),
+      confidenceScore: Math.min(100, Math.max(0, Number(parsed.confidenceScore) || 0)),
       summary: parsed.summary ?? "Overall performance was satisfactory.",
       suggestions: ensureThreeSuggestions(
         Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 3) : []
@@ -183,10 +219,10 @@ Return ONLY valid JSON, no markdown.`,
     };
   } catch {
     return {
-      overallScore: 65,
-      communicationScore: 65,
-      technicalScore: 65,
-      confidenceScore: 65,
+      overallScore: 0,
+      communicationScore: 0,
+      technicalScore: 0,
+      confidenceScore: 0,
       summary: "Overall performance was satisfactory.",
       suggestions: ensureThreeSuggestions([]),
     };
@@ -330,7 +366,8 @@ Analyze the provided image and return a JSON object with:
 - feedback (string, 1-2 sentences of posture feedback)
 - issues (array of specific issues found, e.g. "slouching", "poor eye contact", "bad lighting")
 
-If you cannot see a person clearly, return score: 75, feedback: "Clear image needed for accurate analysis", issues: [].
+IMPORTANT: If the image is blank, black, shows no visible person, or the camera appears to be off or covered, you MUST return score: 0, feedback: "Enable your camera for posture analysis — no person detected.", issues: ["camera off or no person detected"].
+Do NOT assign a non-zero score when no person is clearly visible in the frame.
 Return ONLY valid JSON, no markdown.`,
       },
       {
@@ -356,12 +393,12 @@ Return ONLY valid JSON, no markdown.`,
   try {
     const parsed = JSON.parse(raw) as { score: number; feedback: string; issues: string[] };
     return {
-      score: Math.min(100, Math.max(0, Number(parsed.score) || 75)),
+      score: Math.min(100, Math.max(0, Number(parsed.score) || 0)),
       feedback: parsed.feedback ?? "Posture analysis complete.",
       issues: Array.isArray(parsed.issues) ? parsed.issues : [],
     };
   } catch {
-    return { score: 75, feedback: "Unable to analyze posture at this time.", issues: [] };
+    return { score: 0, feedback: "Unable to analyze posture at this time.", issues: [] };
   }
 }
 

@@ -260,6 +260,7 @@ export default function Report() {
                     <span className="font-mono print:text-gray-700">{report.communicationScore}%</span>
                   </div>
                   <Progress value={report.communicationScore} className="h-2 bg-white/5 print:bg-gray-200" />
+                  <p className="text-xs text-white/40 print:text-gray-500">Clarity, sentence structure, coherence, and relevance to the question</p>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
@@ -267,6 +268,7 @@ export default function Report() {
                     <span className="font-mono print:text-gray-700">{report.technicalScore}%</span>
                   </div>
                   <Progress value={report.technicalScore} className="h-2 bg-white/5 print:bg-gray-200" />
+                  <p className="text-xs text-white/40 print:text-gray-500">Domain knowledge, role-relevant vocabulary, and correct use of technical concepts</p>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
@@ -274,6 +276,7 @@ export default function Report() {
                     <span className="font-mono print:text-gray-700">{report.confidenceScore}%</span>
                   </div>
                   <Progress value={report.confidenceScore} className="h-2 bg-white/5 print:bg-gray-200" />
+                  <p className="text-xs text-white/40 print:text-gray-500">Assertive phrasing, directness, and absence of excessive hedging</p>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
@@ -281,6 +284,7 @@ export default function Report() {
                     <span className="font-mono print:text-gray-700">{report.postureScore}%</span>
                   </div>
                   <Progress value={report.postureScore} className="h-2 bg-white/5 print:bg-gray-200" />
+                  <p className="text-xs text-white/40 print:text-gray-500">Body language, eye contact, and on-camera presence from webcam analysis</p>
                 </div>
               </CardContent>
             </Card>

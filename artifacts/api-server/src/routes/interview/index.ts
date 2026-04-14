@@ -602,7 +602,7 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
   const avgPosture =
     postureScores.length > 0
       ? Math.round(postureScores.reduce((a, b) => a + b, 0) / postureScores.length)
-      : 70;
+      : 0;
 
   const answeredQA = questions.filter((q) => q.answerText != null);
 
