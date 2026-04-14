@@ -133,6 +133,7 @@ export const GetNextQuestionResponse = zod.object({
     .optional()
     .describe("The interviewer who will ask the next question"),
   sessionStatus: zod.string(),
+  isFinalThankYou: zod.boolean().optional(),
 });
 
 /**

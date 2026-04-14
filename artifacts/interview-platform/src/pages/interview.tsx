@@ -38,6 +38,7 @@ export default function Interview() {
   const { speak: speechSpeak, stop: speechStop, isSpeaking, isSupported: isTTSSupported } = useSpeechSynthesis();
 
   const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [timeExpired, setTimeExpired] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [webcamEnabled, setWebcamEnabled] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -46,6 +47,8 @@ export default function Interview() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isHeyGenSpeaking, setIsHeyGenSpeaking] = useState(false);
+  const [isFinalThankYou, setIsFinalThankYou] = useState(false);
+  const [isEndingManually, setIsEndingManually] = useState(false);
 
   // Refs for user webcam / recording
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -57,6 +60,9 @@ export default function Interview() {
   const postureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerStartedRef = useRef(false);
   const hasTTSStartedRef = useRef(false);
+  const closingTTSStartedRef = useRef(false);
+  const isFinalThankYouRef = useRef(false);
+  const isEndingManuallyRef = useRef(false);
 
   // Interviewer card refs — keyed by interviewer ID
   const cardRefsMap = useRef<Map<number, React.RefObject<InterviewerCardHandle | null>>>(new Map());
@@ -85,7 +91,7 @@ export default function Interview() {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          handleComplete();
+          setTimeExpired(true);
           return 0;
         }
         return prev - 1;
@@ -93,6 +99,17 @@ export default function Interview() {
     }, 1000);
     return () => clearInterval(timer);
   }, [timeLeft > 0]);
+
+  // Update status when timer expires
+  useEffect(() => {
+    if (!timeExpired) return;
+    setStatusMessage(prev => {
+      if (prev === "Recording... click again to submit your answer") {
+        return "Time's up — please finish your answer.";
+      }
+      return "Time's up — please give your final answer";
+    });
+  }, [timeExpired]);
 
   // Setup webcam
   useEffect(() => {
@@ -171,6 +188,9 @@ export default function Interview() {
 
     setLastPlayedQuestionId(currentQ.id);
     hasTTSStartedRef.current = true;
+    if (isFinalThankYouRef.current) {
+      closingTTSStartedRef.current = true;
+    }
 
     const cardRef = cardRefsMap.current.get(activeInterviewer.id);
     if (cardRef?.current) {
@@ -192,9 +212,36 @@ export default function Interview() {
   // Update status when TTS ends
   useEffect(() => {
     if (!isSpeaking && hasTTSStartedRef.current && !isHeyGenSpeaking) {
-      setStatusMessage("Your turn — click the mic to answer");
+      if (!isFinalThankYou && !isEndingManually) {
+        setStatusMessage("Your turn — click the mic to answer");
+      }
     }
-  }, [isSpeaking]);
+  }, [isSpeaking, isFinalThankYou, isEndingManually]);
+
+  // After final thank-you TTS finishes, navigate to report
+  useEffect(() => {
+    if (isFinalThankYou && !isAnySpeaking && closingTTSStartedRef.current) {
+      handleComplete();
+    }
+  }, [isFinalThankYou, isAnySpeaking]);
+
+  // Fallback: if isFinalThankYou is set but TTS never starts, navigate after 5s
+  useEffect(() => {
+    if (!isFinalThankYou) return;
+    const fallback = setTimeout(() => {
+      if (!closingTTSStartedRef.current) {
+        handleComplete();
+      }
+    }, 5000);
+    return () => clearTimeout(fallback);
+  }, [isFinalThankYou]);
+
+  // After manual-end TTS finishes, navigate to report
+  useEffect(() => {
+    if (isEndingManually && !isAnySpeaking && closingTTSStartedRef.current) {
+      handleComplete();
+    }
+  }, [isEndingManually, isAnySpeaking]);
 
   const destroyAllCards = useCallback(async () => {
     const destroyPromises: Promise<void>[] = [];
@@ -213,6 +260,40 @@ export default function Interview() {
     } catch (e) {
       console.error(e);
       setLocation(`/report/${sessionId}`);
+    }
+  };
+
+  const CLOSING_LINE = "Thank you for interviewing with IntervYou AI. Please review your performance report!";
+
+  const handleEndWithThankYou = () => {
+    // Stop any active recording gracefully
+    if (isRecording && mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+    // Stop any ongoing TTS/HeyGen
+    speechStop();
+    if (activeInterviewerId) {
+      cardRefsMap.current.get(activeInterviewerId)?.current?.stop();
+    }
+    isEndingManuallyRef.current = true;
+    setIsEndingManually(true);
+    // Play closing TTS
+    const activeInterviewer = sessionData?.interviewers.find(i => i.id === activeInterviewerId)
+      ?? sessionData?.interviewers[0];
+    const cardRef = activeInterviewer ? cardRefsMap.current.get(activeInterviewer.id) : undefined;
+    if (cardRef?.current) {
+      closingTTSStartedRef.current = true;
+      cardRef.current.speak(CLOSING_LINE).catch(() => {
+        // If card TTS fails, navigate directly
+        handleComplete();
+      });
+    } else if (isTTSSupported) {
+      closingTTSStartedRef.current = true;
+      speechSpeak(CLOSING_LINE, activeInterviewer?.voiceId);
+    } else {
+      // No TTS available — navigate immediately
+      handleComplete();
     }
   };
 
@@ -277,6 +358,11 @@ export default function Interview() {
       };
       
       recorder.onstop = async () => {
+        // If the user clicked "End & Get Report" while recording, skip transcription
+        if (isEndingManuallyRef.current) {
+          setIsProcessing(false);
+          return;
+        }
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
@@ -299,6 +385,10 @@ export default function Interview() {
               
               if (nextQ.done) {
                 handleComplete();
+              } else if (nextQ.isFinalThankYou) {
+                isFinalThankYouRef.current = true;
+                setIsFinalThankYou(true);
+                await refetch();
               } else {
                 await refetch();
               }
@@ -345,7 +435,7 @@ export default function Interview() {
           <h1 className="font-semibold text-lg">{sessionData?.session.jobRole} Interview</h1>
         </div>
         <div className="flex items-center gap-6">
-          <div className="font-mono text-xl text-primary" data-testid="text-timer">
+          <div className={`font-mono text-xl ${timeExpired ? 'text-amber-400' : 'text-primary'}`} data-testid="text-timer">
             {formatTime(timeLeft)}
           </div>
         </div>
@@ -368,7 +458,9 @@ export default function Interview() {
                 onSpeakingChange={(speaking) => {
                   if (inv.id === activeInterviewerId) {
                     setIsHeyGenSpeaking(speaking);
-                    if (!speaking) setStatusMessage("Your turn — click the mic to answer");
+                    if (!speaking && !isFinalThankYouRef.current && !isEndingManuallyRef.current) {
+                      setStatusMessage("Your turn — click the mic to answer");
+                    }
                   }
                 }}
               />
@@ -509,9 +601,9 @@ export default function Interview() {
             Cancel Interview
           </Button>
 
-          <Button variant="destructive" size="sm" onClick={handleComplete} data-testid="button-end"
-            disabled={completeSession.isPending}>
-            {completeSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "End & Get Report"}
+          <Button variant="destructive" size="sm" onClick={handleEndWithThankYou} data-testid="button-end"
+            disabled={completeSession.isPending || isEndingManually || isFinalThankYou}>
+            {(completeSession.isPending || isEndingManually) ? <Loader2 className="w-4 h-4 animate-spin" /> : "End & Get Report"}
           </Button>
 
           <Button 
@@ -525,20 +617,22 @@ export default function Interview() {
             {webcamEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5 text-red-500" />}
           </Button>
 
-          <Button 
-            variant={isRecording ? "destructive" : "default"}
-            className={`w-16 h-16 rounded-full transition-all ${isRecording ? 'animate-pulse ring-4 ring-red-500/50' : 'hover:scale-105'}`}
-            onClick={handleToggleRecord}
-            data-testid="button-toggle-audio"
-            disabled={isProcessing || isAnySpeaking || transcribeAnswer.isPending || getNextQuestion.isPending}
-            title={isRecording ? "Stop recording" : "Start recording your answer"}
-          >
-            {isProcessing || transcribeAnswer.isPending || getNextQuestion.isPending 
-              ? <Loader2 className="w-6 h-6 animate-spin" /> 
-              : isRecording 
-                ? <SquareSquare className="w-6 h-6" /> 
-                : <Mic className="w-6 h-6" />}
-          </Button>
+          {!isFinalThankYou && !isEndingManually && (
+            <Button 
+              variant={isRecording ? "destructive" : "default"}
+              className={`w-16 h-16 rounded-full transition-all ${isRecording ? 'animate-pulse ring-4 ring-red-500/50' : 'hover:scale-105'}`}
+              onClick={handleToggleRecord}
+              data-testid="button-toggle-audio"
+              disabled={isProcessing || isAnySpeaking || transcribeAnswer.isPending || getNextQuestion.isPending}
+              title={isRecording ? "Stop recording" : "Start recording your answer"}
+            >
+              {isProcessing || transcribeAnswer.isPending || getNextQuestion.isPending 
+                ? <Loader2 className="w-6 h-6 animate-spin" /> 
+                : isRecording 
+                  ? <SquareSquare className="w-6 h-6" /> 
+                  : <Mic className="w-6 h-6" />}
+            </Button>
+          )}
         </div>
       </footer>
 

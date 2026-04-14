@@ -14,4 +14,5 @@ export interface NextQuestionResponse {
   /** The interviewer who will ask the next question */
   interviewerId?: number;
   sessionStatus: string;
+  isFinalThankYou?: boolean;
 }

@@ -339,6 +339,7 @@ router.post("/interview/sessions/:id/next-question", optionalAuth, async (req, r
       question: newQuestion,
       interviewerId: interviewer.id,
       sessionStatus: "active",
+      isFinalThankYou: true,
     });
     return;
   }
