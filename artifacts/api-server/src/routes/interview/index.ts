@@ -56,7 +56,7 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
   }
 
   const { jobRole, jobDescription, durationMinutes: rawDuration } = parsed.data;
-  const VALID_DURATIONS = [30, 35, 40, 45];
+  const VALID_DURATIONS = [5, 30, 35, 40, 45];
   const durationMinutes = VALID_DURATIONS.includes(rawDuration) ? rawDuration : 35;
 
   await seedInterviewersIfNeeded();
