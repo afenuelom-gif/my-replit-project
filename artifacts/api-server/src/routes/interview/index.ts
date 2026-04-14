@@ -168,6 +168,8 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
     questionIndex: 0,
   });
 
+  await generateTTS("Warm up.", interviewer.voiceId).catch(() => null);
+
   await db
     .update(sessionsTable)
     .set({ questionCount: 1 })
