@@ -52,6 +52,7 @@ export default function Interview() {
   const [isFinalThankYou, setIsFinalThankYou] = useState(false);
   const [isEndingManually, setIsEndingManually] = useState(false);
   const [welcomePending, setWelcomePending] = useState(false);
+  const [outroPending, setOutroPending] = useState(false);
 
   // Refs for user webcam / recording
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -312,6 +313,7 @@ export default function Interview() {
     }
     isEndingManuallyRef.current = true;
     setIsEndingManually(true);
+    setOutroPending(true);
     // Play closing TTS via the active interviewer's card
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === activeInterviewerId)
       ?? sessionData?.interviewers[0];
@@ -322,9 +324,10 @@ export default function Interview() {
     const cardRef = cardRefsMap.current.get(activeInterviewer.id);
     closingTTSStartedRef.current = true;
     if (cardRef?.current) {
-      cardRef.current.speak(CLOSING_LINE).catch(() => handleComplete());
+      cardRef.current.stop();
+      cardRef.current.speak(CLOSING_LINE).finally(() => setOutroPending(false)).catch(() => handleComplete());
     } else {
-      ttsSpeak(CLOSING_LINE, activeInterviewer.id).then(() => {}).catch(() => handleComplete());
+      ttsSpeak(CLOSING_LINE, activeInterviewer.id).finally(() => setOutroPending(false)).catch(() => handleComplete());
     }
   };
 
