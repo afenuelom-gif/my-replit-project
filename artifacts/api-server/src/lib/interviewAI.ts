@@ -430,9 +430,9 @@ export async function generateTTS(text: string, voiceId: string): Promise<Buffer
         text,
         model_id: "eleven_turbo_v2_5",
         voice_settings: {
-          stability: 0.72,
-          similarity_boost: 0.9,
-          style: 0.15,
+          stability: 0.55,
+          similarity_boost: 0.98,
+          style: 0.2,
           use_speaker_boost: true,
         },
       }),
