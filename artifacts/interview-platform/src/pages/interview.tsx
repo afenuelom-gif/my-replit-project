@@ -51,7 +51,6 @@ export default function Interview() {
   const [isHeyGenSpeaking, setIsHeyGenSpeaking] = useState(false);
   const [isFinalThankYou, setIsFinalThankYou] = useState(false);
   const [isEndingManually, setIsEndingManually] = useState(false);
-  const [welcomePending, setWelcomePending] = useState(false);
   const [outroPending, setOutroPending] = useState(false);
 
   // Refs for user webcam / recording
@@ -191,15 +190,15 @@ export default function Interview() {
       const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
       if (!activeInterviewer) return;
       setHasPlayedWelcome(true);
+      setPendingQuestionId(currentQ.id);
       setStatusMessage("Interviewer speaking...");
       const cardRef = cardRefsMap.current.get(activeInterviewer.id);
       const introText = "Hello, welcome to our interview practice session. Let's get started!";
       if (cardRef?.current) {
-        cardRef.current.speak(introText);
+        cardRef.current.speak(introText).finally(() => setPendingQuestionId(currentQ.id));
       } else {
-        ttsSpeak(introText, activeInterviewer.id);
+        ttsSpeak(introText, activeInterviewer.id).finally(() => setPendingQuestionId(currentQ.id));
       }
-      setLastPlayedQuestionId(currentQ.id);
       return;
     }
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
@@ -226,14 +225,13 @@ export default function Interview() {
 
   useEffect(() => {
     if (!hasPlayedWelcome || pendingQuestionId == null) return;
-    if (isSpeaking || welcomePending) return;
+    if (isSpeaking) return;
     const pendingQuestion = sessionData?.questions.find(q => q.id === pendingQuestionId);
     const activeInterviewer = pendingQuestion
       ? sessionData?.interviewers.find(i => i.id === pendingQuestion.interviewerId)
       : null;
     if (!pendingQuestion || !activeInterviewer) return;
     if (lastPlayedQuestionId === pendingQuestion.id) return;
-    if (welcomePending) return;
     setLastPlayedQuestionId(pendingQuestion.id);
     setPendingQuestionId(null);
     hasTTSStartedRef.current = true;
@@ -246,7 +244,7 @@ export default function Interview() {
     } else {
       ttsSpeak(pendingQuestion.questionText, activeInterviewer.id);
     }
-  }, [hasPlayedWelcome, pendingQuestionId, isSpeaking, welcomePending, sessionData, lastPlayedQuestionId, ttsSpeak]);
+  }, [hasPlayedWelcome, pendingQuestionId, isSpeaking, sessionData, lastPlayedQuestionId, ttsSpeak]);
 
   // Update status when TTS ends
   useEffect(() => {
