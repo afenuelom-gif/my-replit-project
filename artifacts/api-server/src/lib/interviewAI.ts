@@ -431,7 +431,7 @@ export async function generateTTS(text: string, voiceId: string): Promise<Buffer
         model_id: "eleven_turbo_v2_5",
         voice_settings: elevenVoiceId === ELEVENLABS_VOICE_MAP.onyx
           ? { stability: 0.72, similarity_boost: 0.4, style: 0.15, use_speaker_boost: false }
-          : { stability: 0.5, similarity_boost: 0.75 },
+          : { stability: 0.4, similarity_boost: 0.9, use_speaker_boost: true },
       }),
     }
   );
