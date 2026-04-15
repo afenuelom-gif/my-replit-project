@@ -35,6 +35,17 @@ export function AppHeader({ right }: AppHeaderProps) {
         >
           Pricing
         </Link>
+
+        <Link
+          href="/contact"
+          className={`text-sm px-2 py-1 rounded transition-colors ${
+            location === "/contact"
+              ? "text-white font-medium"
+              : "text-zinc-400 hover:text-white"
+          }`}
+        >
+          Contact
+        </Link>
       </div>
 
       {right && <div className="flex items-center gap-2">{right}</div>}

@@ -11,6 +11,7 @@ import Interview from "@/pages/interview";
 import Report from "@/pages/report";
 import History from "@/pages/history";
 import Pricing from "@/pages/pricing";
+import Contact from "@/pages/contact";
 
 const queryClient = new QueryClient();
 
@@ -182,6 +183,7 @@ function ClerkProviderWithRoutes() {
           <Switch>
             <Route path="/" component={() => <Home authMenu={<ClerkUserMenu />} />} />
             <Route path="/pricing" component={() => <Pricing authMenu={<ClerkUserMenu />} />} />
+            <Route path="/contact" component={() => <Contact authMenu={<ClerkUserMenu />} />} />
             <Route path="/start" component={StartRoute} />
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
@@ -207,6 +209,7 @@ function App() {
             <Switch>
               <Route path="/" component={() => <Home />} />
               <Route path="/pricing" component={() => <Pricing />} />
+              <Route path="/contact" component={() => <Contact />} />
               <Route path="/start" component={() => <Start />} />
               <Route path="/interview/:sessionId" component={Interview} />
               <Route path="/report/:sessionId" component={Report} />
