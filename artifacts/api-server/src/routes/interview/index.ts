@@ -59,11 +59,14 @@ router.post("/interview/parse-document", upload.single("file"), async (req, res)
     let text = "";
 
     if (ext === "pdf") {
-      const pdfParse = (await import("pdf-parse")).default;
+      // Lazy require to prevent pdf-parse's module-level self-test from running at startup
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pdfParse = require("pdf-parse");
       const data = await pdfParse(file.buffer);
       text = data.text;
     } else if (ext === "docx" || ext === "doc") {
-      const mammoth = await import("mammoth");
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mammoth = require("mammoth");
       const result = await mammoth.extractRawText({ buffer: file.buffer });
       text = result.value;
     } else if (ext === "txt") {
