@@ -114,3 +114,10 @@ When `ELEVENLABS_API_KEY` is set as a Replit secret, the platform uses ElevenLab
 8. "End & Get Report" button also triggers graceful closing TTS → report page
 9. Posture captured via canvas snapshot every 90 seconds → vision AI analysis
 10. Report page shows overall score, category breakdown, per-question feedback, improvement tips
+
+## Pending / Future Work
+
+- **Trial gate enforcement**: Free trial limit (1 session, 15 min) is shown on pricing page but not yet enforced in code. When ready, redirect users who have used their free session to `/pricing` before allowing a new session to start.
+- **Free trial abuse prevention**: Email-based multi-account abuse is hard to fully prevent. Recommended approach when enforcement matters: enable **phone number (SMS) verification** via Clerk — one config change, stops ~95% of casual abuse. Secondary layers: device fingerprinting, IP rate limiting. Avoid card-on-file for free tier unless conversion drop is acceptable.
+- **Pricing / payments**: Starter ($12/mo, 4 sessions) and Pro ($24/mo, unlimited) tiers defined on `/pricing` page but payment integration (Stripe) not yet implemented.
+- **Session history**: `/history` route exists but redirects non-authed users to home; full history UI pending auth enforcement.
