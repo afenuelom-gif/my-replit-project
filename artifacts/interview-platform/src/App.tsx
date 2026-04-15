@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import Start from "@/pages/start";
 import Interview from "@/pages/interview";
 import Report from "@/pages/report";
 import History from "@/pages/history";
@@ -104,6 +105,25 @@ function ClerkUserMenu() {
   );
 }
 
+function StartRoute() {
+  const bypassActive = useDevMode();
+
+  if (bypassActive) {
+    return <Start />;
+  }
+
+  return (
+    <>
+      <Show when="signed-in">
+        <Start authMenu={<ClerkUserMenu />} />
+      </Show>
+      <Show when="signed-out">
+        <Redirect to="/sign-up" />
+      </Show>
+    </>
+  );
+}
+
 function HistoryRoute() {
   const bypassActive = useDevMode();
 
@@ -162,6 +182,7 @@ function ClerkProviderWithRoutes() {
           <Switch>
             <Route path="/" component={() => <Home authMenu={<ClerkUserMenu />} />} />
             <Route path="/pricing" component={() => <Pricing authMenu={<ClerkUserMenu />} />} />
+            <Route path="/start" component={StartRoute} />
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
             <Route path="/interview/:sessionId" component={Interview} />
@@ -186,6 +207,7 @@ function App() {
             <Switch>
               <Route path="/" component={() => <Home />} />
               <Route path="/pricing" component={() => <Pricing />} />
+              <Route path="/start" component={() => <Start />} />
               <Route path="/interview/:sessionId" component={Interview} />
               <Route path="/report/:sessionId" component={Report} />
               <Route path="/history" component={() => <Redirect to="/" />} />
