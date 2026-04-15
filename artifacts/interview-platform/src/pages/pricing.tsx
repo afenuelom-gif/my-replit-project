@@ -29,7 +29,7 @@ const PRO_FEATURES = [
   "Full performance reports",
   "Questions personalized to your role & background",
   "Question history",
-  "Priority processing",
+  "Early access to new features",
 ];
 
 function FeatureItem({ text }: { text: string }) {
