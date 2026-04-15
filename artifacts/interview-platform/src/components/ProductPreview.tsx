@@ -235,7 +235,7 @@ export function ProductPreview() {
         ))}
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80 backdrop-blur-sm shadow-2xl shadow-black/50" style={{ height: 380 }}>
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80 backdrop-blur-sm shadow-2xl shadow-black/50" style={{ height: 420 }}>
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-transparent to-purple-900/10 pointer-events-none rounded-2xl" />
 
         <div className="absolute top-3 left-4 flex gap-1.5">
@@ -244,7 +244,7 @@ export function ProductPreview() {
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
         </div>
 
-        <div className="pt-8 h-full">
+        <div className="pt-8 pb-10 h-full">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={active}
@@ -260,7 +260,7 @@ export function ProductPreview() {
           </AnimatePresence>
         </div>
 
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+        <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 flex gap-1.5">
           {SLIDES.map((_, i) => (
             <button
               key={i}
