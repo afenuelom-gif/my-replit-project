@@ -6,6 +6,7 @@ const SLIDES = [
   { id: "setup", label: "Configure", step: "01" },
   { id: "interview", label: "Interview", step: "02" },
   { id: "report", label: "Report", step: "03" },
+  { id: "feedback", label: "Feedback", step: "04" },
 ];
 
 function SetupMockup() {
@@ -192,7 +193,60 @@ function ReportMockup() {
   );
 }
 
-const MOCKUPS = [SetupMockup, InterviewMockup, ReportMockup];
+function FeedbackMockup() {
+  return (
+    <div className="w-full h-full flex flex-col gap-3 p-5 text-left">
+      <div className="space-y-0.5">
+        <div className="text-sm font-semibold text-white">Question Feedback</div>
+        <div className="text-xs text-zinc-500 italic leading-relaxed line-clamp-2">
+          "Can you walk me through how you handle performance bottlenecks in a large React app?"
+        </div>
+      </div>
+
+      <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+        <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">
+          Strong answer with clear structure. You identified the problem well and proposed concrete solutions. To strengthen further, quantify the impact — e.g. how much did render time improve?
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 flex-1">
+        <div className="space-y-2">
+          <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">Strengths</div>
+          <ul className="space-y-1.5">
+            {[
+              "Identified root cause quickly",
+              "Mentioned React.memo & useMemo",
+              "Structured, logical delivery",
+            ].map((s) => (
+              <li key={s} className="flex items-start gap-1.5">
+                <span className="text-emerald-400 mt-0.5 shrink-0">•</span>
+                <span className="text-xs text-zinc-400 leading-tight">{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-xs font-semibold text-amber-400 uppercase tracking-wide">To Improve</div>
+          <ul className="space-y-1.5">
+            {[
+              "Quantify outcomes (e.g. % faster)",
+              "Mention profiling tools used",
+              "Reduce filler words",
+            ].map((s) => (
+              <li key={s} className="flex items-start gap-1.5">
+                <span className="text-amber-400 mt-0.5 shrink-0">•</span>
+                <span className="text-xs text-zinc-400 leading-tight">{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const MOCKUPS = [SetupMockup, InterviewMockup, ReportMockup, FeedbackMockup];
 
 export function ProductPreview() {
   const [active, setActive] = useState(0);
