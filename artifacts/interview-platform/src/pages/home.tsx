@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useCreateSession } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -298,6 +298,13 @@ export default function Home({ authMenu }: HomeProps) {
               <div>Performance Report</div>
             </div>
           </div>
+
+          <p className="text-center text-sm text-zinc-500">
+            First session is free — no credit card required.{" "}
+            <Link href="/pricing" className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
+              See plans
+            </Link>
+          </p>
         </div>
       </div>
     </div>
