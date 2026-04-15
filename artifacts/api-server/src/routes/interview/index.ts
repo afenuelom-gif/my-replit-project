@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, asc, isNull } from "drizzle-orm";
 import type { Request, Response } from "express";
+import multer from "multer";
 import { optionalAuth } from "../../middlewares/requireAuth.js";
 
 function isForbidden(session: { userId: string | null }, req: Request): boolean {
@@ -42,6 +43,49 @@ import {
 import { seedInterviewersIfNeeded, HEYGEN_FEMALE_AVATARS, HEYGEN_MALE_AVATARS, FEMALE_VOICES } from "../../lib/seedInterviewers.js";
 
 const router: IRouter = Router();
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+router.post("/interview/parse-document", upload.single("file"), async (req, res): Promise<void> => {
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ error: "No file uploaded" });
+    return;
+  }
+
+  const ext = file.originalname.toLowerCase().split(".").pop();
+
+  try {
+    let text = "";
+
+    if (ext === "pdf") {
+      const pdfParse = (await import("pdf-parse")).default;
+      const data = await pdfParse(file.buffer);
+      text = data.text;
+    } else if (ext === "docx" || ext === "doc") {
+      const mammoth = await import("mammoth");
+      const result = await mammoth.extractRawText({ buffer: file.buffer });
+      text = result.value;
+    } else if (ext === "txt") {
+      text = file.buffer.toString("utf-8");
+    } else {
+      res.status(400).json({ error: "Unsupported file type. Please upload a PDF, DOCX, DOC, or TXT file." });
+      return;
+    }
+
+    text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+
+    if (!text || text.length < 10) {
+      res.status(422).json({ error: "Could not extract readable text from the file. Please try a different format." });
+      return;
+    }
+
+    res.json({ text });
+  } catch (err) {
+    console.error("Document parse error:", err);
+    res.status(500).json({ error: "Failed to parse document. Please try a different file." });
+  }
+});
 
 router.get("/interview/interviewers", async (_req, res): Promise<void> => {
   const interviewers = await db.select().from(interviewersTable).orderBy(asc(interviewersTable.id));

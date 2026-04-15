@@ -25,29 +25,35 @@ export default function Home({ authMenu }: HomeProps) {
   const [resumeFileName, setResumeFileName] = useState<string | null>(null);
   const [jdUploadError, setJdUploadError] = useState<string | null>(null);
   const [resumeUploadError, setResumeUploadError] = useState<string | null>(null);
+  const [jdParsing, setJdParsing] = useState(false);
+  const [resumeParsing, setResumeParsing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
 
-  const isSupportedTextFile = (file: File) => file.name.toLowerCase().endsWith(".txt");
+  const parseDocument = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/interview/parse-document", { method: "POST", body: formData });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "Failed to parse file");
+    return json.text as string;
+  };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setJdUploadError(null);
-
-    if (!isSupportedTextFile(file)) {
-      setJdUploadError("Only .txt files are supported. Please save your document as a .txt file and re-upload.");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
+    setJdParsing(true);
+    try {
+      const text = await parseDocument(file);
       setJobDescription(text);
       setUploadedFileName(file.name);
-    };
-    reader.readAsText(file, "utf-8");
+    } catch (err: unknown) {
+      setJdUploadError(err instanceof Error ? err.message : "Failed to read file");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } finally {
+      setJdParsing(false);
+    }
   };
 
   const clearFile = () => {
@@ -57,27 +63,24 @@ export default function Home({ authMenu }: HomeProps) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setResumeUploadError(null);
-
-    if (!isSupportedTextFile(file)) {
-      setResumeUploadError("Only .txt files are supported. Please save your resume as a .txt file and re-upload.");
-      if (resumeInputRef.current) resumeInputRef.current.value = "";
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
+    setResumeParsing(true);
+    try {
+      const text = await parseDocument(file);
       setResumeText(text);
       setResumeFileName(file.name);
-    };
-    reader.readAsText(file, "utf-8");
+    } catch (err: unknown) {
+      setResumeUploadError(err instanceof Error ? err.message : "Failed to read file");
+      if (resumeInputRef.current) resumeInputRef.current.value = "";
+    } finally {
+      setResumeParsing(false);
+    }
   };
 
-  const uploadAccept = ".txt";
+  const uploadAccept = ".txt,.doc,.docx,.pdf";
 
   const clearResume = () => {
     setResumeText("");
@@ -195,13 +198,14 @@ export default function Home({ authMenu }: HomeProps) {
                         type="button"
                         variant="outline"
                         size="sm"
+                        disabled={jdParsing}
                         className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
                         onClick={() => fileInputRef.current?.click()}
                       >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload job description
+                        {jdParsing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                        {jdParsing ? "Reading…" : "Upload job description"}
                       </Button>
-                      {uploadedFileName && (
+                      {uploadedFileName && !jdParsing && (
                         <button type="button" onClick={clearFile} className="text-primary hover:text-white">
                           <X className="w-4 h-4" />
                         </button>
@@ -219,7 +223,7 @@ export default function Home({ authMenu }: HomeProps) {
                       <div className="text-xs text-red-400">{jdUploadError}</div>
                     ) : (
                       <div className="text-xs text-zinc-500 truncate">
-                        {uploadedFileName ? uploadedFileName : "Upload a .txt file"}
+                        {uploadedFileName ? uploadedFileName : "PDF, DOCX, DOC or TXT"}
                       </div>
                     )}
                   </div>
@@ -234,13 +238,14 @@ export default function Home({ authMenu }: HomeProps) {
                         type="button"
                         variant="outline"
                         size="sm"
+                        disabled={resumeParsing}
                         className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
                         onClick={() => resumeInputRef.current?.click()}
                       >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload resume
+                        {resumeParsing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                        {resumeParsing ? "Reading…" : "Upload resume"}
                       </Button>
-                      {resumeFileName && (
+                      {resumeFileName && !resumeParsing && (
                         <button type="button" onClick={clearResume} className="text-primary hover:text-white">
                           <X className="w-4 h-4" />
                         </button>
@@ -258,7 +263,7 @@ export default function Home({ authMenu }: HomeProps) {
                       <div className="text-xs text-red-400">{resumeUploadError}</div>
                     ) : (
                       <div className="text-xs text-zinc-500 truncate">
-                        {resumeFileName ? resumeFileName : "Upload a .txt file"}
+                        {resumeFileName ? resumeFileName : "PDF, DOCX, DOC or TXT"}
                       </div>
                     )}
                   </div>
