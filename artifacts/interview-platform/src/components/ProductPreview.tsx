@@ -142,9 +142,9 @@ function InterviewMockup() {
 
 const CATEGORIES = [
   { label: "Communication", score: 88, color: "bg-blue-500" },
-  { label: "Technical Depth", score: 76, color: "bg-purple-500" },
-  { label: "Problem Solving", score: 82, color: "bg-emerald-500" },
+  { label: "Technical", score: 76, color: "bg-emerald-500" },
   { label: "Confidence", score: 91, color: "bg-amber-500" },
+  { label: "Posture", score: 82, color: "bg-purple-500" },
 ];
 
 function ReportMockup() {
