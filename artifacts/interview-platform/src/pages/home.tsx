@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Briefcase, FileText, Upload, X, Mic, BarChart3, Users, ChevronDown } from "lucide-react";
+import { Loader2, Briefcase, FileText, Upload, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
+import { ProductPreview } from "@/components/ProductPreview";
 
 interface HomeProps {
   authMenu?: React.ReactNode;
@@ -142,25 +143,14 @@ export default function Home({ authMenu }: HomeProps) {
           Sit down with 2–3 AI interviewers who ask real questions based on your role and background. Get a detailed performance report when you're done.
         </p>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-zinc-300">
-            <Users className="w-4 h-4 text-blue-400" />
-            2–3 AI interviewers per session
-          </div>
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-zinc-300">
-            <Mic className="w-4 h-4 text-purple-400" />
-            Voice-based, just like the real thing
-          </div>
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-zinc-300">
-            <BarChart3 className="w-4 h-4 text-emerald-400" />
-            Detailed performance report at the end
-          </div>
+        <div className="mt-10 w-full">
+          <ProductPreview />
         </div>
 
-        <a href="#configure" className="mt-10 flex flex-col items-center gap-1 text-zinc-600 hover:text-zinc-400 transition-colors">
-          <span className="text-xs">Get started</span>
-          <ChevronDown className="w-4 h-4 animate-bounce" />
+        <a href="#configure" className="mt-10 w-full max-w-sm mx-auto block text-center py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold text-sm transition-all hover:scale-[1.02] shadow-lg shadow-blue-500/20">
+          Start your free session
         </a>
+        <p className="mt-3 text-xs text-zinc-600">No credit card required. First session free.</p>
       </section>
 
       {/* ── Setup Form ── */}
