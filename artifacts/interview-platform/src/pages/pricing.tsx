@@ -11,7 +11,7 @@ const FREE_FEATURES = [
   "1 session, up to 15 minutes",
   "2–3 AI interviewers with voice",
   "Full performance report",
-  "Resume & job description support",
+  "Questions personalized to your role & background",
   "No credit card required",
 ];
 
@@ -19,7 +19,7 @@ const STARTER_FEATURES = [
   "4 sessions per month (up to 45 min each)",
   "2–3 AI interviewers with voice",
   "Full performance reports",
-  "Resume & job description tailoring",
+  "Questions personalized to your role & background",
   "Question history",
 ];
 
@@ -27,7 +27,7 @@ const PRO_FEATURES = [
   "Unlimited sessions (up to 45 min each)",
   "2–3 AI interviewers with voice",
   "Full performance reports",
-  "Resume & job description tailoring",
+  "Questions personalized to your role & background",
   "Question history",
   "Priority processing",
 ];
