@@ -353,7 +353,7 @@ router.post("/interview/sessions/:id/next-question", optionalAuth, async (req, r
   const elapsedMinutes = (Date.now() - session.createdAt.getTime()) / 60000;
   const timeUp = elapsedMinutes >= session.durationMinutes;
   if (timeUp) {
-    const thankYouQuestion = `Thank you for interviewing with IntervYou AI. Please review your performance report!`;
+    const thankYouQuestion = `Thank you for interviewing with Ocranity AI. Please review your performance report!`;
     const interviewer = await db
       .select()
       .from(interviewersTable)

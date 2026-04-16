@@ -20,7 +20,7 @@ export default function Home({ authMenu }: HomeProps) {
         <div className="flex justify-center mb-6">
           <img
             src="/logo.png"
-            alt="IntervYou AI"
+            alt="Ocranity AI"
             className="h-20 w-20 rounded-3xl shadow-2xl shadow-blue-500/20 object-cover"
           />
         </div>

@@ -14,11 +14,11 @@ export function AppHeader({ right }: AppHeaderProps) {
         <Link href="/" className="flex items-center gap-3 group">
           <img
             src="/logo-icon.png"
-            alt="IntervYou AI"
+            alt="Ocranity AI"
             className="h-9 w-9 rounded-xl object-cover shadow-md"
           />
           <span className="text-xl font-bold tracking-tight leading-none">
-            <span className="text-white">IntervYou</span>
+            <span className="text-white">Ocranity</span>
             <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent ml-1">
               AI
             </span>

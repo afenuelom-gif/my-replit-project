@@ -2,7 +2,7 @@
 
 ## Overview
 
-A full-stack AI-powered job interview simulator called **IntervYou AI**. Users enter a job role and optional job description, then conduct a simulated interview (2 min test, or 30–45 min full session) with 2-3 AI interviewer personas in a Zoom/Teams-style video call layout. Interviewers speak via ElevenLabs TTS (with a static portrait). At the end, a detailed performance report is generated.
+A full-stack AI-powered job interview simulator called **Ocranity AI**. Users enter a job role and optional job description, then conduct a simulated interview (2 min test, or 30–45 min full session) with 2-3 AI interviewer personas in a Zoom/Teams-style video call layout. Interviewers speak via ElevenLabs TTS (with a static portrait). At the end, a detailed performance report is generated.
 
 ## Architecture
 
