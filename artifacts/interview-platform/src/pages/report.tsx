@@ -146,7 +146,7 @@ export default function Report() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col print:bg-white">
+    <div className="min-h-screen bg-background text-foreground flex flex-col overflow-x-hidden print:bg-white">
       <AppHeader
         right={
           <Link href="/">
@@ -158,13 +158,21 @@ export default function Report() {
       />
       <div className="flex-1 p-6 lg:p-12 print:p-4">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex items-start justify-between gap-4 print:hidden">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">Interview Performance Report</h1>
-            <p className="text-muted-foreground mt-1">Generated on {new Date(report.generatedAt).toLocaleString()}</p>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 print:hidden">
+          <div className="flex items-start gap-3 sm:block">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white leading-tight">Interview Performance Report</h1>
+              <p className="text-muted-foreground mt-1 text-sm">Generated on {new Date(report.generatedAt).toLocaleString()}</p>
+            </div>
+
+            {/* Compact score — mobile only */}
+            <div className="sm:hidden shrink-0 bg-card border border-white/10 rounded-xl px-4 py-2.5 text-center">
+              <div className="text-2xl font-bold text-primary leading-none">{report.overallScore}</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">/100</div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-1">
+          <div className="flex items-center gap-3 sm:pt-1">
             {/* Share dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -202,8 +210,8 @@ export default function Report() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Score badge — visible in screen view next to share */}
-            <div className="flex items-center gap-4 bg-card border border-white/10 rounded-2xl p-6">
+            {/* Full score badge — desktop only */}
+            <div className="hidden sm:flex items-center gap-4 bg-card border border-white/10 rounded-2xl p-6">
               <div className="text-right">
                 <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Overall Score</div>
                 <div className="text-4xl font-bold text-primary">{report.overallScore}<span className="text-xl text-muted-foreground">/100</span></div>
