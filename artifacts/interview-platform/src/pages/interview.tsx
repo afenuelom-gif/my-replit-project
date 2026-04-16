@@ -264,7 +264,7 @@ export default function Interview() {
     }
   };
 
-  const CLOSING_LINE = "Thank you for interviewing with Ocranity AI. Please review your performance report!";
+  const CLOSING_LINE = "Thank you for interviewing with PrepInterv AI. Please review your performance report!";
 
   const handleEndWithThankYou = () => {
     // Mark as ending FIRST so any in-flight TTS chains bail out
