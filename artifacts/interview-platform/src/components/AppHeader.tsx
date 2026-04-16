@@ -9,15 +9,15 @@ export function AppHeader({ right }: AppHeaderProps) {
   const [location] = useLocation();
 
   return (
-    <header className="w-full flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20 backdrop-blur-sm print:hidden">
-      <div className="flex items-center gap-6">
-        <Link href="/" className="flex items-center gap-3 group">
+    <header className="w-full flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/5 bg-black/20 backdrop-blur-sm print:hidden">
+      <div className="flex items-center gap-4 sm:gap-6">
+        <Link href="/" className="flex items-center gap-2 sm:gap-3 group shrink-0">
           <img
             src="/logo-icon.png"
             alt="Ocranity AI"
             className="h-9 w-9 rounded-xl object-cover shadow-md"
           />
-          <span className="text-xl font-bold tracking-tight leading-none">
+          <span className="hidden sm:block text-xl font-bold tracking-tight leading-none">
             <span className="text-white">Ocranity</span>
             <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent ml-1">
               AI
