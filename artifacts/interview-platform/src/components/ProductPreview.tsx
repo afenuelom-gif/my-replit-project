@@ -269,21 +269,21 @@ export function ProductPreview() {
 
   return (
     <div className="w-full max-w-lg mx-auto space-y-4">
-      <div className="flex items-center justify-center gap-1 sm:gap-2">
+      <div className="flex items-center justify-center gap-1.5 sm:gap-2">
         {SLIDES.map((slide, i) => (
           <button
             key={slide.id}
             onClick={() => goTo(i)}
-            className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-medium transition-all border ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-medium transition-all border ${
               active === i
                 ? "border-blue-500/50 bg-blue-500/15 text-blue-300"
                 : "border-white/10 bg-white/5 text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            <span className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full text-[9px] sm:text-xs flex items-center justify-center font-bold shrink-0 ${active === i ? "bg-blue-500 text-white" : "bg-white/10 text-zinc-500"}`}>
+            <span className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full text-[9px] sm:text-xs flex items-center justify-center font-bold shrink-0 ${active === i ? "bg-blue-500 text-white" : "bg-white/10 text-zinc-500"}`}>
               {slide.step}
             </span>
-            <span className="text-[10px] sm:text-xs">{slide.label}</span>
+            <span className="text-[11px] sm:text-xs">{slide.label}</span>
             {i < SLIDES.length - 1 && <ChevronRight className="hidden sm:block w-3 h-3 text-zinc-600 ml-0.5" />}
           </button>
         ))}
