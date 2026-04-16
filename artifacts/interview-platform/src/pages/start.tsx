@@ -10,9 +10,10 @@ import { AppHeader } from "@/components/AppHeader";
 
 interface StartProps {
   authMenu?: React.ReactNode;
+  authMobileMenu?: React.ReactNode;
 }
 
-export default function Start({ authMenu }: StartProps) {
+export default function Start({ authMenu, authMobileMenu }: StartProps) {
   const [, setLocation] = useLocation();
   const createSession = useCreateSession();
 
@@ -110,7 +111,7 @@ export default function Start({ authMenu }: StartProps) {
     <div className="min-h-screen w-full bg-background flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-background to-background pointer-events-none" />
 
-      <AppHeader right={authMenu} />
+      <AppHeader right={authMenu} mobileMenuExtra={authMobileMenu} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 z-10">
         <div className="max-w-2xl w-full space-y-8">

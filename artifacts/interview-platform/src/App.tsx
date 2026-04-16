@@ -70,29 +70,14 @@ function SignUpPage() {
 
 function ClerkUserMenu() {
   const { user } = useUser();
-  const { signOut, openSignIn } = useClerk();
-  const [, setLocation] = useLocation();
+  const { openSignIn } = useClerk();
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center">
       <Show when="signed-in">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            {user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress ?? "Account"}
-          </span>
-          <button
-            className="text-sm text-muted-foreground hover:text-white flex items-center gap-1 px-2 py-1 rounded hover:bg-white/10 transition-colors"
-            onClick={() => setLocation("/history")}
-          >
-            History
-          </button>
-          <button
-            className="text-sm text-muted-foreground hover:text-white flex items-center gap-1 px-2 py-1 rounded hover:bg-white/10 transition-colors"
-            onClick={() => signOut({ redirectUrl: window.location.href })}
-          >
-            Sign Out
-          </button>
-        </div>
+        <span className="text-sm text-muted-foreground truncate max-w-[120px]">
+          {user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress ?? "Account"}
+        </span>
       </Show>
       <Show when="signed-out">
         <button
@@ -106,6 +91,52 @@ function ClerkUserMenu() {
   );
 }
 
+function ClerkMobileActions() {
+  const { signOut } = useClerk();
+  const [, setLocation] = useLocation();
+
+  return (
+    <Show when="signed-in">
+      <button
+        className="flex items-center w-full px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-white/5 transition-colors text-left"
+        onClick={() => setLocation("/history")}
+      >
+        History
+      </button>
+      <button
+        className="flex items-center w-full px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-white/5 transition-colors text-left"
+        onClick={() => signOut({ redirectUrl: window.location.href })}
+      >
+        Sign Out
+      </button>
+    </Show>
+  );
+}
+
+function ClerkDesktopActions() {
+  const { signOut } = useClerk();
+  const [, setLocation] = useLocation();
+
+  return (
+    <Show when="signed-in">
+      <div className="hidden sm:flex items-center gap-1">
+        <button
+          className="text-sm text-muted-foreground hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors"
+          onClick={() => setLocation("/history")}
+        >
+          History
+        </button>
+        <button
+          className="text-sm text-muted-foreground hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors"
+          onClick={() => signOut({ redirectUrl: window.location.href })}
+        >
+          Sign Out
+        </button>
+      </div>
+    </Show>
+  );
+}
+
 function StartRoute() {
   const bypassActive = useDevMode();
 
@@ -116,7 +147,10 @@ function StartRoute() {
   return (
     <>
       <Show when="signed-in">
-        <Start authMenu={<ClerkUserMenu />} />
+        <Start
+          authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>}
+          authMobileMenu={<ClerkMobileActions />}
+        />
       </Show>
       <Show when="signed-out">
         <Redirect to="/sign-up" />
@@ -181,9 +215,9 @@ function ClerkProviderWithRoutes() {
           <ClerkQueryClientCacheInvalidator />
           <DevModeBanner />
           <Switch>
-            <Route path="/" component={() => <Home authMenu={<ClerkUserMenu />} />} />
-            <Route path="/pricing" component={() => <Pricing authMenu={<ClerkUserMenu />} />} />
-            <Route path="/contact" component={() => <Contact authMenu={<ClerkUserMenu />} />} />
+            <Route path="/" component={() => <Home authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />} />
+            <Route path="/pricing" component={() => <Pricing authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />} />
+            <Route path="/contact" component={() => <Contact authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />} />
             <Route path="/start" component={StartRoute} />
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />

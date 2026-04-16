@@ -5,15 +5,16 @@ import { ProductPreview } from "@/components/ProductPreview";
 
 interface HomeProps {
   authMenu?: React.ReactNode;
+  authMobileMenu?: React.ReactNode;
 }
 
-export default function Home({ authMenu }: HomeProps) {
+export default function Home({ authMenu, authMobileMenu }: HomeProps) {
   return (
     <div className="min-h-screen w-full bg-background flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/25 via-background to-background pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-purple-900/10 rounded-full blur-3xl pointer-events-none" />
 
-      <AppHeader right={authMenu} />
+      <AppHeader right={authMenu} mobileMenuExtra={authMobileMenu} />
 
       {/* ── Hero Section ── */}
       <section className="relative z-10 flex flex-col items-center text-center px-6 pt-16 pb-24">

@@ -4,9 +4,10 @@ import { Menu, X } from "lucide-react";
 
 interface AppHeaderProps {
   right?: React.ReactNode;
+  mobileMenuExtra?: React.ReactNode;
 }
 
-export function AppHeader({ right }: AppHeaderProps) {
+export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -30,8 +31,16 @@ export function AppHeader({ right }: AppHeaderProps) {
       location === path ? "text-white font-medium" : "text-zinc-400 hover:text-white"
     }`;
 
+  const dropdownLinkClass = (path: string) =>
+    `flex items-center px-4 py-2.5 text-sm transition-colors ${
+      location === path
+        ? "text-white font-medium bg-white/5"
+        : "text-zinc-400 hover:text-white hover:bg-white/5"
+    }`;
+
   return (
     <header className="w-full flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/5 bg-black/20 backdrop-blur-sm print:hidden relative z-50">
+      {/* Left: logo + desktop nav */}
       <div className="flex items-center gap-4 sm:gap-6">
         <Link href="/" className="flex items-center gap-2.5 group shrink-0">
           <img
@@ -47,15 +56,19 @@ export function AppHeader({ right }: AppHeaderProps) {
           </span>
         </Link>
 
+        {/* Desktop-only nav links */}
         <div className="hidden sm:flex items-center gap-1">
           <Link href="/pricing" className={navLinkClass("/pricing")}>Pricing</Link>
           <Link href="/contact" className={navLinkClass("/contact")}>Contact</Link>
         </div>
       </div>
 
+      {/* Right: username / sign-in + hamburger */}
       <div className="flex items-center gap-2">
-        {right && <div className="flex items-center gap-2">{right}</div>}
+        {/* Always-visible right slot (e.g. username, Sign In, back button) */}
+        {right && <div className="flex items-center">{right}</div>}
 
+        {/* Mobile hamburger */}
         <div ref={menuRef} className="relative sm:hidden">
           <button
             onClick={() => setMenuOpen((o) => !o)}
@@ -66,23 +79,20 @@ export function AppHeader({ right }: AppHeaderProps) {
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-44 rounded-xl border border-white/10 bg-zinc-900/95 backdrop-blur-md shadow-xl py-1.5">
-              <Link
-                href="/pricing"
-                className={`flex items-center px-4 py-2.5 text-sm transition-colors ${
-                  location === "/pricing" ? "text-white font-medium bg-white/5" : "text-zinc-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
+            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-white/10 bg-zinc-900/95 backdrop-blur-md shadow-xl py-1.5">
+              <Link href="/pricing" className={dropdownLinkClass("/pricing")}>
                 Pricing
               </Link>
-              <Link
-                href="/contact"
-                className={`flex items-center px-4 py-2.5 text-sm transition-colors ${
-                  location === "/contact" ? "text-white font-medium bg-white/5" : "text-zinc-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
+              <Link href="/contact" className={dropdownLinkClass("/contact")}>
                 Contact
               </Link>
+
+              {mobileMenuExtra && (
+                <>
+                  <div className="my-1.5 border-t border-white/10" />
+                  {mobileMenuExtra}
+                </>
+              )}
             </div>
           )}
         </div>

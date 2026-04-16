@@ -9,9 +9,10 @@ import { Mail, MessageSquare, CheckCircle2, Loader2 } from "lucide-react";
 
 interface ContactProps {
   authMenu?: React.ReactNode;
+  authMobileMenu?: React.ReactNode;
 }
 
-export default function Contact({ authMenu }: ContactProps) {
+export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
@@ -31,7 +32,7 @@ export default function Contact({ authMenu }: ContactProps) {
     <div className="min-h-screen w-full bg-background flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-background to-background pointer-events-none" />
 
-      <AppHeader right={authMenu} />
+      <AppHeader right={authMenu} mobileMenuExtra={authMobileMenu} />
 
       <main className="flex-1 flex flex-col items-center z-10 px-6 py-16">
         <div className="max-w-4xl w-full space-y-12">
