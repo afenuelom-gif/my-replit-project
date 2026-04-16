@@ -269,24 +269,26 @@ export function ProductPreview() {
 
   return (
     <div className="w-full max-w-lg mx-auto space-y-4">
-      <div className="flex items-center justify-center gap-2">
-        {SLIDES.map((slide, i) => (
-          <button
-            key={slide.id}
-            onClick={() => goTo(i)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-              active === i
-                ? "border-blue-500/50 bg-blue-500/15 text-blue-300"
-                : "border-white/10 bg-white/5 text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            <span className={`w-4 h-4 rounded-full text-xs flex items-center justify-center font-bold ${active === i ? "bg-blue-500 text-white" : "bg-white/10 text-zinc-500"}`}>
-              {slide.step}
-            </span>
-            {slide.label}
-            {i < SLIDES.length - 1 && <ChevronRight className="w-3 h-3 text-zinc-600 ml-1" />}
-          </button>
-        ))}
+      <div className="overflow-x-auto scrollbar-hide w-full">
+        <div className="flex items-center justify-center gap-2 min-w-max mx-auto px-2">
+          {SLIDES.map((slide, i) => (
+            <button
+              key={slide.id}
+              onClick={() => goTo(i)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all border whitespace-nowrap ${
+                active === i
+                  ? "border-blue-500/50 bg-blue-500/15 text-blue-300"
+                  : "border-white/10 bg-white/5 text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              <span className={`w-4 h-4 rounded-full text-xs flex items-center justify-center font-bold ${active === i ? "bg-blue-500 text-white" : "bg-white/10 text-zinc-500"}`}>
+                {slide.step}
+              </span>
+              {slide.label}
+              {i < SLIDES.length - 1 && <ChevronRight className="w-3 h-3 text-zinc-600 ml-1" />}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80 backdrop-blur-sm shadow-2xl shadow-black/50" style={{ height: 420 }}>
