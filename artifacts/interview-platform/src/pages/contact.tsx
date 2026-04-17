@@ -57,7 +57,7 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-white">Email us</div>
-                    <div className="text-sm text-zinc-500 mt-0.5">hello@prepinterv.ai</div>
+                    <div className="text-sm text-zinc-500 mt-0.5">hello@prepinterv.com</div>
                     <div className="text-xs text-zinc-600 mt-1">We aim to reply within 24 hours.</div>
                   </div>
                 </div>

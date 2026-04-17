@@ -60,7 +60,7 @@ export default function Privacy() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">6. Your rights</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            You have the right to access, correct, or delete your personal data. To exercise these rights, please contact us at <a href="mailto:hello@prepinterv.ai" className="text-primary hover:underline">hello@prepinterv.ai</a>.
+            You have the right to access, correct, or delete your personal data. To exercise these rights, please contact us at <a href="mailto:hello@prepinterv.com" className="text-primary hover:underline">hello@prepinterv.com</a>.
           </p>
         </section>
 
@@ -74,7 +74,7 @@ export default function Privacy() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">8. Contact</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            For any privacy-related questions, contact IvanGold Technologies at <a href="mailto:hello@prepinterv.ai" className="text-primary hover:underline">hello@prepinterv.ai</a>.
+            For any privacy-related questions, contact IvanGold Technologies at <a href="mailto:hello@prepinterv.com" className="text-primary hover:underline">hello@prepinterv.com</a>.
           </p>
         </section>
       </main>
