@@ -248,7 +248,17 @@ export default function AdminFeedback() {
   const helpfulPct = total > 0 ? Math.round((helpfulCount / total) * 100) : 0;
   const notHelpfulPct = total > 0 ? Math.round((notHelpfulCount / total) * 100) : 0;
 
-  const { dailyData, weeklyData, roleData } = useChartData(rows);
+  const [chartZoom, setChartZoom] = useState<"30d" | "90d" | "all">("all");
+
+  const chartRows = useMemo(() => {
+    if (!rows || chartZoom === "all") return rows;
+    const days = chartZoom === "30d" ? 30 : 90;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    return rows.filter((r) => new Date(r.createdAt) >= cutoff);
+  }, [rows, chartZoom]);
+
+  const { dailyData, weeklyData, roleData } = useChartData(chartRows);
 
   const autoWeekly = dailyData.length > 14;
   const [granularityOverride, setGranularityOverride] = useState<"daily" | "weekly" | null>(() => {
@@ -535,6 +545,18 @@ export default function AdminFeedback() {
                                 <span className="text-xs font-normal text-slate-400">(weekly)</span>
                               )}
                             </CardTitle>
+                            <div className="flex items-center gap-2">
+                            <div className="flex items-center rounded-md border border-slate-200 overflow-hidden text-xs font-medium">
+                              {(["30d", "90d", "all"] as const).map((z, i) => (
+                                <button
+                                  key={z}
+                                  onClick={() => setChartZoom(z)}
+                                  className={`px-2.5 py-1 transition-colors ${i > 0 ? "border-l border-slate-200" : ""} ${chartZoom === z ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-50"}`}
+                                >
+                                  {z === "30d" ? "30d" : z === "90d" ? "90d" : "All"}
+                                </button>
+                              ))}
+                            </div>
                             <div className="flex items-center rounded-md border border-slate-200 overflow-hidden text-xs font-medium">
                               <button
                                 onClick={() => setGranularity("daily")}
@@ -549,6 +571,7 @@ export default function AdminFeedback() {
                                 Weekly
                               </button>
                             </div>
+                          </div>
                           </div>
                         </CardHeader>
                         <CardContent className="pb-4">
