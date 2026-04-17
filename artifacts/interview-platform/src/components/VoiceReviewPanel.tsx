@@ -219,11 +219,11 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
 
   return (
     <div className="print:hidden sticky top-[65px] z-20 bg-white border border-blue-200 rounded-2xl shadow-md overflow-hidden">
-      <div className="flex items-center gap-4 px-5 py-4">
+      <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3 sm:py-4">
 
         {/* Avatar */}
         <div className="relative shrink-0">
-          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-blue-200 bg-slate-100">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-blue-200 bg-slate-100">
             {interviewer.avatarUrl ? (
               <img src={interviewer.avatarUrl} alt={interviewer.name}
                 className="w-full h-full object-cover object-top" />
@@ -242,18 +242,18 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
         <div className="flex-1 min-w-0">
 
           {/* Section label + status */}
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-sm font-semibold text-slate-900">{interviewer.name}</span>
+          <div className="flex items-center gap-2 mb-1.5 min-w-0">
+            <span className="text-sm font-semibold text-slate-900 shrink-0">{interviewer.name}</span>
             {done ? (
-              <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Review complete
+              <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium truncate">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Review complete
               </span>
             ) : stopped ? (
-              <span className="text-xs text-slate-400 font-medium">Stopped</span>
+              <span className="text-xs text-slate-400 font-medium truncate">Stopped</span>
             ) : paused ? (
-              <span className="text-xs text-amber-600 font-medium">Paused — {currentItem?.label}</span>
+              <span className="text-xs text-amber-600 font-medium truncate">Paused — {currentItem?.label}</span>
             ) : (
-              <span className="text-xs text-blue-600 font-medium">
+              <span className="text-xs text-blue-600 font-medium truncate">
                 {currentItem ? currentItem.label : "Preparing review…"}
               </span>
             )}
@@ -310,15 +310,15 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
 
             {paused ? (
               <Button variant="ghost" size="sm" onClick={handleResume}
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5 px-2">
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5 px-1.5 sm:px-2">
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span className="text-xs">Resume</span>
+                <span className="text-xs hidden sm:inline">Resume</span>
               </Button>
             ) : (
               <Button variant="ghost" size="sm" onClick={handlePause}
-                className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 gap-1.5 px-2">
+                className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 gap-1.5 px-1.5 sm:px-2">
                 <Pause className="w-3.5 h-3.5 fill-current" />
-                <span className="text-xs">Pause</span>
+                <span className="text-xs hidden sm:inline">Pause</span>
               </Button>
             )}
 
