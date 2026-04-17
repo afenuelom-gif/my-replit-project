@@ -296,6 +296,27 @@ export default function Report() {
 
   const firstInterviewer = sessionData?.interviewers?.[0] ?? null;
 
+  const handleDownloadPdf = useCallback(async () => {
+    if (!report || isGeneratingPdf) return;
+    setIsGeneratingPdf(true);
+    try {
+      const jobRole = sessionData?.session?.jobRole;
+      const safeName = jobRole
+        ? jobRole.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+        : "";
+      const filename = safeName ? `interview-report-${safeName}.pdf` : "interview-report.pdf";
+      await downloadReportAsPdf(report as Parameters<typeof downloadReportAsPdf>[0], sessionData ?? null, filename);
+    } catch {
+      toast({
+        title: "PDF generation failed",
+        description: "Unable to create the PDF. Please try again or use the Print option in the Share menu.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  }, [report, sessionData, isGeneratingPdf, toast]);
+
   if (isLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center text-slate-600">Analyzing performance…</div>;
   }
@@ -352,27 +373,6 @@ export default function Report() {
       try { await navigator.share({ title: "My Interview Performance Report", text: shareText, url: pageUrl }); } catch {}
     }
   }
-
-  const handleDownloadPdf = useCallback(async () => {
-    if (!report || isGeneratingPdf) return;
-    setIsGeneratingPdf(true);
-    try {
-      const jobRole = sessionData?.session?.jobRole;
-      const safeName = jobRole
-        ? jobRole.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
-        : "";
-      const filename = safeName ? `interview-report-${safeName}.pdf` : "interview-report.pdf";
-      await downloadReportAsPdf(report as Parameters<typeof downloadReportAsPdf>[0], sessionData ?? null, filename);
-    } catch {
-      toast({
-        title: "PDF generation failed",
-        description: "Unable to create the PDF. Please try again or use the Print option in the Share menu.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingPdf(false);
-    }
-  }, [report, sessionData, isGeneratingPdf, toast]);
 
   async function copyToClipboard() {
     try {
