@@ -446,8 +446,17 @@ export default function Interview() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col relative overflow-hidden">
       <canvas ref={canvasRef} className="hidden" />
+
+      {/* Gradient orbs — same blue/purple family as the rest of the site */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-48 -right-48 w-[700px] h-[700px] rounded-full bg-blue-600/20 blur-[100px]" />
+        <div className="absolute -top-32 -left-48 w-[600px] h-[600px] rounded-full bg-purple-600/15 blur-[90px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[400px] rounded-full bg-indigo-500/10 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[400px] rounded-full bg-blue-600/10 blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[400px] rounded-full bg-purple-600/8 blur-[120px]" />
+      </div>
 
       {/* Floating timer — mobile only, always visible */}
       <div className={`fixed top-4 right-4 z-50 sm:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full border backdrop-blur-md shadow-lg ${
@@ -459,7 +468,7 @@ export default function Interview() {
       </div>
 
       {/* Header */}
-      <header className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-black/50 backdrop-blur-md">
+      <header className="relative z-10 h-16 border-b border-white/10 flex items-center justify-between px-6 bg-black/50 backdrop-blur-md">
         <div className="flex items-center gap-4">
           <Activity className="w-5 h-5 text-primary" />
           <h1 className="font-semibold text-lg">{sessionData?.session.jobRole} Interview</h1>
@@ -472,7 +481,7 @@ export default function Interview() {
       </header>
 
       {/* Main Area: Video Grid + Transcript Panel */}
-      <main className="flex-1 flex overflow-hidden">
+      <main className="relative z-10 flex-1 flex overflow-hidden">
         {/* Video Grid */}
         <div className="flex-1 p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 content-start overflow-y-auto">
           {/* Interviewers */}
@@ -589,7 +598,7 @@ export default function Interview() {
       </main>
 
       {/* Bottom Control Bar */}
-      <footer className="border-t border-white/10 bg-black/80 backdrop-blur-xl px-4 py-4 sm:px-6 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shrink-0 overflow-x-hidden">
+      <footer className="relative z-10 border-t border-white/10 bg-black/80 backdrop-blur-xl px-4 py-4 sm:px-6 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shrink-0 overflow-x-hidden">
         {/* Question text */}
         <div className="flex-1 max-w-3xl w-full">
           <div className="text-xs text-primary mb-1 font-mono uppercase tracking-wider">Current Question</div>
