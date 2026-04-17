@@ -265,7 +265,14 @@ export default function AdminFeedback() {
   const helpfulPct = total > 0 ? Math.round((helpfulCount / total) * 100) : 0;
   const notHelpfulPct = total > 0 ? Math.round((notHelpfulCount / total) * 100) : 0;
 
-  const [chartZoom, setChartZoom] = useState<"30d" | "90d" | "all">("all");
+  const [chartZoom, setChartZoomState] = useState<"30d" | "90d" | "all">(() => {
+    const saved = localStorage.getItem("feedbackChartZoom");
+    return saved === "30d" || saved === "90d" || saved === "all" ? saved : "all";
+  });
+  function setChartZoom(value: "30d" | "90d" | "all") {
+    localStorage.setItem("feedbackChartZoom", value);
+    setChartZoomState(value);
+  }
 
   const chartRows = useMemo(() => {
     if (!rows || chartZoom === "all") return rows;
