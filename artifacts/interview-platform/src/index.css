@@ -179,23 +179,222 @@
 /* ── Print / Save as PDF ──────────────────────────────────────── */
 @media print {
   @page {
-    margin: 1.5cm;
+    margin: 1.8cm 1.5cm;
     size: A4;
   }
 
+  /* ── Reset & base ──────────────────────────────────────────── */
+  *,
+  *::before,
+  *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  html,
   body {
-    background: white !important;
-    color: #111 !important;
-    font-size: 12pt;
+    background: #ffffff !important;
+    color: #1a1a2e !important;
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 10pt !important;
+    line-height: 1.55 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
-  .print\:hidden {
-    display: none !important;
-  }
-
+  /* ── Hide interactive / decorative elements ────────────────── */
+  .print\:hidden,
   nav,
   button,
   [role="button"] {
     display: none !important;
+  }
+
+  /* ── Layout ────────────────────────────────────────────────── */
+  .print\:block   { display: block !important; }
+  .print\:grid-cols-1 { grid-template-columns: 1fr !important; }
+  .print\:p-4    { padding: 1rem !important; }
+  .print\:gap-6  { gap: 1.25rem !important; }
+  .print\:space-y-4 > * + * { margin-top: 1rem !important; }
+
+  /* ── Page-break rules ──────────────────────────────────────── */
+  .print\:break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  h1, h2, h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* ── Cards ─────────────────────────────────────────────────── */
+  [class*="rounded"] {
+    border-radius: 6px !important;
+  }
+
+  .bg-white,
+  [class*="bg-slate-50"],
+  [class*="bg-blue-50"],
+  [class*="bg-emerald-50"],
+  [class*="bg-amber-50"],
+  [class*="bg-red-50"] {
+    background-color: #ffffff !important;
+  }
+
+  /* Preserve subtle tinted card backgrounds */
+  .bg-blue-50\/40   { background-color: #eff6ff !important; }
+  .bg-emerald-50\/40 { background-color: #f0fdf4 !important; }
+  .bg-amber-50\/40  { background-color: #fffbeb !important; }
+  .bg-red-50\/40    { background-color: #fef2f2 !important; }
+
+  /* Card borders */
+  [class*="border-slate-200"],
+  [class*="border-blue-200"],
+  [class*="border-emerald-200"],
+  [class*="border-amber-200"],
+  [class*="border-red-200"] {
+    border-color: currentColor !important;
+    opacity: 0.6;
+  }
+
+  /* ── Progress bars ─────────────────────────────────────────── */
+  [role="progressbar"] {
+    border: 1px solid #d1d5db !important;
+    background-color: #f3f4f6 !important;
+  }
+
+  [role="progressbar"] > * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Typography ────────────────────────────────────────────── */
+  h1 { font-size: 18pt !important; font-weight: 700 !important; color: #0f172a !important; }
+  h2 { font-size: 13pt !important; font-weight: 600 !important; color: #1e293b !important; }
+  h3 { font-size: 11pt !important; font-weight: 600 !important; color: #1e293b !important; }
+  h4 { font-size: 9pt  !important; font-weight: 600 !important; }
+  p, li, span { font-size: 9.5pt !important; }
+
+  .text-blue-600, .text-blue-700, .text-blue-800 { color: #1d4ed8 !important; }
+  .text-emerald-600, .text-emerald-700            { color: #059669 !important; }
+  .text-amber-600,  .text-amber-700               { color: #d97706 !important; }
+  .text-red-600,    .text-red-700                 { color: #dc2626 !important; }
+  .text-slate-400   { color: #94a3b8 !important; }
+  .text-slate-500   { color: #64748b !important; }
+  .text-slate-600   { color: #475569 !important; }
+  .text-slate-700   { color: #334155 !important; }
+  .text-slate-800,
+  .text-slate-900   { color: #0f172a !important; }
+
+  /* ── Print-only header styles ──────────────────────────────── */
+  .print-header {
+    display: flex !important;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 2px solid #1d4ed8;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .print-header-logo {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 6px;
+    background: #1d4ed8;
+  }
+
+  .print-header-brand {
+    color: #ffffff;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    writing-mode: initial;
+  }
+
+  .print-header-body {
+    flex: 1;
+  }
+
+  .print-title {
+    font-size: 16pt !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    margin: 0 0 0.15rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .print-role {
+    font-size: 9.5pt;
+    font-weight: 600;
+    color: #1d4ed8;
+    margin: 0 0 0.1rem;
+  }
+
+  .print-date {
+    font-size: 8pt;
+    color: #64748b;
+    margin: 0;
+  }
+
+  .print-score-badge {
+    flex-shrink: 0;
+    text-align: center;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 0.4rem 0.75rem;
+    background: #eff6ff;
+  }
+
+  .print-score-label {
+    display: block;
+    font-size: 7pt;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.1rem;
+  }
+
+  .print-score-value {
+    display: block;
+    font-size: 20pt;
+    font-weight: 700;
+    color: #1d4ed8;
+    line-height: 1;
+  }
+
+  .print-score-denom {
+    font-size: 11pt;
+    color: #94a3b8;
+  }
+
+  /* ── Filler word badge ─────────────────────────────────────── */
+  [class*="rounded-full"][class*="border"] {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Misc ──────────────────────────────────────────────────── */
+  a[href]::after {
+    content: none !important;
+  }
+
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Question cards should never be orphaned mid-page */
+  .lg\:col-span-2 > * {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

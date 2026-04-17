@@ -313,21 +313,23 @@ export default function Report() {
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col overflow-x-hidden print:bg-white">
 
-      {/* Gradient blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Gradient blobs — hidden in print */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none print:hidden">
         <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-blue-500/30 blur-[80px]" />
         <div className="absolute top-1/3 -left-32 w-[400px] h-[400px] rounded-full bg-purple-500/25 blur-[70px]" />
       </div>
 
-      <AppHeader
-        right={
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="text-slate-600 hover:text-blue-700 hover:bg-blue-50 gap-2 font-medium">
-              <ChevronLeft className="w-4 h-4" /> Dashboard
-            </Button>
-          </Link>
-        }
-      />
+      <div className="print:hidden">
+        <AppHeader
+          right={
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="text-slate-600 hover:text-blue-700 hover:bg-blue-50 gap-2 font-medium">
+                <ChevronLeft className="w-4 h-4" /> Dashboard
+              </Button>
+            </Link>
+          }
+        />
+      </div>
 
       <div className="flex-1 p-6 lg:p-12 print:p-4 relative z-10">
         <div className="max-w-6xl mx-auto space-y-8">
@@ -420,29 +422,39 @@ export default function Report() {
             </div>
           </div>
 
-          {/* Voice-guided walkthrough panel */}
+          {/* Voice-guided walkthrough panel — hidden in print */}
           {report && firstInterviewer && (
-            <VoiceReviewPanel
-              key={sessionId}
-              sessionId={sessionId}
-              interviewer={firstInterviewer}
-              report={report as { answerFeedback: Array<{ questionText: string; feedback: string; strengths: string[]; improvements: string[] }>; suggestions?: string[] }}
-              hasFeedback={hasFeedback}
-              onReviewComplete={() => { if (report.answerFeedback?.length > 0 && !hasFeedback) setShowFeedback(true); }}
-            />
+            <div className="print:hidden">
+              <VoiceReviewPanel
+                key={sessionId}
+                sessionId={sessionId}
+                interviewer={firstInterviewer}
+                report={report as { answerFeedback: Array<{ questionText: string; feedback: string; strengths: string[]; improvements: string[] }>; suggestions?: string[] }}
+                hasFeedback={hasFeedback}
+                onReviewComplete={() => { if (report.answerFeedback?.length > 0 && !hasFeedback) setShowFeedback(true); }}
+              />
+            </div>
           )}
 
           {/* Print-only header */}
-          <div className="hidden print:block mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Interview Performance Report</h1>
-            <p className="text-gray-500 text-sm mt-1">Generated on {new Date(report.generatedAt).toLocaleString()}</p>
-            <div className="mt-3 inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-              <span className="text-sm font-medium text-gray-600">Overall Score:</span>
-              <span className="text-2xl font-bold text-blue-600">{report.overallScore}/100</span>
+          <div className="hidden print:block print-header">
+            <div className="print-header-logo">
+              <span className="print-header-brand">InterviewAI</span>
+            </div>
+            <div className="print-header-body">
+              <h1 className="print-title">Interview Performance Report</h1>
+              {sessionData?.session?.jobRole && (
+                <p className="print-role">Role: {sessionData.session.jobRole}</p>
+              )}
+              <p className="print-date">Generated on {new Date(report.generatedAt).toLocaleString()}</p>
+            </div>
+            <div className="print-score-badge">
+              <span className="print-score-label">Overall Score</span>
+              <span className="print-score-value">{report.overallScore}<span className="print-score-denom">/100</span></span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:grid-cols-1 print:gap-6">
 
             {/* Left Column */}
             <div className="lg:col-span-1 space-y-6 print:space-y-4">
@@ -654,14 +666,18 @@ export default function Report() {
           </div>
         </div>
       </div>
-      <AppFooter />
+      <div className="print:hidden">
+        <AppFooter />
+      </div>
 
       {showFeedback && (
-        <FeedbackModal
-          sessionId={sessionId}
-          jobRole={sessionData?.session?.jobRole ?? "this role"}
-          onClose={() => setShowFeedback(false)}
-        />
+        <div className="print:hidden">
+          <FeedbackModal
+            sessionId={sessionId}
+            jobRole={sessionData?.session?.jobRole ?? "this role"}
+            onClose={() => setShowFeedback(false)}
+          />
+        </div>
       )}
     </div>
   );
