@@ -48,7 +48,7 @@ export default function Privacy() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">4. Session recordings</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            Audio captured during your interview session is streamed to our transcription provider in real time. Only the resulting text transcript is stored — the raw audio is never written to our database or any persistent storage. Transcripts are associated with your account to generate your performance report and allow you to review your session history. You may request deletion of your session data at any time by contacting us.
+            Audio captured during your interview session is streamed to our transcription provider in real time. Only the resulting text transcript is stored — the raw audio is never written to our database or any persistent storage. Your camera is used solely for posture analysis; individual frames are processed on the fly and immediately discarded — no images or video footage are stored at any point. Transcripts and posture scores are associated with your account to generate your performance report and allow you to review your session history. You may request deletion of your session data at any time by contacting us.
           </p>
         </section>
 
