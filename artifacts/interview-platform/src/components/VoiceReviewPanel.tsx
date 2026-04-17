@@ -28,7 +28,7 @@ function ScrollingText({ children, className }: { children: React.ReactNode; cla
         ref={innerRef}
         className="whitespace-nowrap inline-block"
         style={scrollPx > 0 ? {
-          animation: "text-scroll 5s ease-in-out infinite",
+          animation: "text-scroll 4s linear infinite",
           "--scroll-px": `${scrollPx}px`,
         } as React.CSSProperties : undefined}
       >
