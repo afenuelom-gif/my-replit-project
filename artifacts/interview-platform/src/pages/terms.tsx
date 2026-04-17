@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { Link } from "wouter";
 import AppFooter from "@/components/AppFooter";
 
 export default function Terms() {
+  useEffect(() => { window.scrollTo({ top: 0 }); }, []);
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
       <header className="border-b border-white/5 px-6 py-4">
