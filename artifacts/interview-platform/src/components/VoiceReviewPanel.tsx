@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useElevenLabsTTS } from "@/hooks/useElevenLabsTTS";
-import { Square, CheckCircle2 } from "lucide-react";
+import { Square, CheckCircle2, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Interviewer {
@@ -106,17 +106,29 @@ export default function VoiceReviewPanel({
   interviewer,
   report,
 }: VoiceReviewPanelProps) {
-  const { speak, stop, isSpeaking } = useElevenLabsTTS(sessionId);
+  const { speak, stop, pause, resume, isSpeaking, isPaused } = useElevenLabsTTS(sessionId);
+
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   const [stopped, setStopped] = useState(false);
   const [done, setDone] = useState(false);
+  const [paused, setPaused] = useState(false);
+
   const scriptRef = useRef<NarrationItem[]>([]);
   const stoppedRef = useRef(false);
   const runningRef = useRef(false);
+  const pausedRef = useRef(false);
+  const resumeResolveRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     scriptRef.current = buildScript(report);
   }, [report]);
+
+  const waitUntilResumed = useCallback((): Promise<void> => {
+    if (!pausedRef.current) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      resumeResolveRef.current = resolve;
+    });
+  }, []);
 
   const runScript = useCallback(async () => {
     if (runningRef.current) return;
@@ -125,9 +137,12 @@ export default function VoiceReviewPanel({
 
     const script = scriptRef.current;
     for (let i = 0; i < script.length; i++) {
+      await waitUntilResumed();
       if (stoppedRef.current) break;
       setCurrentIndex(i);
       await speak(script[i].text, interviewer.id);
+      if (stoppedRef.current) break;
+      await waitUntilResumed();
       if (stoppedRef.current) break;
       await new Promise<void>((res) => setTimeout(res, 500));
     }
@@ -137,7 +152,7 @@ export default function VoiceReviewPanel({
       setDone(true);
       setCurrentIndex(-1);
     }
-  }, [speak, interviewer.id]);
+  }, [speak, interviewer.id, waitUntilResumed]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -150,10 +165,28 @@ export default function VoiceReviewPanel({
     };
   }, []);
 
+  const handlePause = useCallback(() => {
+    pausedRef.current = true;
+    setPaused(true);
+    pause();
+  }, [pause]);
+
+  const handleResume = useCallback(() => {
+    pausedRef.current = false;
+    setPaused(false);
+    resume();
+    resumeResolveRef.current?.();
+    resumeResolveRef.current = null;
+  }, [resume]);
+
   const handleStop = useCallback(() => {
     stoppedRef.current = true;
     runningRef.current = false;
+    pausedRef.current = false;
+    resumeResolveRef.current?.();
+    resumeResolveRef.current = null;
     setStopped(true);
+    setPaused(false);
     stop();
     setCurrentIndex(-1);
   }, [stop]);
@@ -166,6 +199,8 @@ export default function VoiceReviewPanel({
       : done
       ? 100
       : 0;
+
+  const isActivelyPlaying = isSpeaking && !isPaused && !paused;
 
   return (
     <div className="print:hidden sticky top-[65px] z-20 bg-white border border-blue-200 rounded-2xl shadow-md overflow-hidden">
@@ -186,7 +221,7 @@ export default function VoiceReviewPanel({
               </div>
             )}
           </div>
-          {isSpeaking && (
+          {isActivelyPlaying && (
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-blue-500 border-2 border-white animate-pulse" />
           )}
         </div>
@@ -201,6 +236,8 @@ export default function VoiceReviewPanel({
               </span>
             ) : stopped ? (
               <span className="text-xs text-slate-400 font-medium">Stopped</span>
+            ) : paused ? (
+              <span className="text-xs text-amber-600 font-medium">Paused</span>
             ) : (
               <span className="text-xs text-blue-600 font-medium">
                 {currentItem ? currentItem.label : "Preparing review…"}
@@ -215,7 +252,7 @@ export default function VoiceReviewPanel({
             </p>
           ) : (
             <div className="flex items-center gap-3">
-              <SpeakingWaveform active={isSpeaking} />
+              <SpeakingWaveform active={isActivelyPlaying} />
               <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-500 rounded-full transition-all duration-500"
@@ -229,17 +266,40 @@ export default function VoiceReviewPanel({
           )}
         </div>
 
-        {/* Stop button */}
+        {/* Controls */}
         {!done && !stopped && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleStop}
-            className="shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50 gap-1.5"
-          >
-            <Square className="w-3.5 h-3.5 fill-current" />
-            <span className="text-xs">Stop</span>
-          </Button>
+          <div className="flex items-center gap-1 shrink-0">
+            {paused ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResume}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span className="text-xs">Resume</span>
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePause}
+                className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 gap-1.5"
+              >
+                <Pause className="w-3.5 h-3.5 fill-current" />
+                <span className="text-xs">Pause</span>
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleStop}
+              className="text-slate-400 hover:text-red-600 hover:bg-red-50 gap-1.5"
+            >
+              <Square className="w-3.5 h-3.5 fill-current" />
+              <span className="text-xs">Stop</span>
+            </Button>
+          </div>
         )}
       </div>
     </div>

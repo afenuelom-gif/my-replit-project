@@ -18,6 +18,7 @@ function browserFallbackSpeak(text: string): Promise<void> {
 
 export function useElevenLabsTTS(sessionId: number) {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isBrowserTTSRef = useRef(false);
 
@@ -32,6 +33,27 @@ export function useElevenLabsTTS(sessionId: number) {
       isBrowserTTSRef.current = false;
     }
     setIsSpeaking(false);
+    setIsPaused(false);
+  }, []);
+
+  const pause = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    if (isBrowserTTSRef.current) {
+      window.speechSynthesis?.pause();
+    }
+    setIsPaused(true);
+  }, []);
+
+  const resume = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.play().catch(() => {});
+    }
+    if (isBrowserTTSRef.current) {
+      window.speechSynthesis?.resume();
+    }
+    setIsPaused(false);
   }, []);
 
   const speak = useCallback(
@@ -67,6 +89,7 @@ export function useElevenLabsTTS(sessionId: number) {
           const finish = () => {
             audioRef.current = null;
             setIsSpeaking(false);
+            setIsPaused(false);
             resolve();
           };
           audio.onended = finish;
@@ -86,6 +109,7 @@ export function useElevenLabsTTS(sessionId: number) {
         await browserFallbackSpeak(text).catch(() => {});
         isBrowserTTSRef.current = false;
         setIsSpeaking(false);
+        setIsPaused(false);
       }
     },
     [sessionId, stop]
@@ -103,5 +127,5 @@ export function useElevenLabsTTS(sessionId: number) {
     };
   }, []);
 
-  return { speak, stop, isSpeaking };
+  return { speak, stop, pause, resume, isSpeaking, isPaused };
 }
