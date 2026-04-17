@@ -279,21 +279,7 @@ export default function Interview() {
     for (const ref of cardRefsMap.current.values()) {
       ref.current?.stop();
     }
-    // Play closing TTS via the active interviewer's card
-    const activeInterviewer = sessionData?.interviewers.find(i => i.id === activeInterviewerId)
-      ?? sessionData?.interviewers[0];
-    if (!activeInterviewer) {
-      handleComplete();
-      return;
-    }
-    const cardRef = cardRefsMap.current.get(activeInterviewer.id);
-    closingTTSStartedRef.current = true;
-    if (cardRef?.current) {
-      cardRef.current.stop();
-      cardRef.current.speak(CLOSING_LINE).catch(() => handleComplete());
-    } else {
-      handleComplete();
-    }
+    setLocation("/");
   };
 
   const handleCancel = async () => {
