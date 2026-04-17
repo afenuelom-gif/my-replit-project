@@ -74,11 +74,20 @@ function toDateKey(iso: string): string {
   });
 }
 
+function toWeekKey(iso: string): string {
+  const d = new Date(iso);
+  const day = d.getDay();
+  const sunday = new Date(d);
+  sunday.setDate(d.getDate() - day);
+  return "Wk of " + sunday.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 function useChartData(rows: FeedbackRow[] | undefined) {
   return useMemo(() => {
-    if (!rows || rows.length === 0) return { dailyData: [], roleData: [] };
+    if (!rows || rows.length === 0) return { dailyData: [], weeklyData: [], roleData: [] };
 
     const dailyMap = new Map<string, { date: string; helpful: number; notHelpful: number }>();
+    const weeklyMap = new Map<string, { date: string; helpful: number; notHelpful: number }>();
     const roleMap = new Map<string, { role: string; helpful: number; notHelpful: number }>();
 
     const sorted = [...rows].sort(
@@ -94,6 +103,14 @@ function useChartData(rows: FeedbackRow[] | undefined) {
       if (row.feedbackHelpful) day.helpful += 1;
       else day.notHelpful += 1;
 
+      const weekKey = toWeekKey(row.createdAt);
+      if (!weeklyMap.has(weekKey)) {
+        weeklyMap.set(weekKey, { date: weekKey, helpful: 0, notHelpful: 0 });
+      }
+      const week = weeklyMap.get(weekKey)!;
+      if (row.feedbackHelpful) week.helpful += 1;
+      else week.notHelpful += 1;
+
       const roleKey = row.jobRole;
       if (!roleMap.has(roleKey)) {
         roleMap.set(roleKey, { role: roleKey, helpful: 0, notHelpful: 0 });
@@ -107,7 +124,11 @@ function useChartData(rows: FeedbackRow[] | undefined) {
       (a, b) => b.notHelpful - a.notHelpful
     );
 
-    return { dailyData: Array.from(dailyMap.values()), roleData };
+    return {
+      dailyData: Array.from(dailyMap.values()),
+      weeklyData: Array.from(weeklyMap.values()),
+      roleData,
+    };
   }, [rows]);
 }
 
@@ -225,7 +246,12 @@ export default function AdminFeedback() {
   const helpfulPct = total > 0 ? Math.round((helpfulCount / total) * 100) : 0;
   const notHelpfulPct = total > 0 ? Math.round((notHelpfulCount / total) * 100) : 0;
 
-  const { dailyData, roleData } = useChartData(rows);
+  const { dailyData, weeklyData, roleData } = useChartData(rows);
+
+  const autoWeekly = dailyData.length > 14;
+  const [granularityOverride, setGranularityOverride] = useState<"daily" | "weekly" | null>(null);
+  const granularity = granularityOverride ?? (autoWeekly ? "weekly" : "daily");
+  const trendData = granularity === "weekly" ? weeklyData : dailyData;
 
   return (
     <div className="min-h-screen bg-white flex flex-col overflow-x-hidden relative">
@@ -481,29 +507,48 @@ export default function AdminFeedback() {
                       {/* Submissions over time */}
                       <Card className="bg-white border-slate-200 shadow-sm">
                         <CardHeader className="pb-2 pt-4">
-                          <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 text-blue-500" />
-                            Submissions Over Time
-                          </CardTitle>
+                          <div className="flex items-center justify-between gap-2">
+                            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                              <TrendingUp className="h-4 w-4 text-blue-500" />
+                              Submissions Over Time
+                              {autoWeekly && granularityOverride === null && (
+                                <span className="text-xs font-normal text-slate-400">(weekly)</span>
+                              )}
+                            </CardTitle>
+                            <div className="flex items-center rounded-md border border-slate-200 overflow-hidden text-xs font-medium">
+                              <button
+                                onClick={() => setGranularityOverride("daily")}
+                                className={`px-2.5 py-1 transition-colors ${granularity === "daily" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-50"}`}
+                              >
+                                Daily
+                              </button>
+                              <button
+                                onClick={() => setGranularityOverride("weekly")}
+                                className={`px-2.5 py-1 transition-colors border-l border-slate-200 ${granularity === "weekly" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-50"}`}
+                              >
+                                Weekly
+                              </button>
+                            </div>
+                          </div>
                         </CardHeader>
                         <CardContent className="pb-4">
-                          {dailyData.length === 1 ? (
+                          {trendData.length === 1 ? (
                             <div className="flex flex-col items-center justify-center h-[200px] gap-2">
                               <div className="flex gap-6 text-sm">
                                 <div className="flex items-center gap-2">
                                   <div className="w-3 h-3 rounded-full bg-emerald-400" />
-                                  <span className="text-slate-600">{dailyData[0].helpful} helpful</span>
+                                  <span className="text-slate-600">{trendData[0].helpful} helpful</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div className="w-3 h-3 rounded-full bg-red-400" />
-                                  <span className="text-slate-600">{dailyData[0].notHelpful} not helpful</span>
+                                  <span className="text-slate-600">{trendData[0].notHelpful} not helpful</span>
                                 </div>
                               </div>
-                              <p className="text-xs text-slate-400">{dailyData[0].date}</p>
+                              <p className="text-xs text-slate-400">{trendData[0].date}</p>
                             </div>
                           ) : (
                             <ResponsiveContainer width="100%" height={200}>
-                              <LineChart data={dailyData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                              <LineChart data={trendData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                 <XAxis
                                   dataKey="date"
