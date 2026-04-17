@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, MessageSquare, CheckCircle2, Loader2 } from "lucide-react";
+import { Mail, MessageSquare, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 
 interface ContactProps {
   authMenu?: React.ReactNode;
@@ -20,13 +20,30 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setSubmitting(false);
-    setSubmitted(true);
+    setError("");
+    try {
+      const res = await fetch("/api/interview/sessions/0/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          questionRelevance: "somewhat_relevant",
+          feedbackHelpful: true,
+          additionalComments: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`,
+        }),
+      });
+      if (!res.ok) throw new Error("FAILED");
+      setSubmitted(true);
+    } catch {
+      setError("We couldn't send your message right now. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -96,6 +113,12 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
             </div>
 
             <div className="md:col-span-3">
+              {error && (
+                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {error}
+                </div>
+              )}
               {submitted ? (
                 <div className="h-full flex flex-col items-center justify-center text-center gap-5 py-16 rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
