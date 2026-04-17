@@ -21,8 +21,13 @@ export function useElevenLabsTTS(sessionId: number) {
   const [isPaused, setIsPaused] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isBrowserTTSRef = useRef(false);
+  // Resolves the current pending speak() promise immediately (used by stop/seek)
+  const resolveCurrentSpeakRef = useRef<(() => void) | null>(null);
 
   const stop = useCallback(() => {
+    resolveCurrentSpeakRef.current?.();
+    resolveCurrentSpeakRef.current = null;
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -86,7 +91,9 @@ export function useElevenLabsTTS(sessionId: number) {
         );
         audioRef.current = audio;
         await new Promise<void>((resolve) => {
+          resolveCurrentSpeakRef.current = resolve;
           const finish = () => {
+            resolveCurrentSpeakRef.current = null;
             audioRef.current = null;
             setIsSpeaking(false);
             setIsPaused(false);
@@ -117,6 +124,7 @@ export function useElevenLabsTTS(sessionId: number) {
 
   useEffect(() => {
     return () => {
+      resolveCurrentSpeakRef.current?.();
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
