@@ -254,7 +254,7 @@ export default function Report() {
               sessionId={sessionId}
               interviewer={firstInterviewer}
               report={report as { answerFeedback: Array<{ questionText: string; feedback: string; strengths: string[]; improvements: string[] }>; suggestions?: string[] }}
-              onReviewComplete={() => setShowFeedback(true)}
+              onReviewComplete={() => { if (report.answerFeedback?.length > 0) setShowFeedback(true); }}
             />
           )}
 
