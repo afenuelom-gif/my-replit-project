@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import { useParams, Link } from "wouter";
 import AppFooter from "@/components/AppFooter";
 import { useGetReport, getGetReportQueryKey } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import VoiceReviewPanel from "@/components/VoiceReviewPanel";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,6 +71,18 @@ export default function Report() {
   const { data: report, isLoading } = useGetReport(sessionId, {
     query: { enabled: !!sessionId, queryKey: getGetReportQueryKey(sessionId) }
   });
+
+  const { data: sessionData } = useQuery({
+    queryKey: ["session", sessionId],
+    queryFn: async () => {
+      const res = await fetch(`/api/interview/sessions/${sessionId}`, { credentials: "include" });
+      if (!res.ok) return null;
+      return res.json() as Promise<{ session: unknown; interviewers: Array<{ id: number; name: string; title: string; avatarUrl?: string | null; voiceId?: string }> }>;
+    },
+    enabled: !!sessionId,
+  });
+
+  const firstInterviewer = sessionData?.interviewers?.[0] ?? null;
 
   if (isLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center text-slate-600">Analyzing performance…</div>;
@@ -230,6 +244,16 @@ export default function Report() {
               </div>
             </div>
           </div>
+
+          {/* Voice-guided walkthrough panel */}
+          {report && firstInterviewer && (
+            <VoiceReviewPanel
+              key={sessionId}
+              sessionId={sessionId}
+              interviewer={firstInterviewer}
+              report={report as { answerFeedback: Array<{ questionText: string; feedback: string; strengths: string[]; improvements: string[] }>; suggestions?: string[] }}
+            />
+          )}
 
           {/* Print-only header */}
           <div className="hidden print:block mb-6">
