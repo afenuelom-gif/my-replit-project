@@ -12,6 +12,8 @@ import Report from "@/pages/report";
 import History from "@/pages/history";
 import Pricing from "@/pages/pricing";
 import Contact from "@/pages/contact";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
 
 const queryClient = new QueryClient();
 
@@ -224,6 +226,8 @@ function ClerkProviderWithRoutes() {
             <Route path="/interview/:sessionId" component={Interview} />
             <Route path="/report/:sessionId" component={Report} />
             <Route path="/history" component={HistoryRoute} />
+            <Route path="/privacy" component={Privacy} />
+            <Route path="/terms" component={Terms} />
             <Route component={NotFound} />
           </Switch>
           <Toaster />
@@ -248,6 +252,8 @@ function App() {
               <Route path="/interview/:sessionId" component={Interview} />
               <Route path="/report/:sessionId" component={Report} />
               <Route path="/history" component={() => <Redirect to="/" />} />
+              <Route path="/privacy" component={Privacy} />
+              <Route path="/terms" component={Terms} />
               <Route component={NotFound} />
             </Switch>
           </WouterRouter>
