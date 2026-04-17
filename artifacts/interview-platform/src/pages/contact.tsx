@@ -27,15 +27,11 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch("/api/interview/sessions/0/feedback", {
+      const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          questionRelevance: "somewhat_relevant",
-          feedbackHelpful: true,
-          additionalComments: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`,
-        }),
+        body: JSON.stringify({ name, email, subject, message }),
       });
       if (!res.ok) throw new Error("FAILED");
       setSubmitted(true);
@@ -58,7 +54,6 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
 
       <main className="flex-1 flex flex-col items-center z-10 px-6 py-16">
         <div className="max-w-4xl w-full space-y-12">
-
           <div className="text-center space-y-4">
             <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
               <span className="text-slate-900">Get in </span>
@@ -70,7 +65,6 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-
             <div className="md:col-span-2 space-y-6">
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
@@ -142,10 +136,7 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
                   </Button>
                 </div>
               ) : (
-                <form
-                  onSubmit={handleSubmit}
-                  className="rounded-2xl border border-slate-200 bg-white shadow-sm p-8 space-y-5"
-                >
+                <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white shadow-sm p-8 space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div className="space-y-2">
                       <Label htmlFor="name" className="text-sm font-medium text-slate-700">
