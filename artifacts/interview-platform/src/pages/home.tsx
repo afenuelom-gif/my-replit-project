@@ -19,6 +19,7 @@ export default function Home({ authMenu, authMobileMenu }: HomeProps) {
         <div className="absolute -top-32 -left-48 w-[600px] h-[600px] rounded-full bg-purple-500/30 blur-[80px]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[400px] rounded-full bg-indigo-400/20 blur-[110px]" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[400px] rounded-full bg-blue-500/12 blur-[110px]" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[400px] rounded-full bg-purple-500/10 blur-[110px]" />
       </div>
 
       {/* Top gradient wash */}
