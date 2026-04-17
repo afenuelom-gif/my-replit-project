@@ -280,6 +280,8 @@ export default function Report() {
       return res.json() as Promise<{ session: { jobRole: string } | null; interviewers: Array<{ id: number; name: string; title: string; avatarUrl?: string | null; voiceId?: string }> }>;
     },
     enabled: !!sessionId,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const { data: feedbackStatus } = useQuery({
