@@ -64,17 +64,28 @@ export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
           <Link href="/pricing" className={navLinkClass("/pricing")}>Pricing</Link>
           <Link href="/contact" className={navLinkClass("/contact")}>Contact</Link>
           {isAdmin && (
-            <Link
-              href="/admin/feedback"
-              className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-medium transition-all ${
-                location === "/admin/feedback"
-                  ? "text-purple-700 bg-purple-50 border border-purple-200"
-                  : "text-purple-600 hover:text-purple-700 hover:bg-purple-50 border border-purple-200/60"
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-              Admin
-            </Link>
+            <div className="relative group">
+              <Link
+                href="/admin/feedback"
+                aria-describedby="admin-nav-tooltip"
+                className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-medium transition-all ${
+                  location === "/admin/feedback"
+                    ? "text-purple-700 bg-purple-50 border border-purple-200"
+                    : "text-purple-600 hover:text-purple-700 hover:bg-purple-50 border border-purple-200/60"
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                Admin
+              </Link>
+              <div
+                id="admin-nav-tooltip"
+                role="tooltip"
+                className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2.5 py-1.5 text-xs font-medium text-white bg-slate-800 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 pointer-events-none z-50 shadow-lg"
+              >
+                Admin-only: Feedback Dashboard
+                <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-slate-800 rotate-45 rounded-sm" />
+              </div>
+            </div>
           )}
         </div>
       </div>
