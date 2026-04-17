@@ -116,16 +116,27 @@ export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
                   <div className="my-1.5 border-t border-slate-100" />
                   <Link
                     href="/admin/feedback"
-                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all ${
+                    aria-describedby="admin-mobile-desc"
+                    className={`flex items-start gap-2 px-4 py-2.5 text-sm font-medium transition-all ${
                       location === "/admin/feedback"
                         ? "text-purple-700 bg-purple-50"
                         : "text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                     }`}
                   >
-                    <ShieldCheck className="w-4 h-4 shrink-0" />
-                    Admin Feedback
-                    <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-purple-100 text-purple-600 rounded px-1.5 py-0.5">
-                      Admin
+                    <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span className="flex-1 min-w-0">
+                      <span className="flex items-center gap-2">
+                        Admin Feedback
+                        <span className="text-[10px] font-semibold uppercase tracking-wide bg-purple-100 text-purple-600 rounded px-1.5 py-0.5">
+                          Admin
+                        </span>
+                      </span>
+                      <span
+                        id="admin-mobile-desc"
+                        className="block text-[11px] font-normal text-purple-400 mt-0.5"
+                      >
+                        Admin-only: Feedback Dashboard
+                      </span>
                     </span>
                   </Link>
                 </>
