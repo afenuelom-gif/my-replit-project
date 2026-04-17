@@ -110,7 +110,7 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-background to-background pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_-10%,_var(--tw-gradient-stops))] from-blue-100 via-background to-background pointer-events-none" />
 
       <AppHeader right={authMenu} mobileMenuExtra={authMobileMenu} />
 
@@ -118,11 +118,11 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
         <div className="max-w-2xl w-full space-y-8">
 
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-white tracking-tight">Configure your session</h1>
-            <p className="text-zinc-500 text-sm">Tell us the role and we'll handle the rest.</p>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Configure your session</h1>
+            <p className="text-slate-500 text-sm">Tell us the role and we'll handle the rest.</p>
           </div>
 
-          <Card className="bg-card/50 backdrop-blur-sm border-white/10">
+          <Card className="bg-white shadow-sm border-slate-200">
             <CardHeader>
               <CardTitle className="text-xl">Session Configuration</CardTitle>
               <CardDescription>Define the parameters for your interview simulation.</CardDescription>
@@ -130,7 +130,7 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
             <CardContent>
               <form onSubmit={handleStart} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="jobRole" className="text-sm font-medium text-white flex items-center gap-2">
+                  <Label htmlFor="jobRole" className="text-sm font-medium text-slate-700 flex items-center gap-2">
                     <Briefcase className="w-4 h-4 text-primary" />
                     Target Job Role <span className="text-destructive">*</span>
                   </Label>
@@ -139,14 +139,14 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
                     placeholder="e.g. Senior Frontend Engineer"
                     value={jobRole}
                     onChange={(e) => setJobRole(e.target.value)}
-                    className="bg-black/50 border-white/10 text-white placeholder:text-muted-foreground focus-visible:ring-primary"
+                    className="focus-visible:ring-primary"
                     required
                     data-testid="input-jobRole"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-white flex items-center gap-2">
+                  <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                     Interview Duration
                   </Label>
                   <div className="flex gap-2">
@@ -158,7 +158,7 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
                         className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
                           durationMinutes === mins
                             ? "border-primary bg-primary/20 text-primary"
-                            : "border-white/10 text-zinc-400 hover:border-white/30 hover:text-white"
+                            : "border-slate-200 text-slate-500 hover:border-slate-400 hover:text-slate-900"
                         }`}
                         data-testid={`button-duration-${mins}`}
                       >
@@ -170,7 +170,7 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-white flex items-center gap-2">
+                    <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-primary" />
                       Job Description (Optional)
                     </Label>
@@ -180,14 +180,14 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
                         variant="outline"
                         size="sm"
                         disabled={jdParsing}
-                        className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
+                        className="border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                         onClick={() => fileInputRef.current?.click()}
                       >
                         {jdParsing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
                         {jdParsing ? "Reading…" : "Upload job description"}
                       </Button>
                       {uploadedFileName && !jdParsing && (
-                        <button type="button" onClick={clearFile} className="text-primary hover:text-white">
+                        <button type="button" onClick={clearFile} className="text-primary hover:text-slate-900">
                           <X className="w-4 h-4" />
                         </button>
                       )}
@@ -203,14 +203,14 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
                     {jdUploadError ? (
                       <div className="text-xs text-red-400">{jdUploadError}</div>
                     ) : (
-                      <div className="text-xs text-zinc-500 truncate">
+                      <div className="text-xs text-slate-400 truncate">
                         {uploadedFileName ? uploadedFileName : "PDF, DOCX, DOC or TXT"}
                       </div>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-white flex items-center gap-2">
+                    <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                       <Upload className="w-4 h-4 text-primary" />
                       Resume (Optional)
                     </Label>
@@ -220,14 +220,14 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
                         variant="outline"
                         size="sm"
                         disabled={resumeParsing}
-                        className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/10"
+                        className="border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                         onClick={() => resumeInputRef.current?.click()}
                       >
                         {resumeParsing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
                         {resumeParsing ? "Reading…" : "Upload resume"}
                       </Button>
                       {resumeFileName && !resumeParsing && (
-                        <button type="button" onClick={clearResume} className="text-primary hover:text-white">
+                        <button type="button" onClick={clearResume} className="text-primary hover:text-slate-900">
                           <X className="w-4 h-4" />
                         </button>
                       )}
@@ -243,7 +243,7 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
                     {resumeUploadError ? (
                       <div className="text-xs text-red-400">{resumeUploadError}</div>
                     ) : (
-                      <div className="text-xs text-zinc-500 truncate">
+                      <div className="text-xs text-slate-400 truncate">
                         {resumeFileName ? resumeFileName : "PDF, DOCX, DOC or TXT"}
                       </div>
                     )}
@@ -265,17 +265,17 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-3 gap-4 text-center text-sm text-muted-foreground">
+          <div className="grid grid-cols-3 gap-4 text-center text-sm text-slate-500">
             <div className="space-y-1">
-              <div className="text-2xl font-bold text-white">30-45</div>
+              <div className="text-2xl font-bold text-slate-900">30-45</div>
               <div>Minutes</div>
             </div>
             <div className="space-y-1">
-              <div className="text-2xl font-bold text-white">2-3</div>
+              <div className="text-2xl font-bold text-slate-900">2-3</div>
               <div>AI Interviewers</div>
             </div>
             <div className="space-y-1">
-              <div className="text-2xl font-bold text-white">AI</div>
+              <div className="text-2xl font-bold text-slate-900">AI</div>
               <div>Performance Report</div>
             </div>
           </div>
