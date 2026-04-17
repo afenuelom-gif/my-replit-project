@@ -17,12 +17,14 @@ function browserFallbackSpeak(text: string): Promise<void> {
 }
 
 export function useElevenLabsTTS(sessionId: number) {
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const isBrowserTTSRef = useRef(false);
-  // Resolves the current pending speak() promise immediately (used by stop/seek)
-  const resolveCurrentSpeakRef = useRef<(() => void) | null>(null);
+  const [isSpeaking, setIsSpeaking]         = useState(false);
+  const [isPaused, setIsPaused]             = useState(false);
+  const [audioCurrentTime, setCurrentTime]  = useState(0);
+  const [audioDuration, setDuration]        = useState(0);
+
+  const audioRef                = useRef<HTMLAudioElement | null>(null);
+  const isBrowserTTSRef         = useRef(false);
+  const resolveCurrentSpeakRef  = useRef<(() => void) | null>(null);
 
   const stop = useCallback(() => {
     resolveCurrentSpeakRef.current?.();
@@ -39,32 +41,35 @@ export function useElevenLabsTTS(sessionId: number) {
     }
     setIsSpeaking(false);
     setIsPaused(false);
+    setCurrentTime(0);
+    setDuration(0);
   }, []);
 
   const pause = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-    if (isBrowserTTSRef.current) {
-      window.speechSynthesis?.pause();
-    }
+    if (audioRef.current) audioRef.current.pause();
+    if (isBrowserTTSRef.current) window.speechSynthesis?.pause();
     setIsPaused(true);
   }, []);
 
   const resume = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.play().catch(() => {});
-    }
-    if (isBrowserTTSRef.current) {
-      window.speechSynthesis?.resume();
-    }
+    if (audioRef.current) audioRef.current.play().catch(() => {});
+    if (isBrowserTTSRef.current) window.speechSynthesis?.resume();
     setIsPaused(false);
+  }, []);
+
+  // Seek within the currently playing audio clip
+  const seekTime = useCallback((seconds: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = Math.max(0, Math.min(seconds, audioRef.current.duration || 0));
+    }
   }, []);
 
   const speak = useCallback(
     async (text: string, interviewerId: number): Promise<void> => {
       stop();
       setIsSpeaking(true);
+      setCurrentTime(0);
+      setDuration(0);
       isBrowserTTSRef.current = false;
       try {
         const res = await fetch(`/api/interview/sessions/${sessionId}/tts`, {
@@ -73,9 +78,7 @@ export function useElevenLabsTTS(sessionId: number) {
           body: JSON.stringify({ text, interviewerId }),
         });
         if (!res.ok) {
-          console.warn(
-            `ElevenLabs TTS unavailable (${res.status}), falling back to browser speech synthesis`
-          );
+          console.warn(`ElevenLabs TTS unavailable (${res.status}), falling back to browser TTS`);
           isBrowserTTSRef.current = true;
           await browserFallbackSpeak(text);
           isBrowserTTSRef.current = false;
@@ -86,10 +89,12 @@ export function useElevenLabsTTS(sessionId: number) {
           audioBase64: string;
           format: string;
         };
-        const audio = new Audio(
-          `data:audio/${format ?? "mpeg"};base64,${audioBase64}`
-        );
+        const audio = new Audio(`data:audio/${format ?? "mpeg"};base64,${audioBase64}`);
         audioRef.current = audio;
+
+        audio.addEventListener("loadedmetadata", () => setDuration(audio.duration));
+        audio.addEventListener("timeupdate", () => setCurrentTime(audio.currentTime));
+
         await new Promise<void>((resolve) => {
           resolveCurrentSpeakRef.current = resolve;
           const finish = () => {
@@ -103,7 +108,6 @@ export function useElevenLabsTTS(sessionId: number) {
           audio.onerror = finish;
 
           const startPlay = () => audio.play().catch(finish);
-
           if (audio.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) {
             startPlay();
           } else {
@@ -129,11 +133,9 @@ export function useElevenLabsTTS(sessionId: number) {
         audioRef.current.pause();
         audioRef.current = null;
       }
-      if (isBrowserTTSRef.current) {
-        window.speechSynthesis?.cancel();
-      }
+      if (isBrowserTTSRef.current) window.speechSynthesis?.cancel();
     };
   }, []);
 
-  return { speak, stop, pause, resume, isSpeaking, isPaused };
+  return { speak, stop, pause, resume, seekTime, isSpeaking, isPaused, audioCurrentTime, audioDuration };
 }
