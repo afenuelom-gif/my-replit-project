@@ -30,7 +30,11 @@ type AnswerFeedbackItem = {
   improvements: string[];
 };
 
-function printSingleCard(fb: AnswerFeedbackItem, idx: number) {
+function printSingleCard(
+  fb: AnswerFeedbackItem,
+  idx: number,
+  sessionContext?: { jobRole?: string | null; sessionDate?: string | null; overallScore?: number | null },
+) {
   const scoreColor =
     fb.score >= 80 ? "#059669" : fb.score >= 60 ? "#d97706" : "#dc2626";
   const scoreBg =
@@ -44,6 +48,20 @@ function printSingleCard(fb: AnswerFeedbackItem, idx: number) {
   const improvements = fb.improvements
     .map((s) => `<li style="margin-bottom:4px;">• ${s}</li>`)
     .join("");
+
+  const sessionMeta = sessionContext
+    ? [
+        sessionContext.jobRole ? `<span class="meta-item"><span class="meta-key">Role</span> ${sessionContext.jobRole}</span>` : "",
+        sessionContext.sessionDate ? `<span class="meta-item"><span class="meta-key">Date</span> ${new Date(sessionContext.sessionDate).toLocaleString()}</span>` : "",
+        sessionContext.overallScore != null ? `<span class="meta-item"><span class="meta-key">Session Score</span> ${sessionContext.overallScore}/100</span>` : "",
+      ]
+        .filter(Boolean)
+        .join("")
+    : "";
+
+  const sessionBanner = sessionMeta
+    ? `<div class="session-banner">${sessionMeta}</div>`
+    : "";
 
   const html = `<!DOCTYPE html>
 <html>
@@ -66,6 +84,27 @@ function printSingleCard(fb: AnswerFeedbackItem, idx: number) {
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: #64748b;
+    }
+    .session-banner {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #475569;
+    }
+    .meta-item { display: flex; gap: 4px; align-items: baseline; }
+    .meta-key {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+      margin-right: 2px;
     }
     .header {
       display: flex;
@@ -143,6 +182,7 @@ function printSingleCard(fb: AnswerFeedbackItem, idx: number) {
   </style>
 </head>
 <body>
+  ${sessionBanner}
   <div class="header">
     <span class="label">Question ${idx + 1}</span>
     <span class="score-badge">${fb.score}/100</span>
@@ -657,7 +697,11 @@ export default function Report() {
                         )}
                       </button>
                       <button
-                        onClick={() => printSingleCard(fb as AnswerFeedbackItem, idx)}
+                        onClick={() => printSingleCard(fb as AnswerFeedbackItem, idx, {
+                          jobRole: sessionData?.session?.jobRole,
+                          sessionDate: report.generatedAt,
+                          overallScore: report.overallScore,
+                        })}
                         title="Print this question's feedback"
                         className="print:hidden p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                       >
