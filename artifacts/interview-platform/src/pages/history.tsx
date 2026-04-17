@@ -1,4 +1,5 @@
 import { useLocation } from "wouter";
+import AppFooter from "@/components/AppFooter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -169,6 +170,7 @@ export default function History() {
         )}
       </div>
       </div>
+      <AppFooter />
     </div>
   );
 }

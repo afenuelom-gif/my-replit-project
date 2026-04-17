@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import { AppHeader } from "@/components/AppHeader";
+import AppFooter from "@/components/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -199,6 +200,7 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
           </div>
         </div>
       </main>
+      <AppFooter />
     </div>
   );
 }

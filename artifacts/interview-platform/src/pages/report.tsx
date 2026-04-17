@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useParams, Link } from "wouter";
+import AppFooter from "@/components/AppFooter";
 import { useGetReport, getGetReportQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -437,6 +438,7 @@ export default function Report() {
         </div>
       </div>
       </div>
+      <AppFooter />
     </div>
   );
 }

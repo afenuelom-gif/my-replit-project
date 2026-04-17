@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "wouter";
+import AppFooter from "@/components/AppFooter";
 import { AppHeader } from "@/components/AppHeader";
 import { ProductPreview } from "@/components/ProductPreview";
 
@@ -60,6 +61,7 @@ export default function Home({ authMenu, authMobileMenu }: HomeProps) {
           </Link>
         </p>
       </section>
+      <AppFooter />
     </div>
   );
 }

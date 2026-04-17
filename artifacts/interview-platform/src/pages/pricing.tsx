@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import { Check, Zap, Crown, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/AppHeader";
+import AppFooter from "@/components/AppFooter";
 
 interface PricingProps {
   authMenu?: React.ReactNode;
@@ -184,6 +185,7 @@ export default function Pricing({ authMenu, authMobileMenu }: PricingProps) {
 
         </div>
       </main>
+      <AppFooter />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Briefcase, FileText, Upload, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
+import AppFooter from "@/components/AppFooter";
 
 interface StartProps {
   authMenu?: React.ReactNode;
@@ -280,6 +281,7 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
           </div>
         </div>
       </div>
+      <AppFooter />
     </div>
   );
 }
