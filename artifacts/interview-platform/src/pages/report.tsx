@@ -3,6 +3,7 @@ import { useParams, Link } from "wouter";
 import { downloadReportAsPdf } from "@/utils/reportPdf";
 import AppFooter from "@/components/AppFooter";
 import { useGetReport, getGetReportQueryKey } from "@workspace/api-client-react";
+import { AuthPrompt } from "@/components/AuthPrompt";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import VoiceReviewPanel from "@/components/VoiceReviewPanel";
@@ -267,7 +268,7 @@ export default function Report() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { toast } = useToast();
 
-  const { data: report, isLoading } = useGetReport(sessionId, {
+  const { data: report, isLoading, error: reportError } = useGetReport(sessionId, {
     query: { enabled: !!sessionId, queryKey: getGetReportQueryKey(sessionId) }
   });
 
@@ -297,6 +298,10 @@ export default function Report() {
 
   if (isLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center text-slate-600">Analyzing performance…</div>;
+  }
+
+  if (reportError instanceof Error && 'status' in reportError && (reportError as Error & { status: number }).status === 401) {
+    return <AuthPrompt />;
   }
 
   if (!report) {
