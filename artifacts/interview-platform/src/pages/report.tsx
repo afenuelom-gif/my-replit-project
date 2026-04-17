@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   CheckCircle2, ChevronLeft, Target, MessageSquare, Code, Lightbulb,
-  User, Camera, Volume2, Share2, Mail, Printer, Copy, Check, ExternalLink,
+  User, Camera, Volume2, Share2, Mail, Printer, Copy, Check, ExternalLink, Download,
 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 
@@ -197,6 +197,16 @@ export default function Report() {
             </div>
 
             <div className="flex items-center gap-3 sm:pt-1">
+              {/* Download PDF button */}
+              <Button
+                onClick={() => window.print()}
+                variant="outline"
+                className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-900 hover:border-blue-400 gap-2 font-medium"
+              >
+                <Download className="w-4 h-4" />
+                Download PDF
+              </Button>
+
               {/* Share dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
