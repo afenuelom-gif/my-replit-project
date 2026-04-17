@@ -27,11 +27,11 @@ function ScrollingText({ children, className }: { children: React.ReactNode; cla
 
   return (
     <div ref={outerRef} className={`overflow-hidden min-w-0 ${className ?? ""}`}>
-      {/* Two identical copies sit side-by-side; animating -50% of the combined
-          width moves exactly one copy width — so the second copy arrives right
-          where the first started, creating a seamless continuous loop. */}
+      {/* inline-flex lets the row expand to its full content width (not clamped
+          by the parent), so translateX(-50%) = exactly one copy-width, making
+          the loop seamless as the second copy slides in right behind the first. */}
       <div
-        className="flex whitespace-nowrap"
+        className="inline-flex whitespace-nowrap"
         style={active ? { animation: `text-scroll ${duration.toFixed(1)}s linear infinite` } : undefined}
       >
         <span ref={firstRef} className={active ? "pr-16" : ""}>{children}</span>
