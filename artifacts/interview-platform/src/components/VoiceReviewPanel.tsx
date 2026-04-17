@@ -28,6 +28,9 @@ interface NarrationItem {
 }
 
 function buildScript(report: ReportData): NarrationItem[] {
+  if (!report.answerFeedback || report.answerFeedback.length === 0) {
+    return [{ label: "No Interview Data", text: "It looks like no questions were answered in this session. Complete an interview to receive a voice review." }];
+  }
   const items: NarrationItem[] = [];
   items.push({ label: "Introduction", text: "Let's review this together." });
   report.answerFeedback.forEach((fb, i) => {
