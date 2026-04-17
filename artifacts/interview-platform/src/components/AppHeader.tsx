@@ -27,21 +27,21 @@ export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
   }, [menuOpen]);
 
   const navLinkClass = (path: string) =>
-    `text-sm px-3 py-1.5 rounded-lg transition-colors ${
+    `text-sm px-3 py-1.5 rounded-lg font-medium transition-all ${
       location === path
-        ? "text-slate-900 font-medium bg-slate-100"
-        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+        ? "text-blue-700 bg-blue-50 border border-blue-200"
+        : "text-slate-600 hover:text-blue-700 hover:bg-blue-50"
     }`;
 
   const dropdownLinkClass = (path: string) =>
-    `flex items-center px-4 py-2.5 text-sm transition-colors ${
+    `flex items-center px-4 py-2.5 text-sm font-medium transition-all ${
       location === path
-        ? "text-slate-900 font-medium bg-slate-100"
-        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+        ? "text-blue-700 bg-blue-50"
+        : "text-slate-700 hover:text-blue-700 hover:bg-blue-50"
     }`;
 
   return (
-    <header className="w-full flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-200 bg-white/90 backdrop-blur-md print:hidden relative z-50 shadow-sm">
+    <header className="w-full flex items-center justify-between px-4 sm:px-6 py-4 border-b border-blue-100 bg-white/90 backdrop-blur-md print:hidden relative z-50 shadow-sm">
       {/* Left: logo + desktop nav */}
       <div className="flex items-center gap-4 sm:gap-6">
         <Link href="/" className="flex items-center gap-2.5 group shrink-0">
@@ -72,13 +72,13 @@ export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
           <button
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="Toggle menu"
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-blue-50 transition-colors"
           >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-slate-200 bg-white shadow-lg py-1.5">
+            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5">
               <Link href="/pricing" className={dropdownLinkClass("/pricing")}>
                 Pricing
               </Link>

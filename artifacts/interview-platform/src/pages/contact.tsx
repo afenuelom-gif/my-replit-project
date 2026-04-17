@@ -30,8 +30,12 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
   };
 
   return (
-    <div className="min-h-screen w-full bg-background flex flex-col relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_-10%,_var(--tw-gradient-stops))] from-blue-100 via-background to-background pointer-events-none" />
+    <div className="min-h-screen w-full bg-white flex flex-col relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-blue-500/15 blur-[100px]" />
+        <div className="absolute -top-16 -left-32 w-[400px] h-[400px] rounded-full bg-purple-500/10 blur-[80px]" />
+      </div>
+      <div className="absolute top-0 left-0 right-0 h-[50vh] bg-gradient-to-b from-blue-50/60 via-white/10 to-transparent pointer-events-none" />
 
       <AppHeader right={authMenu} mobileMenuExtra={authMobileMenu} />
 
@@ -39,8 +43,9 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
         <div className="max-w-4xl w-full space-y-12">
 
           <div className="text-center space-y-4">
-            <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight">
-              Get in touch
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
+              <span className="text-slate-900">Get in </span>
+              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">touch</span>
             </h1>
             <p className="text-slate-500 max-w-md mx-auto">
               Have a question, feedback, or need help? We'd love to hear from you.
@@ -77,13 +82,13 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
               <div className="border-t border-slate-200 pt-6 space-y-3">
                 <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Helpful links</div>
                 <div className="space-y-2">
-                  <Link href="/pricing" className="flex items-center text-sm text-slate-500 hover:text-slate-900 transition-colors">
+                  <Link href="/pricing" className="flex items-center text-sm font-medium text-slate-600 hover:text-blue-700 transition-colors">
                     → Pricing plans
                   </Link>
-                  <Link href="/start" className="flex items-center text-sm text-slate-500 hover:text-slate-900 transition-colors">
+                  <Link href="/start" className="flex items-center text-sm font-medium text-slate-600 hover:text-blue-700 transition-colors">
                     → Start a free session
                   </Link>
-                  <Link href="/" className="flex items-center text-sm text-slate-500 hover:text-slate-900 transition-colors">
+                  <Link href="/" className="flex items-center text-sm font-medium text-slate-600 hover:text-blue-700 transition-colors">
                     → Back to home
                   </Link>
                 </div>

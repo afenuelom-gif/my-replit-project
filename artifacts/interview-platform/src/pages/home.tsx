@@ -11,9 +11,18 @@ interface HomeProps {
 
 export default function Home({ authMenu, authMobileMenu }: HomeProps) {
   return (
-    <div className="min-h-screen w-full bg-background flex flex-col relative overflow-hidden">
-      {/* Subtle light gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,_var(--tw-gradient-stops))] from-blue-100 via-background to-background pointer-events-none" />
+    <div className="min-h-screen w-full bg-white flex flex-col relative overflow-hidden">
+
+      {/* Rich gradient blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-48 -right-48 w-[700px] h-[700px] rounded-full bg-blue-500/20 blur-[120px]" />
+        <div className="absolute -top-32 -left-48 w-[600px] h-[600px] rounded-full bg-purple-500/15 blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[400px] rounded-full bg-indigo-400/10 blur-[140px]" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[400px] rounded-full bg-cyan-400/10 blur-[100px]" />
+      </div>
+
+      {/* Top gradient wash */}
+      <div className="absolute top-0 left-0 right-0 h-[70vh] bg-gradient-to-b from-blue-50/80 via-white/30 to-transparent pointer-events-none" />
 
       <AppHeader right={authMenu} mobileMenuExtra={authMobileMenu} />
 
@@ -22,18 +31,18 @@ export default function Home({ authMenu, authMobileMenu }: HomeProps) {
           <img
             src="/logo.png"
             alt="PrepInterv AI"
-            className="h-20 w-20 rounded-3xl shadow-xl shadow-blue-200 object-cover ring-2 ring-blue-100"
+            className="h-20 w-20 rounded-3xl shadow-2xl shadow-blue-300/50 object-cover ring-2 ring-blue-200"
           />
         </div>
 
-        <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 text-sm text-blue-700 font-medium mb-6">
+        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-full px-4 py-1.5 text-sm text-blue-700 font-medium mb-6 shadow-sm">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           Free trial — no credit card required
         </div>
 
         <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight leading-tight max-w-3xl text-slate-900">
           Practice interviews.{" "}
-          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
             Land the job.
           </span>
         </h1>
@@ -44,7 +53,7 @@ export default function Home({ authMenu, authMobileMenu }: HomeProps) {
 
         <div className="flex flex-wrap justify-center gap-3 mt-8">
           {["Voice-powered AI interviewers", "Personalised questions", "Detailed performance report"].map(f => (
-            <span key={f} className="text-xs bg-white border border-slate-200 text-slate-600 rounded-full px-3 py-1.5 shadow-sm">
+            <span key={f} className="text-xs bg-white/80 border border-blue-100 text-slate-600 rounded-full px-3 py-1.5 shadow-sm backdrop-blur-sm">
               {f}
             </span>
           ))}
@@ -56,13 +65,13 @@ export default function Home({ authMenu, authMobileMenu }: HomeProps) {
 
         <Link
           href="/start"
-          className="mt-10 w-full max-w-sm mx-auto block text-center py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold text-sm transition-all hover:scale-[1.02] shadow-lg shadow-blue-200"
+          className="mt-10 w-full max-w-sm mx-auto block text-center py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:via-indigo-500 hover:to-purple-500 text-white font-semibold text-sm transition-all hover:scale-[1.02] shadow-xl shadow-blue-400/30"
         >
           Start your free session
         </Link>
-        <p className="mt-3 text-xs text-slate-400">
+        <p className="mt-3 text-sm text-slate-500">
           Sign up in seconds. First session free.{" "}
-          <Link href="/pricing" className="text-slate-500 underline underline-offset-2 hover:text-slate-800 transition-colors">
+          <Link href="/pricing" className="text-blue-600 font-medium hover:text-blue-800 underline underline-offset-2 transition-colors">
             See plans
           </Link>
         </p>
