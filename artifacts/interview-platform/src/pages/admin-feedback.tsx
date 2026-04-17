@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { AppHeader } from "@/components/AppHeader";
@@ -6,6 +6,18 @@ import AppFooter from "@/components/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import {
   ArrowLeft,
   Loader2,
@@ -15,6 +27,8 @@ import {
   Calendar,
   Filter,
   X,
+  TrendingUp,
+  BarChart2,
 } from "lucide-react";
 
 interface FeedbackRow {
@@ -48,6 +62,50 @@ function formatDate(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function toDateKey(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function useChartData(rows: FeedbackRow[] | undefined) {
+  return useMemo(() => {
+    if (!rows || rows.length === 0) return { dailyData: [], roleData: [] };
+
+    const dailyMap = new Map<string, { date: string; helpful: number; notHelpful: number }>();
+    const roleMap = new Map<string, { role: string; helpful: number; notHelpful: number }>();
+
+    const sorted = [...rows].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    for (const row of sorted) {
+      const dateKey = toDateKey(row.createdAt);
+      if (!dailyMap.has(dateKey)) {
+        dailyMap.set(dateKey, { date: dateKey, helpful: 0, notHelpful: 0 });
+      }
+      const day = dailyMap.get(dateKey)!;
+      if (row.feedbackHelpful) day.helpful += 1;
+      else day.notHelpful += 1;
+
+      const roleKey = row.jobRole;
+      if (!roleMap.has(roleKey)) {
+        roleMap.set(roleKey, { role: roleKey, helpful: 0, notHelpful: 0 });
+      }
+      const role = roleMap.get(roleKey)!;
+      if (row.feedbackHelpful) role.helpful += 1;
+      else role.notHelpful += 1;
+    }
+
+    const roleData = Array.from(roleMap.values()).sort(
+      (a, b) => b.notHelpful - a.notHelpful
+    );
+
+    return { dailyData: Array.from(dailyMap.values()), roleData };
+  }, [rows]);
 }
 
 export default function AdminFeedback() {
@@ -106,6 +164,11 @@ export default function AdminFeedback() {
 
   const helpfulCount = rows?.filter((r) => r.feedbackHelpful).length ?? 0;
   const notHelpfulCount = rows?.filter((r) => !r.feedbackHelpful).length ?? 0;
+  const total = rows?.length ?? 0;
+  const helpfulPct = total > 0 ? Math.round((helpfulCount / total) * 100) : 0;
+  const notHelpfulPct = total > 0 ? Math.round((notHelpfulCount / total) * 100) : 0;
+
+  const { dailyData, roleData } = useChartData(rows);
 
   return (
     <div className="min-h-screen bg-white flex flex-col overflow-x-hidden relative">
@@ -250,7 +313,8 @@ export default function AdminFeedback() {
 
               {!isLoading && !isError && rows && (
                 <>
-                  <div className="grid grid-cols-3 gap-4">
+                  {/* ── Summary stats ── */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <Card className="bg-white border-slate-200 shadow-sm">
                       <CardContent className="pt-4 pb-4 text-center">
                         <div className="text-2xl font-bold text-slate-900">{rows.length}</div>
@@ -261,15 +325,166 @@ export default function AdminFeedback() {
                       <CardContent className="pt-4 pb-4 text-center">
                         <div className="text-2xl font-bold text-emerald-600">{helpfulCount}</div>
                         <div className="text-xs text-slate-500 mt-0.5">Found Helpful</div>
+                        {total > 0 && (
+                          <div className="text-xs text-emerald-500 font-medium mt-0.5">{helpfulPct}%</div>
+                        )}
                       </CardContent>
                     </Card>
                     <Card className="bg-white border-slate-200 shadow-sm">
                       <CardContent className="pt-4 pb-4 text-center">
                         <div className="text-2xl font-bold text-red-500">{notHelpfulCount}</div>
                         <div className="text-xs text-slate-500 mt-0.5">Not Helpful</div>
+                        {total > 0 && (
+                          <div className="text-xs text-red-400 font-medium mt-0.5">{notHelpfulPct}%</div>
+                        )}
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-white border-slate-200 shadow-sm">
+                      <CardContent className="pt-4 pb-4 text-center">
+                        <div className="flex items-end justify-center gap-1 mt-1 mb-0.5">
+                          <div
+                            className="rounded-sm bg-emerald-400"
+                            style={{ width: 20, height: total > 0 ? Math.max(8, (helpfulPct / 100) * 36) : 8 }}
+                          />
+                          <div
+                            className="rounded-sm bg-red-400"
+                            style={{ width: 20, height: total > 0 ? Math.max(8, (notHelpfulPct / 100) * 36) : 8 }}
+                          />
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">Helpful Split</div>
+                        {total > 0 && (
+                          <div className="text-xs text-slate-400 mt-0.5">{helpfulPct}% / {notHelpfulPct}%</div>
+                        )}
                       </CardContent>
                     </Card>
                   </div>
+
+                  {/* ── Charts (only when there's data) ── */}
+                  {rows.length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Submissions over time */}
+                      <Card className="bg-white border-slate-200 shadow-sm">
+                        <CardHeader className="pb-2 pt-4">
+                          <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4 text-blue-500" />
+                            Submissions Over Time
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pb-4">
+                          {dailyData.length === 1 ? (
+                            <div className="flex flex-col items-center justify-center h-[200px] gap-2">
+                              <div className="flex gap-6 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full bg-emerald-400" />
+                                  <span className="text-slate-600">{dailyData[0].helpful} helpful</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full bg-red-400" />
+                                  <span className="text-slate-600">{dailyData[0].notHelpful} not helpful</span>
+                                </div>
+                              </div>
+                              <p className="text-xs text-slate-400">{dailyData[0].date}</p>
+                            </div>
+                          ) : (
+                            <ResponsiveContainer width="100%" height={200}>
+                              <LineChart data={dailyData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                <XAxis
+                                  dataKey="date"
+                                  tick={{ fontSize: 11, fill: "#94a3b8" }}
+                                  tickLine={false}
+                                  axisLine={false}
+                                />
+                                <YAxis
+                                  allowDecimals={false}
+                                  tick={{ fontSize: 11, fill: "#94a3b8" }}
+                                  tickLine={false}
+                                  axisLine={false}
+                                />
+                                <Tooltip
+                                  contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: "#e2e8f0" }}
+                                  labelStyle={{ color: "#475569", fontWeight: 600 }}
+                                />
+                                <Legend
+                                  wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                                  iconType="circle"
+                                  iconSize={8}
+                                />
+                                <Line
+                                  type="monotone"
+                                  dataKey="helpful"
+                                  name="Helpful"
+                                  stroke="#34d399"
+                                  strokeWidth={2}
+                                  dot={{ r: 3, fill: "#34d399" }}
+                                  activeDot={{ r: 5 }}
+                                />
+                                <Line
+                                  type="monotone"
+                                  dataKey="notHelpful"
+                                  name="Not Helpful"
+                                  stroke="#f87171"
+                                  strokeWidth={2}
+                                  dot={{ r: 3, fill: "#f87171" }}
+                                  activeDot={{ r: 5 }}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Breakdown by job role */}
+                      <Card className="bg-white border-slate-200 shadow-sm">
+                        <CardHeader className="pb-2 pt-4">
+                          <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                            <BarChart2 className="h-4 w-4 text-purple-500" />
+                            Feedback by Job Role
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pb-4">
+                          <ResponsiveContainer width="100%" height={200}>
+                            <BarChart
+                              data={roleData}
+                              layout="vertical"
+                              margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                              <XAxis
+                                type="number"
+                                allowDecimals={false}
+                                tick={{ fontSize: 11, fill: "#94a3b8" }}
+                                tickLine={false}
+                                axisLine={false}
+                              />
+                              <YAxis
+                                type="category"
+                                dataKey="role"
+                                width={110}
+                                tick={{ fontSize: 11, fill: "#64748b" }}
+                                tickLine={false}
+                                axisLine={false}
+                                tickFormatter={(v: string) =>
+                                  v.length > 16 ? v.slice(0, 14) + "…" : v
+                                }
+                              />
+                              <Tooltip
+                                contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: "#e2e8f0" }}
+                                labelStyle={{ color: "#475569", fontWeight: 600 }}
+                              />
+                              <Legend
+                                wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                                iconType="circle"
+                                iconSize={8}
+                              />
+                              <Bar dataKey="helpful" name="Helpful" fill="#34d399" radius={[0, 3, 3, 0]} barSize={10} />
+                              <Bar dataKey="notHelpful" name="Not Helpful" fill="#f87171" radius={[0, 3, 3, 0]} barSize={10} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
 
                   {rows.length === 0 && (
                     <Card className="bg-white border-slate-200 shadow-sm">
