@@ -518,6 +518,9 @@ export default function AdminFeedback() {
                       <CardContent className="pt-4 pb-4 text-center">
                         <div className="text-2xl font-bold text-slate-900">{rows.length}</div>
                         <div className="text-xs text-slate-500 mt-0.5">Total Submissions</div>
+                        {hasActiveFilters && allRows != null && (
+                          <div className="text-xs text-blue-500 font-medium mt-0.5">of {allRows.length} total</div>
+                        )}
                       </CardContent>
                     </Card>
                     <Card className="bg-white border-slate-200 shadow-sm">
