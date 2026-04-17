@@ -83,7 +83,7 @@ function ClerkUserMenu() {
       </Show>
       <Show when="signed-out">
         <button
-          className="text-sm text-muted-foreground hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors"
+          className="text-sm text-slate-600 font-medium hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
           onClick={() => openSignIn()}
         >
           Sign In
@@ -100,13 +100,13 @@ function ClerkMobileActions() {
   return (
     <Show when="signed-in">
       <button
-        className="flex items-center w-full px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-white/5 transition-colors text-left"
+        className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
         onClick={() => setLocation("/history")}
       >
         History
       </button>
       <button
-        className="flex items-center w-full px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-white/5 transition-colors text-left"
+        className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
         onClick={() => signOut({ redirectUrl: window.location.href })}
       >
         Sign Out
@@ -123,13 +123,13 @@ function ClerkDesktopActions() {
     <Show when="signed-in">
       <div className="hidden sm:flex items-center gap-1">
         <button
-          className="text-sm text-muted-foreground hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors"
+          className="text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
           onClick={() => setLocation("/history")}
         >
           History
         </button>
         <button
-          className="text-sm text-muted-foreground hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors"
+          className="text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
           onClick={() => signOut({ redirectUrl: window.location.href })}
         >
           Sign Out
