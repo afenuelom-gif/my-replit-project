@@ -73,7 +73,13 @@ export default function AdminFeedback() {
       const url = `/api/interview/admin/feedback${queryString ? `?${queryString}` : ""}`;
       const res = await fetch(url, { credentials: "include" });
       if (res.status === 401) throw new Error("UNAUTHORIZED");
-      if (res.status === 403) throw new Error("FORBIDDEN");
+      if (res.status === 403) {
+        const body = await res.json().catch(() => ({}));
+        if (body?.code === "NO_ADMINS_CONFIGURED") {
+          throw new Error("NO_ADMINS_CONFIGURED");
+        }
+        throw new Error("FORBIDDEN");
+      }
       if (!res.ok) throw new Error("FETCH_FAILED");
       return res.json();
     },
@@ -81,7 +87,8 @@ export default function AdminFeedback() {
   });
 
   const errorMsg = (error as Error | null)?.message ?? "";
-  const isUnauthorized = errorMsg === "UNAUTHORIZED" || errorMsg === "FORBIDDEN";
+  const isNoAdminsConfigured = errorMsg === "NO_ADMINS_CONFIGURED";
+  const isUnauthorized = isNoAdminsConfigured || errorMsg === "UNAUTHORIZED" || errorMsg === "FORBIDDEN";
 
   function applyFilters() {
     setAppliedFilters({ relevance: relevanceFilter, dateFrom, dateTo });
@@ -133,9 +140,30 @@ export default function AdminFeedback() {
 
           {isUnauthorized && (
             <Card className="bg-white border-red-200 shadow-sm">
-              <CardContent className="py-12 text-center space-y-2">
-                <p className="text-red-600 font-medium">Access denied</p>
-                <p className="text-slate-500 text-sm">You don't have permission to view this page.</p>
+              <CardContent className="py-12 text-center space-y-3">
+                <p className="text-red-600 font-semibold text-lg">Access Denied</p>
+                {isNoAdminsConfigured ? (
+                  <>
+                    <p className="text-slate-600 text-sm max-w-md mx-auto">
+                      No admin users have been configured yet. To grant yourself access, set the{" "}
+                      <code className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-mono text-xs">ADMIN_USER_IDS</code>{" "}
+                      environment secret in your Replit project settings.
+                    </p>
+                    <p className="text-slate-500 text-xs max-w-sm mx-auto">
+                      Add your Clerk user ID (e.g. <span className="font-mono">user_abc123</span>) as a comma-separated list.
+                      You can find your Clerk user ID by visiting{" "}
+                      <span className="font-mono">/api/users/me</span> while signed in.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-slate-600 text-sm max-w-md mx-auto">
+                      Your account does not have admin access. If you should have access, ask the project owner to add your user ID to the{" "}
+                      <code className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-mono text-xs">ADMIN_USER_IDS</code>{" "}
+                      environment secret.
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
           )}

@@ -941,12 +941,12 @@ function requireAdmin(req: Request, res: Response, next: NextFunction): void {
     .filter(Boolean);
 
   if (adminIds.length === 0) {
-    res.status(403).json({ error: "Forbidden: no admin users configured. Set the ADMIN_USER_IDS environment variable." });
+    res.status(403).json({ code: "NO_ADMINS_CONFIGURED", error: "Forbidden: no admin users configured. Set the ADMIN_USER_IDS environment variable." });
     return;
   }
 
   if (!adminIds.includes(req.userId)) {
-    res.status(403).json({ error: "Forbidden: admin access required" });
+    res.status(403).json({ code: "NOT_ADMIN", error: "Forbidden: admin access required" });
     return;
   }
 

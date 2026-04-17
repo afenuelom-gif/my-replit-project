@@ -115,6 +115,20 @@ When `ELEVENLABS_API_KEY` is set as a Replit secret, the platform uses ElevenLab
 9. Posture captured via canvas snapshot every 90 seconds → vision AI analysis
 10. Report page shows overall score, category breakdown, per-question feedback, improvement tips
 
+## Admin Access Configuration
+
+The `/admin/feedback` page is restricted to designated admin users. Access is controlled via the `ADMIN_USER_IDS` environment secret.
+
+### Setting up admin access
+
+1. Find your Clerk user ID: sign in to the app, then visit `/api/users/me` — the `id` field is your Clerk user ID (format: `user_xxxxxxxxxxxxxxxxxxxxxxxx`).
+2. Open the Replit **Secrets** panel (the padlock icon in the sidebar).
+3. Add a secret named `ADMIN_USER_IDS` with a comma-separated list of Clerk user IDs that should have admin access.
+   - Example value: `user_abc123,user_def456`
+4. Restart the API server workflow so it picks up the new secret.
+
+When `ADMIN_USER_IDS` is not set, the `/admin/feedback` API returns `403 Forbidden` and the page shows a setup prompt. When set, only the listed user IDs can access admin routes.
+
 ## Pending / Future Work
 
 - **Trial gate enforcement**: Free trial limit (1 session, 15 min) is shown on pricing page but not yet enforced in code. When ready, redirect users who have used their free session to `/pricing` before allowing a new session to start.
