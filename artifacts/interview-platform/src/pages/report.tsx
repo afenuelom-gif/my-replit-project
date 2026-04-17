@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useParams, Link } from "wouter";
 import AppFooter from "@/components/AppFooter";
 import { useGetReport, getGetReportQueryKey } from "@workspace/api-client-react";
@@ -219,6 +219,8 @@ export default function Report() {
   const params = useParams();
   const sessionId = parseInt(params.sessionId || "0");
   const [copied, setCopied] = useState(false);
+  const [copiedQId, setCopiedQId] = useState<number | null>(null);
+  const copiedQIdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
   const { data: report, isLoading } = useGetReport(sessionId, {
@@ -307,6 +309,28 @@ export default function Report() {
       await navigator.clipboard.writeText(`${shareText}\n\n${pageUrl}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  }
+
+  async function copyQuestionFeedback(fb: AnswerFeedbackItem, idx: number) {
+    const lines = [
+      `Question ${idx + 1}: ${fb.questionText}`,
+      ``,
+      `Answer: ${fb.answerText || "No answer recorded."}`,
+      ``,
+      `Feedback (${fb.score}/100): ${fb.feedback}`,
+      ``,
+      `Strengths:`,
+      ...fb.strengths.map((s) => `• ${s}`),
+      ``,
+      `To Improve:`,
+      ...fb.improvements.map((s) => `• ${s}`),
+    ];
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopiedQId(fb.questionId);
+      if (copiedQIdTimer.current) clearTimeout(copiedQIdTimer.current);
+      copiedQIdTimer.current = setTimeout(() => setCopiedQId(null), 2000);
     } catch {}
   }
 
@@ -616,6 +640,22 @@ export default function Report() {
                   <div className="bg-slate-50 border-b border-slate-200 flex items-center justify-between px-6 py-3">
                     <span className="text-sm font-semibold text-slate-500 uppercase tracking-widest">Question {idx + 1}</span>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => copyQuestionFeedback(fb as AnswerFeedbackItem, idx)}
+                        title="Copy this question's feedback"
+                        className="print:hidden p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors relative"
+                      >
+                        {copiedQId === fb.questionId ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 whitespace-nowrap shadow-sm">
+                              Copied!
+                            </span>
+                          </>
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
                       <button
                         onClick={() => printSingleCard(fb as AnswerFeedbackItem, idx)}
                         title="Print this question's feedback"
