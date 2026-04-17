@@ -76,6 +76,8 @@
   },
   "dependencies": {
     "@clerk/react": "^6.2.0",
-    "@heygen/streaming-avatar": "^2.1.0"
+    "@heygen/streaming-avatar": "^2.1.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1"
   }
 }

@@ -1,5 +1,6 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useParams, Link } from "wouter";
+import { downloadReportAsPdf } from "@/utils/reportPdf";
 import AppFooter from "@/components/AppFooter";
 import { useGetReport, getGetReportQueryKey } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -211,6 +212,7 @@ function printSingleCard(
   win.document.close();
 }
 import { AppHeader } from "@/components/AppHeader";
+import { useToast } from "@/hooks/use-toast";
 
 interface FillerResult {
   total: number;
@@ -262,6 +264,8 @@ export default function Report() {
   const [copiedQId, setCopiedQId] = useState<number | null>(null);
   const copiedQIdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const { toast } = useToast();
 
   const { data: report, isLoading } = useGetReport(sessionId, {
     query: { enabled: !!sessionId, queryKey: getGetReportQueryKey(sessionId) }
@@ -344,6 +348,27 @@ export default function Report() {
     }
   }
 
+  const handleDownloadPdf = useCallback(async () => {
+    if (!report || isGeneratingPdf) return;
+    setIsGeneratingPdf(true);
+    try {
+      const jobRole = sessionData?.session?.jobRole;
+      const safeName = jobRole
+        ? jobRole.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+        : "";
+      const filename = safeName ? `interview-report-${safeName}.pdf` : "interview-report.pdf";
+      await downloadReportAsPdf(report as Parameters<typeof downloadReportAsPdf>[0], sessionData ?? null, filename);
+    } catch {
+      toast({
+        title: "PDF generation failed",
+        description: "Unable to create the PDF. Please try again or use the Print option in the Share menu.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  }, [report, sessionData, isGeneratingPdf, toast]);
+
   async function copyToClipboard() {
     try {
       await navigator.clipboard.writeText(`${shareText}\n\n${pageUrl}`);
@@ -416,12 +441,13 @@ export default function Report() {
             <div className="flex items-center gap-3 sm:pt-1">
               {/* Download PDF button */}
               <Button
-                onClick={() => window.print()}
+                onClick={handleDownloadPdf}
+                disabled={isGeneratingPdf}
                 variant="outline"
-                className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-900 hover:border-blue-400 gap-2 font-medium"
+                className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-900 hover:border-blue-400 gap-2 font-medium disabled:opacity-60"
               >
-                <Download className="w-4 h-4" />
-                Download PDF
+                <Download className={`w-4 h-4 ${isGeneratingPdf ? "animate-bounce" : ""}`} />
+                {isGeneratingPdf ? "Generating…" : "Download PDF"}
               </Button>
 
               {/* Share dropdown */}
@@ -456,7 +482,7 @@ export default function Report() {
                     {copied ? "Copied!" : "Copy Summary"}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => window.print()} className="gap-3 cursor-pointer text-slate-700 hover:text-blue-700 hover:bg-blue-50">
-                    <Printer className="w-4 h-4 text-slate-500" /> Save as PDF
+                    <Printer className="w-4 h-4 text-slate-500" /> Print / Save as PDF
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
