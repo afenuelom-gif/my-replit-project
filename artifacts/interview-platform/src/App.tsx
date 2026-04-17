@@ -77,7 +77,7 @@ function ClerkUserMenu() {
   return (
     <div className="flex items-center">
       <Show when="signed-in">
-        <span className="text-sm text-muted-foreground truncate max-w-[120px]">
+        <span className="text-sm font-medium text-slate-600 truncate max-w-[120px]">
           {user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress ?? "Account"}
         </span>
       </Show>
