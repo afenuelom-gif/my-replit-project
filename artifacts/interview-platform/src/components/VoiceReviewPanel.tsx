@@ -55,7 +55,7 @@ function buildScript(report: ReportData): NarrationItem[] {
   }
   items.push({
     label: "Closing",
-    text: "This ends the review. Keep practicing, and all the best with your interview preparations.",
+    text: "This ends the review. We would appreciate your feedback on this interview to help us improve the service. Keep practicing, and all the best with your interview preparations.",
   });
   return items;
 }
@@ -92,9 +92,10 @@ interface VoiceReviewPanelProps {
   sessionId: number;
   interviewer: Interviewer;
   report: ReportData;
+  onReviewComplete?: () => void;
 }
 
-export default function VoiceReviewPanel({ sessionId, interviewer, report }: VoiceReviewPanelProps) {
+export default function VoiceReviewPanel({ sessionId, interviewer, report, onReviewComplete }: VoiceReviewPanelProps) {
   const {
     speak, stop, pause, resume, seekTime,
     isSpeaking, isPaused, audioCurrentTime, audioDuration,
@@ -115,6 +116,8 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report }: Voi
   const seekRef          = useRef<number | null>(null);
 
   useEffect(() => { scriptRef.current = buildScript(report); }, [report]);
+
+  useEffect(() => { if (done) onReviewComplete?.(); }, [done]);
 
   const waitUntilResumed = useCallback((): Promise<void> => {
     if (!pausedRef.current) return Promise.resolve();

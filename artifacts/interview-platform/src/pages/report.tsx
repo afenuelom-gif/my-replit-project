@@ -5,6 +5,7 @@ import { useGetReport, getGetReportQueryKey } from "@workspace/api-client-react"
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import VoiceReviewPanel from "@/components/VoiceReviewPanel";
+import FeedbackModal from "@/components/FeedbackModal";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,6 +68,7 @@ export default function Report() {
   const params = useParams();
   const sessionId = parseInt(params.sessionId || "0");
   const [copied, setCopied] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const { data: report, isLoading } = useGetReport(sessionId, {
     query: { enabled: !!sessionId, queryKey: getGetReportQueryKey(sessionId) }
@@ -77,7 +79,7 @@ export default function Report() {
     queryFn: async () => {
       const res = await fetch(`/api/interview/sessions/${sessionId}`, { credentials: "include" });
       if (!res.ok) return null;
-      return res.json() as Promise<{ session: unknown; interviewers: Array<{ id: number; name: string; title: string; avatarUrl?: string | null; voiceId?: string }> }>;
+      return res.json() as Promise<{ session: { jobRole: string } | null; interviewers: Array<{ id: number; name: string; title: string; avatarUrl?: string | null; voiceId?: string }> }>;
     },
     enabled: !!sessionId,
   });
@@ -252,6 +254,7 @@ export default function Report() {
               sessionId={sessionId}
               interviewer={firstInterviewer}
               report={report as { answerFeedback: Array<{ questionText: string; feedback: string; strengths: string[]; improvements: string[] }>; suggestions?: string[] }}
+              onReviewComplete={() => setShowFeedback(true)}
             />
           )}
 
@@ -469,6 +472,14 @@ export default function Report() {
         </div>
       </div>
       <AppFooter />
+
+      {showFeedback && (
+        <FeedbackModal
+          sessionId={sessionId}
+          jobRole={sessionData?.session?.jobRole ?? "this role"}
+          onClose={() => setShowFeedback(false)}
+        />
+      )}
     </div>
   );
 }

@@ -14,7 +14,10 @@ import {
   questionsTable,
   postureAnalysisTable,
   reportsTable,
+  sessionFeedbackTable,
 } from "@workspace/db";
+import { sendFeedbackEmail } from "../../lib/sendEmail.js";
+import { z } from "zod";
 import {
   CreateSessionBody,
   GetSessionParams,
@@ -855,6 +858,45 @@ router.post("/interview/sessions/:id/transcribe", optionalAuth, async (req, res)
   }
 
   res.json({ text });
+});
+
+// ── POST /interview/sessions/:id/feedback ─────────────────────────────────
+
+const FeedbackBody = z.object({
+  questionRelevance: z.enum(["highly_relevant", "somewhat_relevant", "not_relevant"]),
+  feedbackHelpful: z.boolean(),
+  additionalComments: z.string().nullable().optional(),
+});
+
+router.post("/interview/sessions/:id/feedback", optionalAuth, async (req: Request, res: Response) => {
+  const sessionId = parseInt(req.params.id);
+  if (isNaN(sessionId)) { res.status(400).json({ error: "Invalid session ID" }); return; }
+
+  const body = FeedbackBody.safeParse(req.body);
+  if (!body.success) { res.status(400).json({ error: "Invalid feedback data" }); return; }
+
+  const [session] = await db.select().from(sessionsTable).where(eq(sessionsTable.id, sessionId)).limit(1);
+  if (!session) { res.status(404).json({ error: "Session not found" }); return; }
+  if (isForbidden(session, req)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  await db.insert(sessionFeedbackTable).values({
+    sessionId,
+    userId: req.userId ?? null,
+    jobRole: session.jobRole,
+    questionRelevance: body.data.questionRelevance,
+    feedbackHelpful: body.data.feedbackHelpful,
+    additionalComments: body.data.additionalComments ?? null,
+  });
+
+  sendFeedbackEmail({
+    sessionId,
+    jobRole: session.jobRole,
+    questionRelevance: body.data.questionRelevance,
+    feedbackHelpful: body.data.feedbackHelpful,
+    additionalComments: body.data.additionalComments ?? null,
+  }).catch((err) => console.error("[sendFeedbackEmail]", err));
+
+  res.json({ success: true });
 });
 
 export default router;
