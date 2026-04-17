@@ -79,3 +79,6 @@ channel = "stable-25_05"
 
 [userenv.development]
 BYPASS_AUTH = "false"
+
+[userenv.production]
+VITE_CLERK_PROXY_URL = "https://prepinterv.com/api/__clerk"
