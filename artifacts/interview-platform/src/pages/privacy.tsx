@@ -19,7 +19,7 @@ export default function Privacy() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">1. What we collect</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            When you use PrepInterv AI we collect the information you provide directly — including your name, email address (via Clerk authentication), job role, resume or job description text, and audio recordings made during interview sessions. We also collect session metadata such as duration, question history, and AI-generated performance scores.
+            When you use PrepInterv AI we collect the information you provide directly — including your name, email address (via Clerk authentication), job role, resume text, and job description text. During interview sessions your spoken answers are recorded locally, sent for transcription, and the resulting text transcript is stored against your session. The raw audio is processed in real time and is not retained. We also collect session metadata such as duration, question history, and AI-generated performance scores.
           </p>
         </section>
 
@@ -48,7 +48,7 @@ export default function Privacy() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">4. Session recordings</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            Audio recorded during your interview session is processed in real time for transcription purposes. Transcripts are stored in association with your account to generate your performance report and allow you to review your session history. You may request deletion of your session data at any time by contacting us.
+            Audio captured during your interview session is streamed to our transcription provider in real time. Only the resulting text transcript is stored — the raw audio is never written to our database or any persistent storage. Transcripts are associated with your account to generate your performance report and allow you to review your session history. You may request deletion of your session data at any time by contacting us.
           </p>
         </section>
 
