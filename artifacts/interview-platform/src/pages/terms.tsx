@@ -47,7 +47,7 @@ export default function Terms() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">5. Session recording consent</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            By starting an interview session, you consent to the recording and processing of your audio responses for the purpose of transcription and performance analysis. Recordings are processed by our third-party AI providers and are used solely to deliver the Service.
+            By starting an interview session, you consent to the recording and processing of your audio responses for the purpose of transcription and performance analysis, and to the use of your camera for posture assessment. Audio is processed by our third-party AI providers and used solely to deliver the Service. Camera frames are analysed on the fly for posture scoring and are immediately discarded — no images or video footage are stored at any point.
           </p>
         </section>
 
