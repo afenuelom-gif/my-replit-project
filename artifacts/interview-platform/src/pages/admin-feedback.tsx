@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
+import { useClerk } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
 import { AppHeader } from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
@@ -164,6 +165,7 @@ function exportToCSV(rows: FeedbackRow[]) {
 
 export default function AdminFeedback() {
   const [, setLocation] = useLocation();
+  const { openSignIn } = useClerk();
   const [relevanceFilter, setRelevanceFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -365,9 +367,19 @@ export default function AdminFeedback() {
                     ) : null}
                   </>
                 ) : (
-                  <p className="text-slate-600 text-sm max-w-md mx-auto">
-                    You must be signed in to access this page.
-                  </p>
+                  <div className="space-y-4">
+                    <p className="text-slate-600 text-sm max-w-md mx-auto">
+                      You must be signed in to access this page.
+                    </p>
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={() =>
+                        openSignIn({ redirectUrl: window.location.href })
+                      }
+                    >
+                      Sign In
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
