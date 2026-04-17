@@ -14,6 +14,7 @@ import Pricing from "@/pages/pricing";
 import Contact from "@/pages/contact";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
+import AdminFeedback from "@/pages/admin-feedback";
 
 const queryClient = new QueryClient();
 
@@ -228,6 +229,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/history" component={HistoryRoute} />
             <Route path="/privacy" component={Privacy} />
             <Route path="/terms" component={Terms} />
+            <Route path="/admin/feedback" component={AdminFeedback} />
             <Route component={NotFound} />
           </Switch>
           <Toaster />
@@ -254,6 +256,7 @@ function App() {
               <Route path="/history" component={() => <Redirect to="/" />} />
               <Route path="/privacy" component={Privacy} />
               <Route path="/terms" component={Terms} />
+              <Route path="/admin/feedback" component={AdminFeedback} />
               <Route component={NotFound} />
             </Switch>
           </WouterRouter>

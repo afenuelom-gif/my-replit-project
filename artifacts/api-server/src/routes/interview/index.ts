@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
-import { eq, and, asc, isNull } from "drizzle-orm";
-import type { Request, Response } from "express";
+import { eq, and, asc, desc, isNull, gte, lte } from "drizzle-orm";
+import type { Request, Response, NextFunction } from "express";
 import multer from "multer";
-import { optionalAuth } from "../../middlewares/requireAuth.js";
+import { optionalAuth, requireAuth } from "../../middlewares/requireAuth.js";
 
 function isForbidden(session: { userId: string | null }, req: Request): boolean {
   return !!(session.userId && session.userId !== req.userId);
@@ -916,6 +916,80 @@ router.post("/interview/sessions/:id/feedback", optionalAuth, async (req: Reques
   }).catch((err) => console.error("[sendFeedbackEmail]", err));
 
   res.json({ success: true });
+});
+
+// ── Admin middleware ───────────────────────────────────────────────────────
+
+const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
+const DEV_USER_ID = "dev_bypass_user";
+
+function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (BYPASS_AUTH) {
+    req.userId = DEV_USER_ID;
+    next();
+    return;
+  }
+
+  if (!req.userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const adminIds = (process.env.ADMIN_USER_IDS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (adminIds.length === 0) {
+    res.status(403).json({ error: "Forbidden: no admin users configured. Set the ADMIN_USER_IDS environment variable." });
+    return;
+  }
+
+  if (!adminIds.includes(req.userId)) {
+    res.status(403).json({ error: "Forbidden: admin access required" });
+    return;
+  }
+
+  next();
+}
+
+// ── GET /interview/admin/feedback ──────────────────────────────────────────
+
+router.get("/interview/admin/feedback", requireAuth, requireAdmin, async (req: Request, res: Response) => {
+  const { relevance, dateFrom, dateTo } = req.query as {
+    relevance?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  };
+
+  const conditions = [];
+
+  if (relevance && ["highly_relevant", "somewhat_relevant", "not_relevant"].includes(relevance)) {
+    conditions.push(eq(sessionFeedbackTable.questionRelevance, relevance));
+  }
+
+  if (dateFrom) {
+    const from = new Date(dateFrom);
+    if (!isNaN(from.getTime())) {
+      conditions.push(gte(sessionFeedbackTable.createdAt, from));
+    }
+  }
+
+  if (dateTo) {
+    const to = new Date(dateTo);
+    if (!isNaN(to.getTime())) {
+      to.setHours(23, 59, 59, 999);
+      conditions.push(lte(sessionFeedbackTable.createdAt, to));
+    }
+  }
+
+  const rows = await db
+    .select()
+    .from(sessionFeedbackTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(sessionFeedbackTable.createdAt));
+
+  res.json(rows);
 });
 
 export default router;
