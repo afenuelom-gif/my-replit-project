@@ -580,79 +580,109 @@ export default function Interview() {
       </main>
 
       {/* Bottom Control Bar */}
-      <footer className="border-t border-white/10 bg-black/80 backdrop-blur-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
-        <div className="flex-1 max-w-3xl">
+      <footer className="border-t border-white/10 bg-black/80 backdrop-blur-xl px-4 py-4 sm:px-6 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shrink-0 overflow-x-hidden">
+        {/* Question text */}
+        <div className="flex-1 max-w-3xl w-full">
           <div className="text-xs text-primary mb-1 font-mono uppercase tracking-wider">Current Question</div>
-          <div className="text-base sm:text-lg font-medium text-white/90 line-clamp-3 min-h-[4.5rem]">
+          <div className="text-sm sm:text-lg font-medium text-white/90 line-clamp-2 sm:line-clamp-3 min-h-[2.5rem] sm:min-h-[4.5rem]">
             {currentQuestion?.questionText || "Starting interview — please wait..."}
           </div>
-          <div className="mt-2 text-xs text-zinc-500">{statusMessage}</div>
+          <div className="mt-1 text-xs text-zinc-500">{statusMessage}</div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            className={`border-primary/40 text-primary hover:bg-primary/10 gap-2 transition-opacity duration-300 ${
-              isAnySpeaking ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
-            onClick={() => {
-              if (activeInterviewerId) {
-                const ref = cardRefsMap.current.get(activeInterviewerId);
-                ref?.current?.stop();
-              }
-              setIsHeyGenSpeaking(false);
-            }}
-            data-testid="button-skip-tts"
-            title="Skip to answering"
-          >
-            Skip
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-white/20 text-zinc-400 hover:text-red-400 hover:border-red-400/40 hover:bg-red-950/20 gap-2"
-            onClick={() => setShowCancelDialog(true)}
-            data-testid="button-cancel"
-            disabled={isCancelling}
-            title="Cancel and discard this session"
-          >
-            <XCircle className="w-4 h-4" />
-            Cancel Interview
-          </Button>
-
-          <Button variant="destructive" size="sm" onClick={handleEndWithThankYou} data-testid="button-end"
-            disabled={completeSession.isPending || isEndingManually || isFinalThankYou}>
-            {(completeSession.isPending || isEndingManually) ? <Loader2 className="w-4 h-4 animate-spin" /> : "End & Get Report"}
-          </Button>
-
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="w-12 h-12 rounded-full border-white/20 hover:bg-white/10"
-            onClick={() => setWebcamEnabled(!webcamEnabled)}
-            data-testid="button-toggle-video"
-            title={webcamEnabled ? "Turn off camera" : "Turn on camera"}
-          >
-            {webcamEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5 text-red-500" />}
-          </Button>
-
-          {!isFinalThankYou && !isEndingManually && (
-            <Button 
-              variant={isRecording ? "destructive" : "default"}
-              className={`w-16 h-16 rounded-full transition-all ${isRecording ? 'animate-pulse ring-4 ring-red-500/50' : 'hover:scale-105'}`}
-              onClick={handleToggleRecord}
-              data-testid="button-toggle-audio"
-              disabled={isProcessing || isAnySpeaking || transcribeAnswer.isPending || getNextQuestion.isPending}
-              title={isRecording ? "Stop recording" : "Start recording your answer"}
+        {/* Controls */}
+        <div className="flex flex-col items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+          {/* Row 1: secondary actions */}
+          <div className="flex items-center justify-between sm:justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className={`border-primary/40 text-primary hover:bg-primary/10 gap-1.5 transition-opacity duration-300 text-xs sm:text-sm ${
+                isAnySpeaking ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+              onClick={() => {
+                if (activeInterviewerId) {
+                  const ref = cardRefsMap.current.get(activeInterviewerId);
+                  ref?.current?.stop();
+                }
+                setIsHeyGenSpeaking(false);
+              }}
+              data-testid="button-skip-tts"
+              title="Skip to answering"
             >
-              {isProcessing || transcribeAnswer.isPending || getNextQuestion.isPending 
-                ? <Loader2 className="w-6 h-6 animate-spin" /> 
-                : isRecording 
-                  ? <SquareSquare className="w-6 h-6" /> 
-                  : <Mic className="w-6 h-6" />}
+              Skip
             </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/20 text-zinc-400 hover:text-red-400 hover:border-red-400/40 hover:bg-red-950/20 gap-1.5 text-xs sm:text-sm"
+              onClick={() => setShowCancelDialog(true)}
+              data-testid="button-cancel"
+              disabled={isCancelling}
+              title="Cancel and discard this session"
+            >
+              <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Cancel</span>
+              <span className="inline xs:hidden">Cancel</span>
+            </Button>
+
+            <Button variant="destructive" size="sm" onClick={handleEndWithThankYou} data-testid="button-end"
+              className="text-xs sm:text-sm"
+              disabled={completeSession.isPending || isEndingManually || isFinalThankYou}>
+              {(completeSession.isPending || isEndingManually) ? <Loader2 className="w-4 h-4 animate-spin" /> : "End & Get Report"}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-white/20 hover:bg-white/10 shrink-0"
+              onClick={() => setWebcamEnabled(!webcamEnabled)}
+              data-testid="button-toggle-video"
+              title={webcamEnabled ? "Turn off camera" : "Turn on camera"}
+            >
+              {webcamEnabled ? <Video className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />}
+            </Button>
+          </div>
+
+          {/* Row 2: mic button — centered and prominent */}
+          {!isFinalThankYou && !isEndingManually && (
+            <div className="flex justify-center sm:hidden">
+              <Button
+                variant={isRecording ? "destructive" : "default"}
+                className={`w-16 h-16 rounded-full transition-all ${isRecording ? 'animate-pulse ring-4 ring-red-500/50' : 'hover:scale-105'}`}
+                onClick={handleToggleRecord}
+                data-testid="button-toggle-audio"
+                disabled={isProcessing || isAnySpeaking || transcribeAnswer.isPending || getNextQuestion.isPending}
+                title={isRecording ? "Stop recording" : "Start recording your answer"}
+              >
+                {isProcessing || transcribeAnswer.isPending || getNextQuestion.isPending
+                  ? <Loader2 className="w-6 h-6 animate-spin" />
+                  : isRecording
+                    ? <SquareSquare className="w-6 h-6" />
+                    : <Mic className="w-6 h-6" />}
+              </Button>
+            </div>
+          )}
+
+          {/* Desktop mic — inline with controls */}
+          {!isFinalThankYou && !isEndingManually && (
+            <div className="hidden sm:flex">
+              <Button
+                variant={isRecording ? "destructive" : "default"}
+                className={`w-16 h-16 rounded-full transition-all ${isRecording ? 'animate-pulse ring-4 ring-red-500/50' : 'hover:scale-105'}`}
+                onClick={handleToggleRecord}
+                data-testid="button-toggle-audio"
+                disabled={isProcessing || isAnySpeaking || transcribeAnswer.isPending || getNextQuestion.isPending}
+                title={isRecording ? "Stop recording" : "Start recording your answer"}
+              >
+                {isProcessing || transcribeAnswer.isPending || getNextQuestion.isPending
+                  ? <Loader2 className="w-6 h-6 animate-spin" />
+                  : isRecording
+                    ? <SquareSquare className="w-6 h-6" />
+                    : <Mic className="w-6 h-6" />}
+              </Button>
+            </div>
           )}
         </div>
       </footer>
