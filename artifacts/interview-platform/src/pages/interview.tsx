@@ -179,6 +179,7 @@ export default function Interview() {
   useEffect(() => {
     const currentQ = sessionData?.questions[sessionData.questions.length - 1];
     if (!currentQ || currentQ.id === lastPlayedQuestionId) return;
+    if (isEndingManuallyRef.current) return;
 
     const activeInterviewer = sessionData?.interviewers.find(i => i.id === currentQ.interviewerId);
     if (!activeInterviewer) return;
