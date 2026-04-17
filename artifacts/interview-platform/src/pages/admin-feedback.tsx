@@ -29,6 +29,8 @@ import {
   X,
   TrendingUp,
   BarChart2,
+  Copy,
+  Check,
 } from "lucide-react";
 
 interface FeedbackRow {
@@ -118,6 +120,7 @@ export default function AdminFeedback() {
     dateFrom: "",
     dateTo: "",
   });
+  const [copied, setCopied] = useState(false);
 
   const queryParams = new URLSearchParams();
   if (appliedFilters.relevance) queryParams.set("relevance", appliedFilters.relevance);
@@ -146,7 +149,30 @@ export default function AdminFeedback() {
 
   const errorMsg = (error as Error | null)?.message ?? "";
   const isNoAdminsConfigured = errorMsg === "NO_ADMINS_CONFIGURED";
-  const isUnauthorized = isNoAdminsConfigured || errorMsg === "UNAUTHORIZED" || errorMsg === "FORBIDDEN";
+  const isForbidden = errorMsg === "FORBIDDEN";
+  const isLoggedOut = errorMsg === "UNAUTHORIZED";
+  const isUnauthorized = isNoAdminsConfigured || isLoggedOut || isForbidden;
+
+  const showUserId = isNoAdminsConfigured || isForbidden;
+
+  const { data: meData, isError: isMeError } = useQuery<{ userId: string }>({
+    queryKey: ["users-me"],
+    queryFn: async () => {
+      const res = await fetch("/api/users/me", { credentials: "include" });
+      if (!res.ok) throw new Error("FETCH_FAILED");
+      return res.json();
+    },
+    enabled: showUserId,
+    retry: false,
+  });
+
+  function handleCopy() {
+    if (!meData?.userId) return;
+    navigator.clipboard.writeText(meData.userId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   function applyFilters() {
     setAppliedFilters({ relevance: relevanceFilter, dateFrom, dateTo });
@@ -212,20 +238,67 @@ export default function AdminFeedback() {
                       <code className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-mono text-xs">ADMIN_USER_IDS</code>{" "}
                       environment secret in your Replit project settings.
                     </p>
-                    <p className="text-slate-500 text-xs max-w-sm mx-auto">
-                      Add your Clerk user ID (e.g. <span className="font-mono">user_abc123</span>) as a comma-separated list.
-                      You can find your Clerk user ID by visiting{" "}
-                      <span className="font-mono">/api/users/me</span> while signed in.
-                    </p>
+                    {meData?.userId ? (
+                      <div className="max-w-sm mx-auto space-y-2 pt-1">
+                        <p className="text-slate-500 text-xs font-medium">Your Clerk user ID:</p>
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                          <code className="flex-1 text-left text-slate-800 font-mono text-sm break-all">{meData.userId}</code>
+                          <button
+                            onClick={handleCopy}
+                            className="flex-shrink-0 text-slate-400 hover:text-slate-700 transition-colors"
+                            title="Copy to clipboard"
+                          >
+                            {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        <p className="text-slate-400 text-xs">
+                          Copy this ID and paste it into the{" "}
+                          <code className="bg-slate-100 text-slate-700 px-1 py-0.5 rounded font-mono">ADMIN_USER_IDS</code>{" "}
+                          secret to grant yourself access.
+                        </p>
+                      </div>
+                    ) : isMeError ? (
+                      <p className="text-slate-400 text-xs max-w-sm mx-auto pt-1">
+                        Couldn't load your user ID — try refreshing, or visit{" "}
+                        <span className="font-mono">/api/users/me</span> while signed in.
+                      </p>
+                    ) : null}
                   </>
-                ) : (
+                ) : isForbidden ? (
                   <>
                     <p className="text-slate-600 text-sm max-w-md mx-auto">
                       Your account does not have admin access. If you should have access, ask the project owner to add your user ID to the{" "}
                       <code className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-mono text-xs">ADMIN_USER_IDS</code>{" "}
                       environment secret.
                     </p>
+                    {meData?.userId ? (
+                      <div className="max-w-sm mx-auto space-y-2 pt-1">
+                        <p className="text-slate-500 text-xs font-medium">Your Clerk user ID:</p>
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                          <code className="flex-1 text-left text-slate-800 font-mono text-sm break-all">{meData.userId}</code>
+                          <button
+                            onClick={handleCopy}
+                            className="flex-shrink-0 text-slate-400 hover:text-slate-700 transition-colors"
+                            title="Copy to clipboard"
+                          >
+                            {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        <p className="text-slate-400 text-xs">
+                          Share this ID with the project owner to request access.
+                        </p>
+                      </div>
+                    ) : isMeError ? (
+                      <p className="text-slate-400 text-xs max-w-sm mx-auto pt-1">
+                        Couldn't load your user ID — try refreshing, or visit{" "}
+                        <span className="font-mono">/api/users/me</span> while signed in.
+                      </p>
+                    ) : null}
                   </>
+                ) : (
+                  <p className="text-slate-600 text-sm max-w-md mx-auto">
+                    You must be signed in to access this page.
+                  </p>
                 )}
               </CardContent>
             </Card>
