@@ -156,7 +156,11 @@ function StartRoute() {
         />
       </Show>
       <Show when="signed-out">
-        <Redirect to="/sign-up" />
+        <Start
+          showAuthPrompt
+          authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>}
+          authMobileMenu={<ClerkMobileActions />}
+        />
       </Show>
     </>
   );

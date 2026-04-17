@@ -5,16 +5,53 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Briefcase, FileText, Upload, X } from "lucide-react";
+import { Loader2, Briefcase, FileText, Upload, X, LogIn, UserPlus } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
+import { useClerk } from "@clerk/react";
 
 interface StartProps {
   authMenu?: React.ReactNode;
   authMobileMenu?: React.ReactNode;
+  showAuthPrompt?: boolean;
 }
 
-export default function Start({ authMenu, authMobileMenu }: StartProps) {
+function AuthPromptCard() {
+  const { openSignIn, openSignUp } = useClerk();
+  const redirectUrl = window.location.href;
+
+  return (
+    <Card className="bg-white shadow-sm border-slate-200">
+      <CardContent className="py-10 text-center space-y-5">
+        <div className="space-y-2">
+          <p className="text-lg font-semibold text-slate-900">Sign in to start your interview</p>
+          <p className="text-slate-500 text-sm max-w-md mx-auto">
+            An account is required to run and save your interview session. Sign in or create a free account to continue.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button
+            className="flex-1 sm:flex-none sm:min-w-[140px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 border-0 gap-2"
+            onClick={() => openSignIn({ redirectUrl })}
+          >
+            <LogIn className="w-4 h-4" />
+            Sign In
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 sm:flex-none sm:min-w-[140px] border-slate-300 text-slate-700 hover:bg-slate-50 gap-2"
+            onClick={() => openSignUp({ redirectUrl })}
+          >
+            <UserPlus className="w-4 h-4" />
+            Create Account
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function Start({ authMenu, authMobileMenu, showAuthPrompt }: StartProps) {
   const [, setLocation] = useLocation();
   const createSession = useCreateSession();
 
@@ -127,7 +164,7 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
             <p className="text-slate-500 text-sm">Tell us the role and we'll handle the rest.</p>
           </div>
 
-          <Card className="bg-white shadow-sm border-slate-200">
+          {showAuthPrompt ? <AuthPromptCard /> : <Card className="bg-white shadow-sm border-slate-200">
             <CardHeader>
               <CardTitle className="text-xl">Session Configuration</CardTitle>
               <CardDescription>Define the parameters for your interview simulation.</CardDescription>
@@ -268,7 +305,7 @@ export default function Start({ authMenu, authMobileMenu }: StartProps) {
                 </Button>
               </form>
             </CardContent>
-          </Card>
+          </Card>}
 
           <div className="grid grid-cols-3 gap-4 text-center text-sm text-slate-500">
             <div className="space-y-1">
