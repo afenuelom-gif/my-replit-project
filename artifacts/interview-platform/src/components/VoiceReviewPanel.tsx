@@ -14,8 +14,8 @@ function ScrollingText({ children, className }: { children: React.ReactNode; cla
     if (!outer || !first) return;
     const measure = () => {
       const overflow = first.scrollWidth - outer.clientWidth;
-      // speed ~60 px/s; min 2 s so it never feels frantic
-      setDuration(overflow > 4 ? Math.max(2, first.scrollWidth / 60) : 0);
+      // speed ~40 px/s; min 3 s so it never feels frantic
+      setDuration(overflow > 4 ? Math.max(3, first.scrollWidth / 40) : 0);
     };
     measure();
     const ro = new ResizeObserver(measure);
