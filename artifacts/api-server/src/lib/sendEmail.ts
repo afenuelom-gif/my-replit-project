@@ -1,5 +1,14 @@
 import nodemailer from "nodemailer";
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export interface FeedbackEmailPayload {
   sessionId: number;
   jobRole: string;
@@ -32,17 +41,21 @@ export async function sendFeedbackEmail(payload: FeedbackEmailPayload): Promise<
     auth: { user: SMTP_USER, pass: SMTP_PASS },
   });
 
-  const relevanceLabel = RELEVANCE_LABELS[payload.questionRelevance] ?? payload.questionRelevance;
+  const relevanceLabel = escapeHtml(RELEVANCE_LABELS[payload.questionRelevance] ?? payload.questionRelevance);
   const helpfulLabel   = payload.feedbackHelpful ? "Yes" : "No";
+  const jobRoleSafe    = escapeHtml(payload.jobRole);
+  const commentsSafe   = payload.additionalComments
+    ? escapeHtml(payload.additionalComments)
+    : "<em style='color:#94a3b8;'>None</em>";
 
   const html = `
     <h2 style="font-family:sans-serif;color:#1e293b;">New Session Feedback</h2>
     <table style="font-family:sans-serif;font-size:14px;border-collapse:collapse;width:100%;max-width:480px;">
       <tr><td style="padding:8px 0;color:#64748b;width:160px;">Session ID</td><td style="padding:8px 0;color:#1e293b;font-weight:600;">#${payload.sessionId}</td></tr>
-      <tr><td style="padding:8px 0;color:#64748b;">Role</td><td style="padding:8px 0;color:#1e293b;font-weight:600;">${payload.jobRole}</td></tr>
+      <tr><td style="padding:8px 0;color:#64748b;">Role</td><td style="padding:8px 0;color:#1e293b;font-weight:600;">${jobRoleSafe}</td></tr>
       <tr><td style="padding:8px 0;color:#64748b;">Question relevance</td><td style="padding:8px 0;color:#1e293b;">${relevanceLabel}</td></tr>
       <tr><td style="padding:8px 0;color:#64748b;">Feedback helpful</td><td style="padding:8px 0;color:#1e293b;">${helpfulLabel}</td></tr>
-      <tr><td style="padding:8px 0;color:#64748b;vertical-align:top;">Comments</td><td style="padding:8px 0;color:#1e293b;">${payload.additionalComments ?? "<em style='color:#94a3b8;'>None</em>"}</td></tr>
+      <tr><td style="padding:8px 0;color:#64748b;vertical-align:top;">Comments</td><td style="padding:8px 0;color:#1e293b;">${commentsSafe}</td></tr>
     </table>
   `;
 
