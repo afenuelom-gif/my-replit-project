@@ -32,10 +32,10 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
   return (
     <div className="min-h-screen w-full bg-white flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-blue-500/15 blur-[100px]" />
-        <div className="absolute -top-16 -left-32 w-[400px] h-[400px] rounded-full bg-purple-500/10 blur-[80px]" />
+        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-blue-500/35 blur-[80px]" />
+        <div className="absolute -top-16 -left-32 w-[400px] h-[400px] rounded-full bg-purple-500/30 blur-[70px]" />
       </div>
-      <div className="absolute top-0 left-0 right-0 h-[50vh] bg-gradient-to-b from-blue-50/60 via-white/10 to-transparent pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-[50vh] bg-gradient-to-b from-blue-100/90 via-purple-50/40 to-transparent pointer-events-none" />
 
       <AppHeader right={authMenu} mobileMenuExtra={authMobileMenu} />
 

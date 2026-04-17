@@ -59,8 +59,8 @@ export default function History() {
 
       {/* Gradient blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-blue-500/10 blur-[100px]" />
-        <div className="absolute top-1/2 -left-32 w-[400px] h-[400px] rounded-full bg-purple-500/8 blur-[80px]" />
+        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-blue-500/35 blur-[80px]" />
+        <div className="absolute top-1/2 -left-32 w-[400px] h-[400px] rounded-full bg-purple-500/30 blur-[70px]" />
       </div>
 
       <AppHeader

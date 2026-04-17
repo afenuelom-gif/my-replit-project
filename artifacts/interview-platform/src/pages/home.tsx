@@ -15,14 +15,14 @@ export default function Home({ authMenu, authMobileMenu }: HomeProps) {
 
       {/* Rich gradient blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-48 -right-48 w-[700px] h-[700px] rounded-full bg-blue-500/20 blur-[120px]" />
-        <div className="absolute -top-32 -left-48 w-[600px] h-[600px] rounded-full bg-purple-500/15 blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[400px] rounded-full bg-indigo-400/10 blur-[140px]" />
-        <div className="absolute bottom-0 right-0 w-[500px] h-[400px] rounded-full bg-cyan-400/10 blur-[100px]" />
+        <div className="absolute -top-48 -right-48 w-[700px] h-[700px] rounded-full bg-blue-500/35 blur-[90px]" />
+        <div className="absolute -top-32 -left-48 w-[600px] h-[600px] rounded-full bg-purple-500/30 blur-[80px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[400px] rounded-full bg-indigo-400/20 blur-[110px]" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[400px] rounded-full bg-cyan-400/20 blur-[80px]" />
       </div>
 
       {/* Top gradient wash */}
-      <div className="absolute top-0 left-0 right-0 h-[70vh] bg-gradient-to-b from-blue-50/80 via-white/30 to-transparent pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-[70vh] bg-gradient-to-b from-blue-100/90 via-purple-50/40 to-transparent pointer-events-none" />
 
       <AppHeader right={authMenu} mobileMenuExtra={authMobileMenu} />
 

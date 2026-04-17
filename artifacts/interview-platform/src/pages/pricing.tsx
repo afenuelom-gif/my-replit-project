@@ -52,11 +52,11 @@ export default function Pricing({ authMenu, authMobileMenu }: PricingProps) {
 
       {/* Rich gradient blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-blue-500/20 blur-[120px]" />
-        <div className="absolute -top-20 -left-40 w-[500px] h-[500px] rounded-full bg-purple-500/15 blur-[100px]" />
-        <div className="absolute top-2/3 left-1/2 -translate-x-1/2 w-[700px] h-[300px] rounded-full bg-indigo-400/10 blur-[100px]" />
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-blue-500/35 blur-[90px]" />
+        <div className="absolute -top-20 -left-40 w-[500px] h-[500px] rounded-full bg-purple-500/30 blur-[80px]" />
+        <div className="absolute top-2/3 left-1/2 -translate-x-1/2 w-[700px] h-[300px] rounded-full bg-indigo-400/20 blur-[80px]" />
       </div>
-      <div className="absolute top-0 left-0 right-0 h-[60vh] bg-gradient-to-b from-blue-50/70 via-white/20 to-transparent pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-[60vh] bg-gradient-to-b from-blue-100/90 via-purple-50/40 to-transparent pointer-events-none" />
 
       <AppHeader right={authMenu} mobileMenuExtra={authMobileMenu} />
 
