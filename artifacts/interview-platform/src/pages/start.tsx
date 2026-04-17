@@ -18,7 +18,7 @@ interface StartProps {
 
 function AuthPromptCard() {
   const { openSignIn, openSignUp } = useClerk();
-  const redirectUrl = window.location.href;
+  const afterAuthUrl = window.location.href;
 
   return (
     <Card className="bg-white shadow-sm border-slate-200">
@@ -32,7 +32,7 @@ function AuthPromptCard() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button
             className="flex-1 sm:flex-none sm:min-w-[140px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 border-0 gap-2"
-            onClick={() => openSignIn({ redirectUrl })}
+            onClick={() => openSignIn({ afterSignInUrl: afterAuthUrl, afterSignUpUrl: afterAuthUrl })}
           >
             <LogIn className="w-4 h-4" />
             Sign In
@@ -40,7 +40,7 @@ function AuthPromptCard() {
           <Button
             variant="outline"
             className="flex-1 sm:flex-none sm:min-w-[140px] border-slate-300 text-slate-700 hover:bg-slate-50 gap-2"
-            onClick={() => openSignUp({ redirectUrl })}
+            onClick={() => openSignUp({ afterSignUpUrl: afterAuthUrl, afterSignInUrl: afterAuthUrl })}
           >
             <UserPlus className="w-4 h-4" />
             Create Account
