@@ -293,7 +293,7 @@ export default function AdminFeedback() {
                 className="border-slate-200 text-slate-700 hover:bg-slate-50 gap-2"
                 onClick={() => exportToCSV(rows)}
               >
-                <Download className="h-4 w-4" /> Export CSV
+                <Download className="h-4 w-4" /> Export CSV ({rows.length} {rows.length === 1 ? "row" : "rows"})
               </Button>
             )}
           </div>
