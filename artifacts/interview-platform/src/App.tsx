@@ -163,22 +163,7 @@ function StartRoute() {
 }
 
 function HistoryRoute() {
-  const bypassActive = useDevMode();
-
-  if (bypassActive) {
-    return <History />;
-  }
-
-  return (
-    <>
-      <Show when="signed-in">
-        <History />
-      </Show>
-      <Show when="signed-out">
-        <Redirect to="/sign-in" />
-      </Show>
-    </>
-  );
+  return <History />;
 }
 
 function ClerkQueryClientCacheInvalidator() {

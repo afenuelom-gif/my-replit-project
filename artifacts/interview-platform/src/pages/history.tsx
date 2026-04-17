@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import AppFooter from "@/components/AppFooter";
 import { useQuery } from "@tanstack/react-query";
+import { useClerk } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,15 +45,20 @@ function statusBadgeVariant(status: string): "default" | "secondary" | "destruct
 
 export default function History() {
   const [, setLocation] = useLocation();
+  const { openSignIn } = useClerk();
 
-  const { data: sessions, isLoading, isError } = useQuery<SessionWithReport[]>({
+  const { data: sessions, isLoading, isError, error } = useQuery<SessionWithReport[]>({
     queryKey: ["user-sessions"],
     queryFn: async () => {
       const res = await fetch("/api/users/me/sessions", { credentials: "include" });
+      if (res.status === 401) throw new Error("UNAUTHORIZED");
       if (!res.ok) throw new Error("Failed to fetch sessions");
       return res.json();
     },
+    retry: false,
   });
+
+  const isLoggedOut = (error as Error | null)?.message === "UNAUTHORIZED";
 
   return (
     <div className="min-h-screen bg-white flex flex-col overflow-x-hidden relative">
@@ -96,7 +102,24 @@ export default function History() {
             </div>
           )}
 
-          {isError && (
+          {isError && isLoggedOut && (
+            <Card className="bg-white border-red-200 shadow-sm">
+              <CardContent className="py-12 text-center space-y-4">
+                <p className="text-red-600 font-semibold text-lg">Sign In Required</p>
+                <p className="text-slate-600 text-sm max-w-md mx-auto">
+                  You must be signed in to view your interview history.
+                </p>
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => openSignIn({ redirectUrl: window.location.href })}
+                >
+                  Sign In
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {isError && !isLoggedOut && (
             <Card className="bg-white border-red-200 shadow-sm">
               <CardContent className="py-8 text-center text-red-600">
                 Failed to load sessions. Please try again.
