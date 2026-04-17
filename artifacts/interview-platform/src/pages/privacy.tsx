@@ -76,7 +76,7 @@ export default function Privacy() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">8. Contact</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            For any privacy-related questions, contact IvanGold Technologies at <a href="mailto:hello@prepinterv.com" className="text-primary hover:underline">hello@prepinterv.com</a>.
+            For any privacy-related questions, contact us at <a href="mailto:hello@prepinterv.com" className="text-primary hover:underline">hello@prepinterv.com</a>.
           </p>
         </section>
       </main>

@@ -82,7 +82,7 @@ export default function Terms() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">10. Contact</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            If you have questions about these Terms, contact IvanGold Technologies at <a href="mailto:hello@prepinterv.com" className="text-primary hover:underline">hello@prepinterv.com</a>.
+            If you have questions about these Terms, contact us at <a href="mailto:hello@prepinterv.com" className="text-primary hover:underline">hello@prepinterv.com</a>.
           </p>
         </section>
       </main>
