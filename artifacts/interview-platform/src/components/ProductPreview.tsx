@@ -276,11 +276,11 @@ export function ProductPreview() {
             onClick={() => goTo(i)}
             className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-medium transition-all border ${
               active === i
-                ? "border-blue-500/50 bg-blue-500/15 text-blue-300"
-                : "border-white/10 bg-white/5 text-zinc-500 hover:text-zinc-300"
+                ? "border-blue-400 bg-blue-50 text-blue-700"
+                : "border-slate-200 bg-white text-slate-400 hover:text-slate-600 hover:border-slate-300"
             }`}
           >
-            <span className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full text-[9px] sm:text-xs flex items-center justify-center font-bold shrink-0 ${active === i ? "bg-blue-500 text-white" : "bg-white/10 text-zinc-500"}`}>
+            <span className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full text-[9px] sm:text-xs flex items-center justify-center font-bold shrink-0 ${active === i ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400"}`}>
               {slide.step}
             </span>
             <span className="text-[11px] sm:text-xs">{slide.label}</span>
