@@ -98,6 +98,7 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report }: Voi
   const [stopped, setStopped]           = useState(false);
   const [done, setDone]                 = useState(false);
   const [paused, setPaused]             = useState(false);
+  const [dragValue, setDragValue]       = useState<number | null>(null);
 
   const scriptRef        = useRef<NarrationItem[]>([]);
   const stoppedRef       = useRef(false);
@@ -211,9 +212,11 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report }: Voi
 
   // ── Derived state ─────────────────────────────────────────────────────────
 
-  const script           = scriptRef.current;
-  const currentItem      = currentIndex >= 0 ? script[currentIndex] : null;
+  const script            = scriptRef.current;
+  const currentItem       = currentIndex >= 0 ? script[currentIndex] : null;
   const isActivelyPlaying = isSpeaking && !isPaused && !paused;
+  // While dragging, show the thumb at dragValue without actually seeking yet
+  const displayIndex      = dragValue !== null ? dragValue : Math.max(0, currentIndex);
 
   return (
     <div className="print:hidden sticky top-[65px] z-20 bg-white border border-blue-200 rounded-2xl shadow-md overflow-hidden">
@@ -247,10 +250,16 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report }: Voi
             ) : stopped ? (
               <span className="text-xs text-slate-400 font-medium">Stopped</span>
             ) : paused ? (
-              <span className="text-xs text-amber-600 font-medium">Paused — {currentItem?.label}</span>
+              <span className="text-xs text-amber-600 font-medium">
+                {dragValue !== null ? `Jump to: ${script[dragValue]?.label}` : `Paused — ${currentItem?.label}`}
+              </span>
             ) : (
               <span className="text-xs text-blue-600 font-medium">
-                {currentItem ? currentItem.label : "Preparing review…"}
+                {dragValue !== null
+                  ? `Jump to: ${script[dragValue]?.label}`
+                  : currentItem
+                  ? currentItem.label
+                  : "Preparing review…"}
               </span>
             )}
           </div>
@@ -262,26 +271,36 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report }: Voi
           ) : (
             /* Scrubber row */
             <div className="flex items-center gap-2">
-              <SpeakingWaveform active={isActivelyPlaying} />
+              <SpeakingWaveform active={isActivelyPlaying && dragValue === null} />
               <div className="flex-1 relative flex items-center">
                 <input
                   type="range"
                   min={0}
                   max={Math.max(0, script.length - 1)}
                   step={1}
-                  value={currentIndex >= 0 ? currentIndex : 0}
-                  onChange={(e) => seekTo(Number(e.target.value))}
-                  title={currentItem?.label ?? ""}
+                  value={displayIndex}
+                  onChange={(e) => setDragValue(Number(e.target.value))}
+                  onPointerDown={(e) => setDragValue(Number((e.target as HTMLInputElement).value))}
+                  onPointerUp={(e) => {
+                    const v = Number((e.target as HTMLInputElement).value);
+                    setDragValue(null);
+                    seekTo(v);
+                  }}
+                  title={script[displayIndex]?.label ?? ""}
                   className="w-full h-1.5 appearance-none rounded-full cursor-pointer accent-blue-500"
                   style={{
                     background: script.length > 1
-                      ? `linear-gradient(to right, #3b82f6 ${(Math.max(0, currentIndex) / (script.length - 1)) * 100}%, #e2e8f0 ${(Math.max(0, currentIndex) / (script.length - 1)) * 100}%)`
+                      ? `linear-gradient(to right, #3b82f6 ${(displayIndex / (script.length - 1)) * 100}%, #e2e8f0 ${(displayIndex / (script.length - 1)) * 100}%)`
                       : "#3b82f6",
                   }}
                 />
               </div>
               <span className="text-xs text-slate-400 shrink-0 tabular-nums w-10 text-right">
-                {currentIndex >= 0 ? `${currentIndex + 1}/${script.length}` : `0/${script.length}`}
+                {dragValue !== null
+                  ? `${dragValue + 1}/${script.length}`
+                  : currentIndex >= 0
+                  ? `${currentIndex + 1}/${script.length}`
+                  : `0/${script.length}`}
               </span>
             </div>
           )}
