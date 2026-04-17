@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 function escapeHtml(str: string): string {
   return str
@@ -17,19 +17,14 @@ export interface ContactEmailPayload {
 }
 
 export async function sendContactEmail(payload: ContactEmailPayload): Promise<void> {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+  const { RESEND_API_KEY } = process.env;
 
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    console.log("[sendContactEmail] SMTP not configured — logging contact message instead:\n", JSON.stringify(payload, null, 2));
+  if (!RESEND_API_KEY) {
+    console.log("[sendContactEmail] RESEND_API_KEY not configured — logging contact message instead:\n", JSON.stringify(payload, null, 2));
     return;
   }
 
-  const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT ? parseInt(SMTP_PORT) : 587,
-    secure: SMTP_PORT === "465",
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
+  const resend = new Resend(RESEND_API_KEY);
 
   const html = `
     <h2 style="font-family:sans-serif;color:#1e293b;">New Contact Message</h2>
@@ -41,11 +36,16 @@ export async function sendContactEmail(payload: ContactEmailPayload): Promise<vo
     </table>
   `;
 
-  await transporter.sendMail({
-    from: SMTP_FROM ?? SMTP_USER,
-    to: "feedback@prepinterv.com",
+  const { error } = await resend.emails.send({
+    from: "PrepInterv <hello@prepinterv.com>",
+    to: "hello@prepinterv.com",
     replyTo: payload.email,
     subject: `[PrepInterv Contact] ${payload.subject}`,
     html,
   });
+
+  if (error) {
+    console.error("[sendContactEmail] Resend error:", error);
+    throw new Error(error.message);
+  }
 }
