@@ -251,8 +251,16 @@ export default function AdminFeedback() {
   const { dailyData, weeklyData, roleData } = useChartData(rows);
 
   const autoWeekly = dailyData.length > 14;
-  const [granularityOverride, setGranularityOverride] = useState<"daily" | "weekly" | null>(null);
+  const [granularityOverride, setGranularityOverride] = useState<"daily" | "weekly" | null>(() => {
+    const saved = localStorage.getItem("feedbackGranularity");
+    return saved === "daily" || saved === "weekly" ? saved : null;
+  });
   const granularity = granularityOverride ?? (autoWeekly ? "weekly" : "daily");
+
+  function setGranularity(value: "daily" | "weekly") {
+    localStorage.setItem("feedbackGranularity", value);
+    setGranularityOverride(value);
+  }
   const trendData = granularity === "weekly" ? weeklyData : dailyData;
 
   return (
@@ -529,13 +537,13 @@ export default function AdminFeedback() {
                             </CardTitle>
                             <div className="flex items-center rounded-md border border-slate-200 overflow-hidden text-xs font-medium">
                               <button
-                                onClick={() => setGranularityOverride("daily")}
+                                onClick={() => setGranularity("daily")}
                                 className={`px-2.5 py-1 transition-colors ${granularity === "daily" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-50"}`}
                               >
                                 Daily
                               </button>
                               <button
-                                onClick={() => setGranularityOverride("weekly")}
+                                onClick={() => setGranularity("weekly")}
                                 className={`px-2.5 py-1 transition-colors border-l border-slate-200 ${granularity === "weekly" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-50"}`}
                               >
                                 Weekly
