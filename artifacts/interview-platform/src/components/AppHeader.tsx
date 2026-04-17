@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 interface AppHeaderProps {
   right?: React.ReactNode;
@@ -10,6 +11,7 @@ interface AppHeaderProps {
 export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const isAdmin = useIsAdmin();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,6 +63,11 @@ export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
         <div className="hidden sm:flex items-center gap-1">
           <Link href="/pricing" className={navLinkClass("/pricing")}>Pricing</Link>
           <Link href="/contact" className={navLinkClass("/contact")}>Contact</Link>
+          {isAdmin && (
+            <Link href="/admin/feedback" className={navLinkClass("/admin/feedback")}>
+              Admin Feedback
+            </Link>
+          )}
         </div>
       </div>
 
@@ -85,6 +92,11 @@ export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
               <Link href="/contact" className={dropdownLinkClass("/contact")}>
                 Contact
               </Link>
+              {isAdmin && (
+                <Link href="/admin/feedback" className={dropdownLinkClass("/admin/feedback")}>
+                  Admin Feedback
+                </Link>
+              )}
 
               {mobileMenuExtra && (
                 <>

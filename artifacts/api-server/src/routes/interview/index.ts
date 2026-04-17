@@ -44,6 +44,7 @@ import {
   generateDynamicInterviewers,
 } from "../../lib/interviewAI.js";
 import { seedInterviewersIfNeeded, HEYGEN_FEMALE_AVATARS, HEYGEN_MALE_AVATARS, FEMALE_VOICES } from "../../lib/seedInterviewers.js";
+import { getAdminIds } from "../../lib/adminAuth.js";
 
 const router: IRouter = Router();
 
@@ -935,10 +936,7 @@ function requireAdmin(req: Request, res: Response, next: NextFunction): void {
     return;
   }
 
-  const adminIds = (process.env.ADMIN_USER_IDS ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const adminIds = getAdminIds();
 
   if (adminIds.length === 0) {
     res.status(403).json({ code: "NO_ADMINS_CONFIGURED", error: "Forbidden: no admin users configured. Set the ADMIN_USER_IDS environment variable." });

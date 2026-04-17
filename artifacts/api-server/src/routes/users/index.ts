@@ -2,11 +2,12 @@ import { Router, type IRouter } from "express";
 import { db, sessionsTable, reportsTable } from "@workspace/db";
 import { eq, desc, inArray } from "drizzle-orm";
 import { requireAuth } from "../../middlewares/requireAuth.js";
+import { isAdminUser } from "../../lib/adminAuth.js";
 
 const router: IRouter = Router();
 
 router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
-  res.json({ userId: req.userId });
+  res.json({ userId: req.userId, isAdmin: isAdminUser(req.userId) });
 });
 
 router.get("/users/me/sessions", requireAuth, async (req, res): Promise<void> => {
