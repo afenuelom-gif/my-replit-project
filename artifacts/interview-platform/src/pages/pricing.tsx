@@ -48,7 +48,8 @@ export default function Pricing({ authMenu, authMobileMenu }: PricingProps) {
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-background to-background pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,_var(--tw-gradient-stops))] from-blue-500/15 via-purple-500/5 to-transparent pointer-events-none" />
+      <div className="absolute top-20 right-1/4 w-[350px] h-[350px] bg-purple-500/8 rounded-full blur-3xl pointer-events-none" />
 
       <AppHeader right={authMenu} mobileMenuExtra={authMobileMenu} />
 
@@ -70,7 +71,7 @@ export default function Pricing({ authMenu, authMobileMenu }: PricingProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
 
-            <div className="relative flex flex-col rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 space-y-6">
+            <div className="relative flex flex-col rounded-2xl border border-border bg-card backdrop-blur-sm p-7 space-y-6">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-zinc-400" />
@@ -99,7 +100,7 @@ export default function Pricing({ authMenu, authMobileMenu }: PricingProps) {
               </Button>
             </div>
 
-            <div className="relative flex flex-col rounded-2xl border border-blue-500/40 bg-gradient-to-b from-blue-950/40 to-black/40 backdrop-blur-sm p-7 space-y-6">
+            <div className="relative flex flex-col rounded-2xl border border-blue-500/40 bg-gradient-to-b from-blue-600/15 to-card backdrop-blur-sm p-7 space-y-6">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-blue-400" />
@@ -128,7 +129,7 @@ export default function Pricing({ authMenu, authMobileMenu }: PricingProps) {
               </Button>
             </div>
 
-            <div className="relative flex flex-col rounded-2xl border border-purple-500/50 bg-gradient-to-b from-purple-950/40 to-black/40 backdrop-blur-sm p-7 space-y-6">
+            <div className="relative flex flex-col rounded-2xl border border-purple-500/50 bg-gradient-to-b from-purple-600/15 to-card backdrop-blur-sm p-7 space-y-6">
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                 <span className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
                   Most popular
@@ -164,11 +165,11 @@ export default function Pricing({ authMenu, authMobileMenu }: PricingProps) {
 
           </div>
 
-          <div className="text-center text-sm text-zinc-600">
+          <div className="text-center text-sm text-muted-foreground">
             Cancel anytime. No hidden fees. Your free trial session does not require a credit card.
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 border-t border-white/5 pt-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 border-t border-border pt-12">
             <div className="text-center space-y-2">
               <div className="text-2xl font-bold text-white">2–3</div>
               <div className="text-sm text-zinc-500">AI interviewers per session</div>

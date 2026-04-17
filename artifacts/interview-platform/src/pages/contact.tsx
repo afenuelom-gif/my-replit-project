@@ -31,7 +31,7 @@ export default function Contact({ authMenu, authMobileMenu }: ContactProps) {
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-background to-background pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,_var(--tw-gradient-stops))] from-blue-500/15 via-purple-500/5 to-transparent pointer-events-none" />
 
       <AppHeader right={authMenu} mobileMenuExtra={authMobileMenu} />
 

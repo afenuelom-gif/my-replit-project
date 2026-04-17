@@ -39,7 +39,7 @@ export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
     }`;
 
   return (
-    <header className="w-full flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/5 bg-black/20 backdrop-blur-sm print:hidden relative z-50">
+    <header className="w-full flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border bg-background/80 backdrop-blur-md print:hidden relative z-50">
       {/* Left: logo + desktop nav */}
       <div className="flex items-center gap-4 sm:gap-6">
         <Link href="/" className="flex items-center gap-2.5 group shrink-0">
