@@ -167,10 +167,8 @@ export default function VoiceReviewPanel({
       ? 100
       : 0;
 
-  if (stopped) return null;
-
   return (
-    <div className="print:hidden bg-white border border-blue-200 rounded-2xl shadow-sm overflow-hidden">
+    <div className="print:hidden sticky top-[65px] z-20 bg-white border border-blue-200 rounded-2xl shadow-md overflow-hidden">
       <div className="flex items-center gap-4 px-5 py-4">
 
         {/* Avatar */}
@@ -201,6 +199,8 @@ export default function VoiceReviewPanel({
               <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Review complete
               </span>
+            ) : stopped ? (
+              <span className="text-xs text-slate-400 font-medium">Stopped</span>
             ) : (
               <span className="text-xs text-blue-600 font-medium">
                 {currentItem ? currentItem.label : "Preparing review…"}
@@ -209,8 +209,10 @@ export default function VoiceReviewPanel({
           </div>
 
           {/* Waveform + progress bar */}
-          {done ? (
-            <p className="text-xs text-slate-400">The voice walkthrough has finished.</p>
+          {done || stopped ? (
+            <p className="text-xs text-slate-400">
+              {done ? "The voice walkthrough has finished." : "Narration stopped."}
+            </p>
           ) : (
             <div className="flex items-center gap-3">
               <SpeakingWaveform active={isSpeaking} />
@@ -228,7 +230,7 @@ export default function VoiceReviewPanel({
         </div>
 
         {/* Stop button */}
-        {!done && (
+        {!done && !stopped && (
           <Button
             variant="ghost"
             size="sm"
