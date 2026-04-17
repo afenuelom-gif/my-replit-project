@@ -27,7 +27,7 @@ interface NarrationItem {
   text: string;
 }
 
-function buildScript(report: ReportData): NarrationItem[] {
+function buildScript(report: ReportData, hasFeedback: boolean): NarrationItem[] {
   if (!report.answerFeedback || report.answerFeedback.length === 0) {
     return [{ label: "No Interview Data", text: "It looks like no questions were answered in this session. Complete an interview to receive a voice review." }];
   }
@@ -56,10 +56,10 @@ function buildScript(report: ReportData): NarrationItem[] {
       text: `Here are the areas you can improve. ${combined.slice(0, 3).join(". ")}.`,
     });
   }
-  items.push({
-    label: "Closing",
-    text: "This ends the review. We would appreciate your feedback on this interview to help us improve the service. Keep practicing, and all the best with your interview preparations.",
-  });
+  const closingText = hasFeedback
+    ? "This ends the review. Keep practicing, and all the best with your interview preparations."
+    : "This ends the review. We would appreciate your feedback on this interview to help us improve the service. Keep practicing, and all the best with your interview preparations.";
+  items.push({ label: "Closing", text: closingText });
   return items;
 }
 
@@ -95,10 +95,11 @@ interface VoiceReviewPanelProps {
   sessionId: number;
   interviewer: Interviewer;
   report: ReportData;
+  hasFeedback?: boolean;
   onReviewComplete?: () => void;
 }
 
-export default function VoiceReviewPanel({ sessionId, interviewer, report, onReviewComplete }: VoiceReviewPanelProps) {
+export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFeedback = false, onReviewComplete }: VoiceReviewPanelProps) {
   const {
     speak, stop, pause, resume, seekTime,
     isSpeaking, isPaused, audioCurrentTime, audioDuration,
@@ -118,7 +119,7 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, onRev
   const resumeResolveRef = useRef<(() => void) | null>(null);
   const seekRef          = useRef<number | null>(null);
 
-  useEffect(() => { scriptRef.current = buildScript(report); }, [report]);
+  useEffect(() => { scriptRef.current = buildScript(report, hasFeedback); }, [report, hasFeedback]);
 
   useEffect(() => { if (done) onReviewComplete?.(); }, [done]);
 

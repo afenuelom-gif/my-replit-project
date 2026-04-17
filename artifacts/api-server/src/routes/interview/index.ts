@@ -860,6 +860,25 @@ router.post("/interview/sessions/:id/transcribe", optionalAuth, async (req, res)
   res.json({ text });
 });
 
+// ── GET /interview/sessions/:id/feedback/status ───────────────────────────
+
+router.get("/interview/sessions/:id/feedback/status", optionalAuth, async (req: Request, res: Response) => {
+  const sessionId = parseInt(req.params.id);
+  if (isNaN(sessionId)) { res.status(400).json({ error: "Invalid session ID" }); return; }
+
+  const [session] = await db.select().from(sessionsTable).where(eq(sessionsTable.id, sessionId)).limit(1);
+  if (!session) { res.status(404).json({ error: "Session not found" }); return; }
+  if (isForbidden(session, req)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const [existing] = await db
+    .select({ id: sessionFeedbackTable.id })
+    .from(sessionFeedbackTable)
+    .where(eq(sessionFeedbackTable.sessionId, sessionId))
+    .limit(1);
+
+  res.json({ exists: !!existing });
+});
+
 // ── POST /interview/sessions/:id/feedback ─────────────────────────────────
 
 const FeedbackBody = z.object({
