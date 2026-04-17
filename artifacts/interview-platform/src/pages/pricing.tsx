@@ -121,7 +121,7 @@ export default function Pricing({ authMenu, authMobileMenu }: PricingProps) {
             </div>
 
             {/* Pro — gradient card */}
-            <div className="relative flex flex-col rounded-2xl border border-transparent bg-gradient-to-b from-blue-600 to-purple-700 shadow-2xl shadow-blue-400/30 p-7 space-y-6 text-white overflow-hidden">
+            <div className="relative flex flex-col rounded-2xl border border-transparent bg-gradient-to-b from-blue-600 to-purple-700 shadow-2xl shadow-blue-400/30 p-7 pt-9 space-y-6 text-white">
               {/* inner shine */}
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none rounded-2xl" />
               <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-indigo-400/20 blur-2xl pointer-events-none" />
