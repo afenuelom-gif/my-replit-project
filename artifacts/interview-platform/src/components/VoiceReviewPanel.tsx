@@ -5,16 +5,17 @@ import { Button } from "@/components/ui/button";
 
 function ScrollingText({ children, className }: { children: React.ReactNode; className?: string }) {
   const outerRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLSpanElement>(null);
-  const [scrollPx, setScrollPx] = useState(0);
+  const firstRef = useRef<HTMLSpanElement>(null);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     const outer = outerRef.current;
-    const inner = innerRef.current;
-    if (!outer || !inner) return;
+    const first = firstRef.current;
+    if (!outer || !first) return;
     const measure = () => {
-      const overflow = inner.scrollWidth - outer.clientWidth;
-      setScrollPx(overflow > 4 ? overflow : 0);
+      const overflow = first.scrollWidth - outer.clientWidth;
+      // speed ~60 px/s; min 2 s so it never feels frantic
+      setDuration(overflow > 4 ? Math.max(2, first.scrollWidth / 60) : 0);
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -22,18 +23,20 @@ function ScrollingText({ children, className }: { children: React.ReactNode; cla
     return () => ro.disconnect();
   }, [children]);
 
+  const active = duration > 0;
+
   return (
     <div ref={outerRef} className={`overflow-hidden min-w-0 ${className ?? ""}`}>
-      <span
-        ref={innerRef}
-        className="whitespace-nowrap inline-block"
-        style={scrollPx > 0 ? {
-          animation: "text-scroll 4s linear infinite",
-          "--scroll-px": `${scrollPx}px`,
-        } as React.CSSProperties : undefined}
+      {/* Two identical copies sit side-by-side; animating -50% of the combined
+          width moves exactly one copy width — so the second copy arrives right
+          where the first started, creating a seamless continuous loop. */}
+      <div
+        className="flex whitespace-nowrap"
+        style={active ? { animation: `text-scroll ${duration.toFixed(1)}s linear infinite` } : undefined}
       >
-        {children}
-      </span>
+        <span ref={firstRef} className={active ? "pr-16" : ""}>{children}</span>
+        {active && <span aria-hidden className="pr-16">{children}</span>}
+      </div>
     </div>
   );
 }
