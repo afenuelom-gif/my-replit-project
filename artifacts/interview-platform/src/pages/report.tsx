@@ -19,6 +19,157 @@ import {
   CheckCircle2, ChevronLeft, Target, MessageSquare, Code, Lightbulb,
   User, Camera, Volume2, Share2, Mail, Printer, Copy, Check, ExternalLink, Download,
 } from "lucide-react";
+
+type AnswerFeedbackItem = {
+  questionId: number;
+  questionText: string;
+  answerText?: string | null;
+  feedback: string;
+  score: number;
+  strengths: string[];
+  improvements: string[];
+};
+
+function printSingleCard(fb: AnswerFeedbackItem, idx: number) {
+  const scoreColor =
+    fb.score >= 80 ? "#059669" : fb.score >= 60 ? "#d97706" : "#dc2626";
+  const scoreBg =
+    fb.score >= 80 ? "#ecfdf5" : fb.score >= 60 ? "#fffbeb" : "#fef2f2";
+  const scoreBorder =
+    fb.score >= 80 ? "#a7f3d0" : fb.score >= 60 ? "#fde68a" : "#fecaca";
+
+  const strengths = fb.strengths
+    .map((s) => `<li style="margin-bottom:4px;">• ${s}</li>`)
+    .join("");
+  const improvements = fb.improvements
+    .map((s) => `<li style="margin-bottom:4px;">• ${s}</li>`)
+    .join("");
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Question ${idx + 1} Feedback</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #1e293b;
+      background: #fff;
+      padding: 32px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+    .score-badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      border: 1px solid ${scoreBorder};
+      background: ${scoreBg};
+      color: ${scoreColor};
+    }
+    .question {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .answer {
+      font-size: 13px;
+      color: #64748b;
+      font-style: italic;
+      line-height: 1.6;
+      border-left: 2px solid #cbd5e1;
+      padding-left: 12px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+    .feedback-text {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 16px;
+    }
+    .col-title-strengths {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #059669;
+      margin-bottom: 8px;
+    }
+    .col-title-improvements {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #d97706;
+      margin-bottom: 8px;
+    }
+    ul { list-style: none; }
+    li { font-size: 13px; color: #475569; line-height: 1.5; }
+    @media print {
+      body { padding: 0; }
+      @page { margin: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="label">Question ${idx + 1}</span>
+    <span class="score-badge">${fb.score}/100</span>
+  </div>
+  <p class="question">${fb.questionText}</p>
+  <p class="answer">"${fb.answerText || "No answer recorded."}"</p>
+  <p class="section-title">Feedback</p>
+  <p class="feedback-text">${fb.feedback}</p>
+  <div class="columns">
+    <div>
+      <p class="col-title-strengths">Strengths</p>
+      <ul>${strengths}</ul>
+    </div>
+    <div>
+      <p class="col-title-improvements">To Improve</p>
+      <ul>${improvements}</ul>
+    </div>
+  </div>
+  <script>window.addEventListener('load', () => { window.print(); });<\/script>
+</body>
+</html>`;
+
+  const win = window.open("", "_blank", "width=800,height=700");
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+}
 import { AppHeader } from "@/components/AppHeader";
 
 interface FillerResult {
@@ -452,15 +603,24 @@ export default function Report() {
                 <Card key={fb.questionId} className="bg-white border-slate-200 shadow-sm overflow-hidden print:break-inside-avoid">
                   <div className="bg-slate-50 border-b border-slate-200 flex items-center justify-between px-6 py-3">
                     <span className="text-sm font-semibold text-slate-500 uppercase tracking-widest">Question {idx + 1}</span>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      fb.score >= 80
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : fb.score >= 60
-                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                        : 'bg-red-50 text-red-700 border border-red-200'
-                    }`}>
-                      {fb.score}/100
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => printSingleCard(fb as AnswerFeedbackItem, idx)}
+                        title="Print this question's feedback"
+                        className="print:hidden p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                      </button>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                        fb.score >= 80
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : fb.score >= 60
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : 'bg-red-50 text-red-700 border border-red-200'
+                      }`}>
+                        {fb.score}/100
+                      </span>
+                    </div>
                   </div>
                   <CardContent className="p-6 print:p-4 space-y-5">
                     <div>
