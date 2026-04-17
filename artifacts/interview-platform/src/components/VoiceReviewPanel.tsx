@@ -3,6 +3,41 @@ import { useElevenLabsTTS } from "@/hooks/useElevenLabsTTS";
 import { Square, CheckCircle2, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+function ScrollingText({ children, className }: { children: React.ReactNode; className?: string }) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLSpanElement>(null);
+  const [scrollPx, setScrollPx] = useState(0);
+
+  useEffect(() => {
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
+    const measure = () => {
+      const overflow = inner.scrollWidth - outer.clientWidth;
+      setScrollPx(overflow > 4 ? overflow : 0);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(outer);
+    return () => ro.disconnect();
+  }, [children]);
+
+  return (
+    <div ref={outerRef} className={`overflow-hidden min-w-0 ${className ?? ""}`}>
+      <span
+        ref={innerRef}
+        className="whitespace-nowrap inline-block"
+        style={scrollPx > 0 ? {
+          animation: "text-scroll 5s ease-in-out infinite",
+          "--scroll-px": `${scrollPx}px`,
+        } as React.CSSProperties : undefined}
+      >
+        {children}
+      </span>
+    </div>
+  );
+}
+
 interface Interviewer {
   id: number;
   name: string;
@@ -245,17 +280,17 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
           <div className="flex items-center gap-2 mb-1.5 min-w-0">
             <span className="text-sm font-semibold text-slate-900 shrink-0">{interviewer.name}</span>
             {done ? (
-              <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium truncate">
-                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Review complete
+              <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium shrink-0">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Review complete
               </span>
             ) : stopped ? (
-              <span className="text-xs text-slate-400 font-medium truncate">Stopped</span>
+              <span className="text-xs text-slate-400 font-medium shrink-0">Stopped</span>
             ) : paused ? (
-              <span className="text-xs text-amber-600 font-medium truncate">Paused — {currentItem?.label}</span>
+              <ScrollingText className="text-xs text-amber-600 font-medium">Paused — {currentItem?.label}</ScrollingText>
             ) : (
-              <span className="text-xs text-blue-600 font-medium truncate">
+              <ScrollingText className="text-xs text-blue-600 font-medium">
                 {currentItem ? currentItem.label : "Preparing review…"}
-              </span>
+              </ScrollingText>
             )}
           </div>
 
