@@ -448,7 +448,16 @@ export default function Interview() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
       <canvas ref={canvasRef} className="hidden" />
-      
+
+      {/* Floating timer — mobile only, always visible */}
+      <div className={`fixed top-4 right-4 z-50 sm:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full border backdrop-blur-md shadow-lg ${
+        timeExpired
+          ? "bg-amber-950/80 border-amber-500/50 text-amber-400"
+          : "bg-black/70 border-white/10 text-primary"
+      }`}>
+        <span className="font-mono text-sm font-semibold" data-testid="text-timer-float">{formatTime(timeLeft)}</span>
+      </div>
+
       {/* Header */}
       <header className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-black/50 backdrop-blur-md">
         <div className="flex items-center gap-4">
