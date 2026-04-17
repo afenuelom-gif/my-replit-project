@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ShieldCheck } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 interface AppHeaderProps {
@@ -64,8 +64,16 @@ export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
           <Link href="/pricing" className={navLinkClass("/pricing")}>Pricing</Link>
           <Link href="/contact" className={navLinkClass("/contact")}>Contact</Link>
           {isAdmin && (
-            <Link href="/admin/feedback" className={navLinkClass("/admin/feedback")}>
-              Admin Feedback
+            <Link
+              href="/admin/feedback"
+              className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-medium transition-all ${
+                location === "/admin/feedback"
+                  ? "text-purple-700 bg-purple-50 border border-purple-200"
+                  : "text-purple-600 hover:text-purple-700 hover:bg-purple-50 border border-purple-200/60"
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+              Admin
             </Link>
           )}
         </div>
@@ -93,9 +101,23 @@ export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
                 Contact
               </Link>
               {isAdmin && (
-                <Link href="/admin/feedback" className={dropdownLinkClass("/admin/feedback")}>
-                  Admin Feedback
-                </Link>
+                <>
+                  <div className="my-1.5 border-t border-slate-100" />
+                  <Link
+                    href="/admin/feedback"
+                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all ${
+                      location === "/admin/feedback"
+                        ? "text-purple-700 bg-purple-50"
+                        : "text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                    }`}
+                  >
+                    <ShieldCheck className="w-4 h-4 shrink-0" />
+                    Admin Feedback
+                    <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-purple-100 text-purple-600 rounded px-1.5 py-0.5">
+                      Admin
+                    </span>
+                  </Link>
+                </>
               )}
 
               {mobileMenuExtra && (
