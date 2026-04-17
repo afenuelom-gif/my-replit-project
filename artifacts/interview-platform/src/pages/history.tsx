@@ -25,15 +25,15 @@ interface SessionWithReport {
 }
 
 function scoreColor(score: number): string {
-  if (score >= 80) return "text-green-400";
-  if (score >= 60) return "text-yellow-400";
-  return "text-red-400";
+  if (score >= 80) return "text-emerald-600";
+  if (score >= 60) return "text-amber-600";
+  return "text-red-600";
 }
 
-function scoreLabel(score: number): string {
-  if (score >= 80) return "Excellent";
-  if (score >= 60) return "Good";
-  return "Needs Work";
+function scoreBg(score: number): string {
+  if (score >= 80) return "bg-emerald-50";
+  if (score >= 60) return "bg-amber-50";
+  return "bg-red-50";
 }
 
 function statusBadgeVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
@@ -48,127 +48,139 @@ export default function History() {
   const { data: sessions, isLoading, isError } = useQuery<SessionWithReport[]>({
     queryKey: ["user-sessions"],
     queryFn: async () => {
-      const res = await fetch("/api/users/me/sessions", {
-        credentials: "include",
-      });
+      const res = await fetch("/api/users/me/sessions", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch sessions");
       return res.json();
     },
   });
 
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-white flex flex-col overflow-x-hidden">
+
+      {/* Gradient blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-blue-500/10 blur-[100px]" />
+        <div className="absolute top-1/2 -left-32 w-[400px] h-[400px] rounded-full bg-purple-500/8 blur-[80px]" />
+      </div>
+
       <AppHeader
         right={
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-white gap-2" onClick={() => setLocation("/")}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-slate-600 font-medium hover:text-blue-700 hover:bg-blue-50 gap-2"
+            onClick={() => setLocation("/")}
+          >
             <ArrowLeft className="h-4 w-4" /> Back to Home
           </Button>
         }
       />
-      <div className="flex-1 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Interview History</h1>
-          <p className="text-muted-foreground text-sm">Your past interview sessions</p>
+
+      <div className="flex-1 p-6 relative z-10">
+        <div className="max-w-4xl mx-auto space-y-6">
+
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Interview History</h1>
+            <p className="text-slate-500 text-sm">Your past interview sessions</p>
+          </div>
+
+          {isLoading && (
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            </div>
+          )}
+
+          {isError && (
+            <Card className="bg-white border-red-200 shadow-sm">
+              <CardContent className="py-8 text-center text-red-600">
+                Failed to load sessions. Please try again.
+              </CardContent>
+            </Card>
+          )}
+
+          {!isLoading && !isError && sessions && sessions.length === 0 && (
+            <Card className="bg-white border-slate-200 shadow-sm">
+              <CardContent className="py-16 text-center space-y-4">
+                <Briefcase className="h-12 w-12 text-slate-300 mx-auto" />
+                <p className="text-slate-500">You haven't completed any interviews yet.</p>
+                <Button onClick={() => setLocation("/")} variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50">
+                  Start Your First Interview
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {!isLoading && !isError && sessions && sessions.length > 0 && (
+            <div className="space-y-4">
+              {sessions.map((session) => (
+                <Card
+                  key={session.id}
+                  className="bg-white border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => {
+                    if (session.report && session.status === "completed") {
+                      setLocation(`/report/${session.id}`);
+                    }
+                  }}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Briefcase className="h-4 w-4 text-blue-500 shrink-0" />
+                        <CardTitle className="text-base truncate text-slate-900">{session.jobRole}</CardTitle>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant={statusBadgeVariant(session.status)} className="capitalize">
+                          {session.status}
+                        </Badge>
+                        {session.report && session.status === "completed" && (
+                          <ChevronRight className="h-4 w-4 text-slate-400" />
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs text-slate-400">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 shrink-0" />
+                        {new Date(session.createdAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      <span className="hidden sm:inline">·</span>
+                      <span>{session.durationMinutes} min session</span>
+                    </div>
+
+                    {session.report ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        {[
+                          { label: "Overall", value: session.report.overallScore },
+                          { label: "Communication", value: session.report.communicationScore },
+                          { label: "Technical", value: session.report.technicalScore },
+                          { label: "Confidence", value: session.report.confidenceScore },
+                          { label: "Posture", value: session.report.postureScore },
+                        ].map(({ label, value }) => (
+                          <div key={label} className={`rounded-lg p-2 text-center ${scoreBg(value)}`}>
+                            <div className={`text-lg font-bold ${scoreColor(value)}`}>{value}</div>
+                            <div className="text-[10px] text-slate-500">{label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <Trophy className="h-3.5 w-3.5" />
+                        <span>No report generated</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
-
-        {isLoading && (
-          <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        )}
-
-        {isError && (
-          <Card className="bg-card/50 border-red-500/30">
-            <CardContent className="py-8 text-center text-red-400">
-              Failed to load sessions. Please try again.
-            </CardContent>
-          </Card>
-        )}
-
-        {!isLoading && !isError && sessions && sessions.length === 0 && (
-          <Card className="bg-card/50 border-white/10">
-            <CardContent className="py-16 text-center space-y-4">
-              <Briefcase className="h-12 w-12 text-muted-foreground mx-auto" />
-              <p className="text-muted-foreground">You haven't completed any interviews yet.</p>
-              <Button onClick={() => setLocation("/")} variant="outline">
-                Start Your First Interview
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {!isLoading && !isError && sessions && sessions.length > 0 && (
-          <div className="space-y-4">
-            {sessions.map((session) => (
-              <Card
-                key={session.id}
-                className="bg-card/50 border-white/10 hover:border-primary/40 transition-all cursor-pointer"
-                onClick={() => {
-                  if (session.report && session.status === "completed") {
-                    setLocation(`/report/${session.id}`);
-                  }
-                }}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Briefcase className="h-4 w-4 text-primary shrink-0" />
-                      <CardTitle className="text-base truncate">{session.jobRole}</CardTitle>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant={statusBadgeVariant(session.status)} className="capitalize">
-                        {session.status}
-                      </Badge>
-                      {session.report && session.status === "completed" && (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5 shrink-0" />
-                      {new Date(session.createdAt).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                    <span className="hidden sm:inline">·</span>
-                    <span>{session.durationMinutes} min session</span>
-                  </div>
-
-                  {session.report ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                      {[
-                        { label: "Overall", value: session.report.overallScore },
-                        { label: "Communication", value: session.report.communicationScore },
-                        { label: "Technical", value: session.report.technicalScore },
-                        { label: "Confidence", value: session.report.confidenceScore },
-                        { label: "Posture", value: session.report.postureScore },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="bg-background/40 rounded-lg p-2 text-center">
-                          <div className={`text-lg font-bold ${scoreColor(value)}`}>{value}</div>
-                          <div className="text-[10px] text-muted-foreground">{label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Trophy className="h-3.5 w-3.5" />
-                      <span>No report generated</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
       </div>
       <AppFooter />
     </div>
