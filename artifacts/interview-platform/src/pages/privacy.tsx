@@ -19,7 +19,7 @@ export default function Privacy() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">1. What we collect</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            When you use PrepInterv AI we collect the information you provide directly — including your name, email address (via Clerk authentication), job role, resume text, and job description text. During interview sessions your spoken answers are recorded locally, sent for transcription, and the resulting text transcript is stored against your session. The raw audio is processed in real time and is not retained. We also collect session metadata such as duration, question history, and AI-generated performance scores.
+            When you use PrepInterv AI we collect the information you provide directly — including your name, email address (via Clerk authentication), job role, resume text, and job description text. These are used to personalise your interview questions and are automatically deleted from our database as soon as your performance report is generated. During interview sessions your spoken answers are recorded locally, sent for transcription, and the resulting text transcript is stored against your session. The raw audio is processed in real time and is not retained. We also collect session metadata such as duration, question history, and AI-generated performance scores.
           </p>
         </section>
 

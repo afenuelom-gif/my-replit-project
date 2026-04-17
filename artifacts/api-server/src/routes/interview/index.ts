@@ -728,6 +728,13 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
     postureNotes: JSON.stringify(postureNotes),
   });
 
+  // Discard sensitive input data — resume and job description are no longer
+  // needed once the report has been generated.
+  await db
+    .update(sessionsTable)
+    .set({ resumeText: null, jobDescription: null })
+    .where(eq(sessionsTable.id, session.id));
+
   res.json({
     sessionId: session.id,
     overallScore: reportData.overallScore,
