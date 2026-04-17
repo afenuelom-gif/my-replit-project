@@ -31,6 +31,7 @@ import {
   BarChart2,
   Copy,
   Check,
+  Download,
 } from "lucide-react";
 
 interface FeedbackRow {
@@ -108,6 +109,36 @@ function useChartData(rows: FeedbackRow[] | undefined) {
 
     return { dailyData: Array.from(dailyMap.values()), roleData };
   }, [rows]);
+}
+
+function escapeCsvCell(value: string | null | undefined): string {
+  const str = value == null ? "" : String(value);
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function exportToCSV(rows: FeedbackRow[]) {
+  const headers = ["Date", "Job Role", "Helpful", "Relevance", "Comments"];
+  const dataRows = rows.map((row) => [
+    escapeCsvCell(formatDate(row.createdAt)),
+    escapeCsvCell(row.jobRole),
+    escapeCsvCell(row.feedbackHelpful ? "Yes" : "No"),
+    escapeCsvCell(RELEVANCE_LABELS[row.questionRelevance] ?? row.questionRelevance),
+    escapeCsvCell(row.additionalComments),
+  ]);
+
+  const csvContent = [headers.join(","), ...dataRows.map((r) => r.join(","))].join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `feedback-export-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 export default function AdminFeedback() {
@@ -222,9 +253,21 @@ export default function AdminFeedback() {
       <div className="flex-1 p-6 relative z-10">
         <div className="max-w-5xl mx-auto space-y-6">
 
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Feedback Dashboard</h1>
-            <p className="text-slate-500 text-sm">All collected session feedback submissions</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Feedback Dashboard</h1>
+              <p className="text-slate-500 text-sm">All collected session feedback submissions</p>
+            </div>
+            {rows && rows.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-slate-200 text-slate-700 hover:bg-slate-50 gap-2"
+                onClick={() => exportToCSV(rows)}
+              >
+                <Download className="h-4 w-4" /> Export CSV
+              </Button>
+            )}
           </div>
 
           {isUnauthorized && (
