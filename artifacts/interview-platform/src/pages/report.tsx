@@ -439,10 +439,42 @@ export default function Report() {
               </div>
 
               {/* Compact score — mobile only */}
-              <div className="sm:hidden shrink-0 bg-white border border-blue-200 rounded-xl px-4 py-2.5 text-center shadow-sm">
-                <div className="text-2xl font-bold text-blue-600 leading-none">{report.overallScore}</div>
-                <div className="text-[10px] text-slate-400 uppercase tracking-wide mt-0.5">/100</div>
-              </div>
+              {(() => {
+                const s = report.overallScore;
+                const tier =
+                  s >= 85 ? { label: "Excellent",      Icon: Trophy,     color: "#059669", glow: "rgba(5,150,105,",   badgeBg: "#ecfdf5", badgeBorder: "#6ee7b7", badgeText: "#065f46" }
+                : s >= 70 ? { label: "Good",            Icon: ThumbsUp,   color: "#2563eb", glow: "rgba(37,99,235,",   badgeBg: "#eff6ff", badgeBorder: "#93c5fd", badgeText: "#1e3a8a" }
+                : s >= 55 ? { label: "Fair",             Icon: TrendingUp, color: "#d97706", glow: "rgba(217,119,6,",  badgeBg: "#fffbeb", badgeBorder: "#fcd34d", badgeText: "#78350f" }
+                :            { label: "Needs Practice",  Icon: Dumbbell,   color: "#e11d48", glow: "rgba(225,29,72,",  badgeBg: "#fff1f2", badgeBorder: "#fda4af", badgeText: "#881337" };
+                return (
+                  <div className="sm:hidden shrink-0 flex flex-col items-center gap-1 bg-white rounded-xl p-2.5 shadow-sm" style={{ border: `1.5px solid ${tier.badgeBorder}` }}>
+                    <style>{`
+                      @keyframes sonarR {
+                        0%   { transform: scale(0.55); opacity: 0.65; }
+                        100% { transform: scale(1.95); opacity: 0; }
+                      }
+                      @keyframes breatheR {
+                        0%,100% { box-shadow: 0 0 0 0 ${tier.glow}0.2), 0 0 14px 4px ${tier.glow}0.08); }
+                        50%     { box-shadow: 0 0 0 5px ${tier.glow}0.07), 0 0 24px 8px ${tier.glow}0.16); }
+                      }
+                    `}</style>
+                    {/* Pulse ring — 64×64 */}
+                    <div className="relative flex items-center justify-center" style={{ width: 64, height: 64 }}>
+                      {[0, 0.6, 1.2, 1.8].map((delay, i) => (
+                        <div key={i} style={{ position: "absolute", width: 42, height: 42, borderRadius: "50%", border: `1.5px solid ${tier.color}`, opacity: 0, animation: `sonarR 2.4s ease-out ${delay}s infinite` }} />
+                      ))}
+                      <div style={{ position: "relative", zIndex: 10, width: 56, height: 56, borderRadius: "50%", background: "#fff", border: `2.5px solid ${tier.color}`, display: "flex", alignItems: "center", justifyContent: "center", animation: "breatheR 3s ease-in-out infinite" }}>
+                        <span style={{ fontSize: 20, fontWeight: 900, color: tier.color, lineHeight: 1 }}>{report.overallScore}</span>
+                      </div>
+                    </div>
+                    {/* Tier pill */}
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 999, background: tier.badgeBg, border: `1.5px solid ${tier.badgeBorder}` }}>
+                      <tier.Icon style={{ width: 10, height: 10, color: tier.color }} />
+                      <span style={{ fontSize: 10, fontWeight: 700, color: tier.badgeText, letterSpacing: "0.01em" }}>{tier.label}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="flex items-center gap-3 sm:pt-1">
