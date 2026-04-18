@@ -716,14 +716,12 @@ export default function Report() {
                       <button
                         onClick={() => copyQuestionFeedback(fb as AnswerFeedbackItem, idx)}
                         title="Copy this question's feedback"
-                        className="cursor-pointer print:hidden p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors relative"
+                        className="cursor-pointer print:hidden flex items-center gap-1 px-2 py-1.5 rounded-md transition-colors text-slate-400 hover:text-blue-600 hover:bg-blue-50"
                       >
                         {copiedQId === fb.questionId ? (
                           <>
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 whitespace-nowrap shadow-sm">
-                              Copied!
-                            </span>
+                            <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span className="text-[11px] font-medium text-emerald-600 whitespace-nowrap">Copied!</span>
                           </>
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
