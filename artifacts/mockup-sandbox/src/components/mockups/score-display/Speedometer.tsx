@@ -1,56 +1,84 @@
 const SCORE = 68;
 
+const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+// 270° gauge: starts at lower-left (135°), sweeps clockwise to lower-right (45°=405°)
+const CX = 80, CY = 85, R = 60;
+const START_DEG = 135; // 0 score
+const SWEEP = 270;     // total degrees
+
+function arcPoint(deg: number) {
+  return {
+    x: CX + R * Math.cos(toRad(deg)),
+    y: CY + R * Math.sin(toRad(deg)),
+  };
+}
+
+function scoreToDeg(score: number) {
+  return START_DEG + (score / 100) * SWEEP;
+}
+
+function describeArc(fromDeg: number, toDeg: number) {
+  const start = arcPoint(fromDeg);
+  const end   = arcPoint(toDeg);
+  const span  = toDeg - fromDeg;
+  const largeArc = span > 180 ? 1 : 0;
+  return `M ${start.x} ${start.y} A ${R} ${R} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+}
+
+const TICKS = [0, 25, 50, 75, 100];
+
 export function Speedometer() {
-  const SIZE = 140;
-  const cx = SIZE / 2;
-  const cy = SIZE / 2;
-  const R = 54;
-  const strokeW = 12;
-
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-
-  const trackStart = { x: cx - R, y: cy };
-  const trackEnd   = { x: cx + R, y: cy };
-
-  const angleDeg = 180 - (SCORE / 100) * 180;
-  const scoreEndX = cx + R * Math.cos(toRad(angleDeg));
-  const scoreEndY = cy - R * Math.sin(toRad(angleDeg));
-  const largeArc = SCORE > 50 ? 1 : 0;
-
-  const needleLen = R - 6;
-  const needleX = cx + needleLen * Math.cos(toRad(angleDeg));
-  const needleY = cy - needleLen * Math.sin(toRad(angleDeg));
+  const scoreDeg = scoreToDeg(SCORE);
+  const needleEnd = {
+    x: CX + (R - 8) * Math.cos(toRad(scoreDeg)),
+    y: CY + (R - 8) * Math.sin(toRad(scoreDeg)),
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
       <div className="flex flex-col items-center gap-2">
         <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">Overall Score</p>
-        <div className="bg-white border border-blue-200 rounded-2xl px-8 py-5 shadow-sm flex flex-col items-center gap-1">
-          <svg width={SIZE} height={SIZE * 0.62} viewBox={`0 0 ${SIZE} ${SIZE * 0.62}`}>
-            {/* Track */}
+        <div className="bg-white border border-blue-200 rounded-2xl px-6 py-5 shadow-sm flex flex-col items-center gap-2">
+          <svg width="160" height="130" viewBox="0 0 160 130">
+            {/* Full background track */}
             <path
-              d={`M ${trackStart.x} ${trackStart.y} A ${R} ${R} 0 0 1 ${trackEnd.x} ${trackEnd.y}`}
-              fill="none" stroke="#dbeafe" strokeWidth={strokeW} strokeLinecap="round"
+              d={describeArc(START_DEG, START_DEG + SWEEP)}
+              fill="none" stroke="#dbeafe" strokeWidth="10" strokeLinecap="round"
             />
             {/* Score arc */}
-            <path
-              d={`M ${trackStart.x} ${trackStart.y} A ${R} ${R} 0 ${largeArc} 1 ${scoreEndX} ${scoreEndY}`}
-              fill="none" stroke="#3b82f6" strokeWidth={strokeW} strokeLinecap="round"
-            />
+            {SCORE > 0 && (
+              <path
+                d={describeArc(START_DEG, scoreDeg)}
+                fill="none" stroke="#3b82f6" strokeWidth="10" strokeLinecap="round"
+              />
+            )}
+
+            {/* Tick marks */}
+            {TICKS.map((t) => {
+              const deg = scoreToDeg(t);
+              const inner = { x: CX + (R - 14) * Math.cos(toRad(deg)), y: CY + (R - 14) * Math.sin(toRad(deg)) };
+              const outer = { x: CX + (R + 2)  * Math.cos(toRad(deg)), y: CY + (R + 2)  * Math.sin(toRad(deg)) };
+              const label = { x: CX + (R - 24) * Math.cos(toRad(deg)), y: CY + (R - 24) * Math.sin(toRad(deg)) };
+              return (
+                <g key={t}>
+                  <line x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
+                  <text x={label.x} y={label.y} fontSize="8" fill="#94a3b8" textAnchor="middle" dominantBaseline="middle">{t}</text>
+                </g>
+              );
+            })}
+
             {/* Needle */}
-            <line x1={cx} y1={cy} x2={needleX} y2={needleY} stroke="#1d4ed8" strokeWidth="2.5" strokeLinecap="round" />
-            {/* Pivot */}
-            <circle cx={cx} cy={cy} r="5" fill="#1d4ed8" />
-            {/* Tick labels */}
-            <text x={cx - R - 4} y={cy + 14} fontSize="9" fill="#94a3b8" textAnchor="middle">0</text>
-            <text x={cx + R + 4} y={cy + 14} fontSize="9" fill="#94a3b8" textAnchor="middle">100</text>
+            <line x1={CX} y1={CY} x2={needleEnd.x} y2={needleEnd.y} stroke="#1d4ed8" strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx={CX} cy={CY} r="5" fill="#1d4ed8" />
+            <circle cx={CX} cy={CY} r="2.5" fill="white" />
           </svg>
 
-          <div className="flex flex-col items-center -mt-2">
+          <div className="flex flex-col items-center -mt-1">
             <span className="text-4xl font-black text-slate-800 leading-none">
               {SCORE}<span className="text-lg font-medium text-slate-400">/100</span>
             </span>
-            <span className="text-sm font-semibold mt-1 text-blue-600">Overall Score</span>
+            <span className="text-sm font-semibold mt-0.5 text-blue-600">Overall Score</span>
           </div>
         </div>
       </div>
