@@ -440,6 +440,19 @@ export default function Report() {
 
               {/* Compact score — mobile only */}
               {(() => {
+                const noInterview = !report.answerFeedback || (report.answerFeedback as unknown[]).length === 0;
+                if (noInterview) return (
+                  <div className="sm:hidden shrink-0 flex flex-col items-center gap-1 bg-white rounded-xl p-2.5 shadow-sm" style={{ border: "1.5px solid #e2e8f0" }}>
+                    <div className="relative flex items-center justify-center" style={{ width: 64, height: 64 }}>
+                      <div style={{ position: "relative", zIndex: 10, width: 56, height: 56, borderRadius: "50%", background: "#f8fafc", border: "2.5px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ fontSize: 14, fontWeight: 900, color: "#cbd5e1", lineHeight: 1 }}>N/A</span>
+                      </div>
+                    </div>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 999, background: "#f8fafc", border: "1.5px solid #e2e8f0" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.01em" }}>Not started</span>
+                    </div>
+                  </div>
+                );
                 const s = report.overallScore;
                 const tier =
                   s >= 85 ? { label: "Excellent",      Icon: Trophy,     color: "#059669", glow: "rgba(5,150,105,",   badgeBg: "#ecfdf5", badgeBorder: "#6ee7b7", badgeText: "#065f46" }
@@ -458,7 +471,6 @@ export default function Report() {
                         50%     { box-shadow: 0 0 0 5px ${tier.glow}0.07), 0 0 24px 8px ${tier.glow}0.16); }
                       }
                     `}</style>
-                    {/* Pulse ring — 64×64 */}
                     <div className="relative flex items-center justify-center" style={{ width: 64, height: 64 }}>
                       {[0, 0.6, 1.2, 1.8].map((delay, i) => (
                         <div key={i} style={{ position: "absolute", width: 42, height: 42, borderRadius: "50%", border: `1.5px solid ${tier.color}`, opacity: 0, animation: `sonarR 2.4s ease-out ${delay}s infinite` }} />
@@ -467,7 +479,6 @@ export default function Report() {
                         <span style={{ fontSize: 20, fontWeight: 900, color: tier.color, lineHeight: 1 }}>{report.overallScore}</span>
                       </div>
                     </div>
-                    {/* Tier pill */}
                     <div style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 999, background: tier.badgeBg, border: `1.5px solid ${tier.badgeBorder}` }}>
                       <tier.Icon style={{ width: 10, height: 10, color: tier.color }} />
                       <span style={{ fontSize: 10, fontWeight: 700, color: tier.badgeText, letterSpacing: "0.01em" }}>{tier.label}</span>
@@ -528,6 +539,23 @@ export default function Report() {
 
               {/* Full score badge — desktop only */}
               {(() => {
+                const noInterview = !report.answerFeedback || (report.answerFeedback as unknown[]).length === 0;
+                if (noInterview) return (
+                  <div className="hidden sm:flex items-center gap-5 bg-white rounded-2xl p-5 shadow-sm" style={{ border: "1.5px solid #e2e8f0" }}>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Overall Score</div>
+                      <div className="text-4xl font-black leading-none text-slate-300">N/A</div>
+                      <div style={{ display: "inline-flex", alignItems: "center", padding: "4px 11px", borderRadius: "999px", background: "#f8fafc", border: "1.5px solid #e2e8f0" }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.01em" }}>Not started</span>
+                      </div>
+                    </div>
+                    <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+                      <div style={{ position: "relative", zIndex: 10, width: 72, height: 72, borderRadius: "50%", background: "#f8fafc", border: "3px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ fontSize: 20, fontWeight: 900, color: "#cbd5e1", lineHeight: 1 }}>N/A</span>
+                      </div>
+                    </div>
+                  </div>
+                );
                 const s = report.overallScore;
                 const tier =
                   s >= 85 ? { label: "Excellent",      Icon: Trophy,     color: "#059669", glow: "rgba(5,150,105,",   badgeBg: "#ecfdf5", badgeBorder: "#6ee7b7", badgeText: "#065f46" }
