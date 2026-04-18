@@ -419,7 +419,7 @@ export default function Report() {
         <AppHeader
           right={
             <Link href="/">
-              <Button variant="ghost" size="sm" className="text-slate-600 hover:text-blue-700 hover:bg-blue-50 gap-2 font-medium">
+              <Button variant="ghost" size="sm" className="cursor-pointer text-slate-600 hover:text-blue-700 hover:bg-blue-50 gap-2 font-medium">
                 <ChevronLeft className="w-4 h-4" /> Dashboard
               </Button>
             </Link>
@@ -451,7 +451,7 @@ export default function Report() {
                 onClick={handleDownloadPdf}
                 disabled={isGeneratingPdf}
                 variant="outline"
-                className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-900 hover:border-blue-400 gap-2 font-medium disabled:opacity-60"
+                className="cursor-pointer border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-900 hover:border-blue-400 gap-2 font-medium disabled:opacity-60"
               >
                 <Download className={`w-4 h-4 ${isGeneratingPdf ? "animate-bounce" : ""}`} />
                 {isGeneratingPdf ? "Generating…" : "Download PDF"}
@@ -460,7 +460,7 @@ export default function Report() {
               {/* Share dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900 gap-2">
+                  <Button variant="outline" className="cursor-pointer border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900 gap-2">
                     <Share2 className="w-4 h-4" />
                     Share
                   </Button>
@@ -716,7 +716,7 @@ export default function Report() {
                       <button
                         onClick={() => copyQuestionFeedback(fb as AnswerFeedbackItem, idx)}
                         title="Copy this question's feedback"
-                        className="print:hidden p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors relative"
+                        className="cursor-pointer print:hidden p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors relative"
                       >
                         {copiedQId === fb.questionId ? (
                           <>
@@ -736,7 +736,7 @@ export default function Report() {
                           overallScore: report.overallScore,
                         })}
                         title="Print this question's feedback"
-                        className="print:hidden p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        className="cursor-pointer print:hidden p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                       >
                         <Printer className="w-3.5 h-3.5" />
                       </button>

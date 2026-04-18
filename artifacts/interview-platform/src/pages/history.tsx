@@ -80,7 +80,7 @@ export default function History() {
           <Button
             variant="ghost"
             size="sm"
-            className="text-slate-600 font-medium hover:text-blue-700 hover:bg-blue-50 gap-2"
+            className="cursor-pointer text-slate-600 font-medium hover:text-blue-700 hover:bg-blue-50 gap-2"
             onClick={() => setLocation("/")}
           >
             <ArrowLeft className="h-4 w-4" /> Back to Home
