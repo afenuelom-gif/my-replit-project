@@ -41,8 +41,13 @@ export default function Interview() {
   const [isRecording, setIsRecording] = useState(false);
   const [webcamEnabled, setWebcamEnabled] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [lastPlayedQuestionId, setLastPlayedQuestionId] = useState<number | null>(null);
-  const [hasPlayedWelcome, setHasPlayedWelcome] = useState(false);
+  const [lastPlayedQuestionId, setLastPlayedQuestionId] = useState<number | null>(() => {
+    const stored = sessionStorage.getItem(`interview_lastQ_${sessionId}`);
+    return stored ? parseInt(stored, 10) : null;
+  });
+  const [hasPlayedWelcome, setHasPlayedWelcome] = useState<boolean>(() => {
+    return sessionStorage.getItem(`interview_welcome_${sessionId}`) === "true";
+  });
   const [statusMessage, setStatusMessage] = useState("Waiting...");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -75,6 +80,17 @@ export default function Interview() {
   }, []);
 
   const isAnySpeaking = isHeyGenSpeaking;
+
+  // Persist TTS progress to sessionStorage so hot-reloads don't re-trigger auto-play
+  useEffect(() => {
+    if (lastPlayedQuestionId !== null)
+      sessionStorage.setItem(`interview_lastQ_${sessionId}`, String(lastPlayedQuestionId));
+  }, [lastPlayedQuestionId, sessionId]);
+
+  useEffect(() => {
+    if (hasPlayedWelcome)
+      sessionStorage.setItem(`interview_welcome_${sessionId}`, "true");
+  }, [hasPlayedWelcome, sessionId]);
 
   // Setup timer
   useEffect(() => {
@@ -258,6 +274,9 @@ export default function Interview() {
       ref.current?.stop();
     }
     await destroyAllCards();
+    // Clear persisted TTS progress so a future reload doesn't replay on a completed session
+    sessionStorage.removeItem(`interview_lastQ_${sessionId}`);
+    sessionStorage.removeItem(`interview_welcome_${sessionId}`);
     try {
       await completeSession.mutateAsync({ id: sessionId });
       setLocation(`/report/${sessionId}`);
