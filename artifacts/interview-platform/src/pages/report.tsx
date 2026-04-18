@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  CheckCircle2, ChevronLeft, Target, MessageSquare, Code, Lightbulb,
+  CheckCircle2, ChevronLeft, Trophy, ThumbsUp, TrendingUp, Dumbbell, MessageSquare, Code, Lightbulb,
   User, Camera, Volume2, Share2, Mail, Printer, Copy, Check, ExternalLink, Download,
 } from "lucide-react";
 
@@ -495,27 +495,52 @@ export default function Report() {
               </DropdownMenu>
 
               {/* Full score badge — desktop only */}
-              <div className="hidden sm:flex items-center gap-4 bg-white border border-blue-200 rounded-2xl p-6 shadow-sm">
-                <div className="text-right">
-                  <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Overall Score</div>
-                  <div className="text-4xl font-bold text-blue-600">{report.overallScore}<span className="text-xl text-slate-400">/100</span></div>
-                </div>
-                <div className="w-24 h-24 rounded-full border-8 border-blue-100 flex items-center justify-center relative">
-                  <svg className="absolute inset-0 w-full h-full -rotate-90">
-                    <circle
-                      className="text-blue-500"
-                      strokeWidth="8"
-                      stroke="currentColor"
-                      fill="transparent"
-                      r="38"
-                      cx="48"
-                      cy="48"
-                      strokeDasharray={`${report.overallScore * 2.38} 240`}
-                    />
-                  </svg>
-                  <Target className="w-8 h-8 text-blue-500" />
-                </div>
-              </div>
+              {(() => {
+                const s = report.overallScore;
+                const tier =
+                  s >= 85 ? { label: "Excellent",      Icon: Trophy,     color: "#059669", glow: "rgba(5,150,105,",   badgeBg: "#ecfdf5", badgeBorder: "#6ee7b7", badgeText: "#065f46" }
+                : s >= 70 ? { label: "Good",            Icon: ThumbsUp,   color: "#2563eb", glow: "rgba(37,99,235,",   badgeBg: "#eff6ff", badgeBorder: "#93c5fd", badgeText: "#1e3a8a" }
+                : s >= 55 ? { label: "Fair",             Icon: TrendingUp, color: "#d97706", glow: "rgba(217,119,6,",  badgeBg: "#fffbeb", badgeBorder: "#fcd34d", badgeText: "#78350f" }
+                :            { label: "Needs Practice",  Icon: Dumbbell,   color: "#e11d48", glow: "rgba(225,29,72,",  badgeBg: "#fff1f2", badgeBorder: "#fda4af", badgeText: "#881337" };
+
+                return (
+                  <div className="hidden sm:flex items-center gap-5 bg-white rounded-2xl p-5 shadow-sm" style={{ border: `1.5px solid ${tier.badgeBorder}` }}>
+                    <style>{`
+                      @keyframes sonarR {
+                        0%   { transform: scale(0.55); opacity: 0.65; }
+                        100% { transform: scale(1.95); opacity: 0; }
+                      }
+                      @keyframes breatheR {
+                        0%,100% { box-shadow: 0 0 0 0 ${tier.glow}0.2), 0 0 14px 4px ${tier.glow}0.08); }
+                        50%     { box-shadow: 0 0 0 5px ${tier.glow}0.07), 0 0 24px 8px ${tier.glow}0.16); }
+                      }
+                    `}</style>
+
+                    {/* Score number + tier badge */}
+                    <div className="flex flex-col items-end gap-1.5">
+                      <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Overall Score</div>
+                      <div className="text-4xl font-black leading-none" style={{ color: tier.color }}>
+                        {report.overallScore}<span className="text-lg font-medium text-slate-400 ml-0.5">/100</span>
+                      </div>
+                      {/* Framed tier badge */}
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "4px 11px", borderRadius: "999px", background: tier.badgeBg, border: `1.5px solid ${tier.badgeBorder}` }}>
+                        <tier.Icon style={{ width: 12, height: 12, color: tier.color }} />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: tier.badgeText, letterSpacing: "0.01em" }}>{tier.label}</span>
+                      </div>
+                    </div>
+
+                    {/* Compact pulse ring — same 96×96 footprint as before */}
+                    <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+                      {[0, 0.6, 1.2, 1.8].map((delay, i) => (
+                        <div key={i} style={{ position: "absolute", width: 58, height: 58, borderRadius: "50%", border: `1.5px solid ${tier.color}`, opacity: 0, animation: `sonarR 2.4s ease-out ${delay}s infinite` }} />
+                      ))}
+                      <div style={{ position: "relative", zIndex: 10, width: 72, height: 72, borderRadius: "50%", background: "#fff", border: `3px solid ${tier.color}`, display: "flex", alignItems: "center", justifyContent: "center", animation: "breatheR 3s ease-in-out infinite" }}>
+                        <span style={{ fontSize: 24, fontWeight: 900, color: tier.color, lineHeight: 1 }}>{report.overallScore}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
