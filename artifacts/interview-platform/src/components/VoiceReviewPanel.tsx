@@ -340,7 +340,7 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
             <Button variant="ghost" size="icon"
               onClick={handleBack}
               disabled={currentIndex <= 0}
-              className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
+              className="cursor-pointer h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
               title="Previous section"
             >
               <SkipBack className="w-4 h-4" />
@@ -348,13 +348,13 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
 
             {paused ? (
               <Button variant="ghost" size="sm" onClick={handleResume}
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5 px-1.5 sm:px-2">
+                className="cursor-pointer text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5 px-1.5 sm:px-2">
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span className="text-xs hidden sm:inline">Resume</span>
               </Button>
             ) : (
               <Button variant="ghost" size="sm" onClick={handlePause}
-                className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 gap-1.5 px-1.5 sm:px-2">
+                className="cursor-pointer text-slate-500 hover:text-slate-700 hover:bg-slate-100 gap-1.5 px-1.5 sm:px-2">
                 <Pause className="w-3.5 h-3.5 fill-current" />
                 <span className="text-xs hidden sm:inline">Pause</span>
               </Button>
@@ -363,7 +363,7 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
             <Button variant="ghost" size="icon"
               onClick={handleForward}
               disabled={currentIndex >= script.length - 1}
-              className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
+              className="cursor-pointer h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
               title="Next section"
             >
               <SkipForward className="w-4 h-4" />
@@ -371,7 +371,7 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
 
             <Button variant="ghost" size="icon"
               onClick={handleStop}
-              className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
+              className="cursor-pointer h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
               title="Stop narration"
             >
               <Square className="w-3.5 h-3.5 fill-current" />
