@@ -35,8 +35,12 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   let profile: { email?: string; firstName?: string; lastName?: string } = {};
   try {
     const clerkUser = await clerkClient.users.getUser(userId);
+    // Prefer the user's designated primary email; fall back to the first address.
+    const primaryEmail = clerkUser.emailAddresses?.find(
+      e => e.id === clerkUser.primaryEmailAddressId,
+    ) ?? clerkUser.emailAddresses?.[0];
     profile = {
-      email: clerkUser.emailAddresses?.[0]?.emailAddress,
+      email: primaryEmail?.emailAddress,
       firstName: clerkUser.firstName ?? undefined,
       lastName: clerkUser.lastName ?? undefined,
     };
