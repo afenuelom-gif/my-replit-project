@@ -79,7 +79,7 @@ async function ensureUserExists(
 ): Promise<void> {
   // Build the update set for existing users — only include fields that were
   // actually retrieved so a transient Clerk failure never wipes out stored data.
-  const updateSet: Record<string, unknown> = { updatedAt: new Date() };
+  const updateSet: Partial<typeof usersTable.$inferInsert> = { updatedAt: new Date() };
   if (profile.email !== undefined) updateSet.email = profile.email;
   if (profile.firstName !== undefined) updateSet.firstName = profile.firstName;
   if (profile.lastName !== undefined) updateSet.lastName = profile.lastName;
@@ -94,8 +94,7 @@ async function ensureUserExists(
     })
     .onConflictDoUpdate({
       target: usersTable.id,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      set: updateSet as any,
+      set: updateSet,
     });
 }
 
