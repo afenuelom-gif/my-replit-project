@@ -1,7 +1,6 @@
 import { getAuth, clerkClient } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
 import { db, usersTable, loginEventsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
 import geoip from "geoip-lite";
 
 declare global {
@@ -44,13 +43,18 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     };
   } catch {
     // Fall back to session claims if Clerk API is unreachable.
-    profile.email = auth?.sessionClaims?.email as string | undefined;
+    // Only email is available here; name fields stay undefined so we don't
+    // overwrite existing data on a transient Clerk outage.
+    const fallbackEmail = auth?.sessionClaims?.email as string | undefined;
+    if (fallbackEmail) profile.email = fallbackEmail;
   }
 
   await ensureUserExists(userId, profile);
 
-  // Fire-and-forget: log this login event without blocking the request.
-  logLoginEvent(userId, req).catch(() => {});
+  // Fire-and-forget: log a login event keyed on the Clerk session ID so that
+  // repeated API calls within the same session produce only one row.
+  const clerkSessionId = auth?.sessionId ?? null;
+  logLoginEvent(userId, clerkSessionId, req).catch(() => {});
 
   next();
 }
@@ -73,6 +77,13 @@ async function ensureUserExists(
   userId: string,
   profile: { email?: string; firstName?: string; lastName?: string },
 ): Promise<void> {
+  // Build the update set for existing users — only include fields that were
+  // actually retrieved so a transient Clerk failure never wipes out stored data.
+  const updateSet: Record<string, unknown> = { updatedAt: new Date() };
+  if (profile.email !== undefined) updateSet.email = profile.email;
+  if (profile.firstName !== undefined) updateSet.firstName = profile.firstName;
+  if (profile.lastName !== undefined) updateSet.lastName = profile.lastName;
+
   await db
     .insert(usersTable)
     .values({
@@ -83,16 +94,16 @@ async function ensureUserExists(
     })
     .onConflictDoUpdate({
       target: usersTable.id,
-      set: {
-        email: profile.email ?? null,
-        firstName: profile.firstName ?? null,
-        lastName: profile.lastName ?? null,
-        updatedAt: new Date(),
-      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      set: updateSet as any,
     });
 }
 
-async function logLoginEvent(userId: string, req: Request): Promise<void> {
+async function logLoginEvent(
+  userId: string,
+  clerkSessionId: string | null,
+  req: Request,
+): Promise<void> {
   const forwarded = req.headers["x-forwarded-for"];
   const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0])?.trim()
     ?? req.socket?.remoteAddress
@@ -106,17 +117,22 @@ async function logLoginEvent(userId: string, req: Request): Promise<void> {
       country = geo?.country ?? null;
       city = geo?.city ?? null;
     } catch {
-      // geo lookup failed — non-fatal
+      // geo lookup is non-fatal
     }
   }
 
   const userAgent = req.headers["user-agent"] ?? null;
 
-  await db.insert(loginEventsTable).values({
-    userId,
-    ipAddress: ip,
-    country,
-    city,
-    userAgent,
-  });
+  await db
+    .insert(loginEventsTable)
+    .values({
+      userId,
+      clerkSessionId,
+      ipAddress: ip,
+      country,
+      city,
+      userAgent,
+    })
+    // One row per Clerk session — subsequent API calls in the same session are skipped.
+    .onConflictDoNothing();
 }
