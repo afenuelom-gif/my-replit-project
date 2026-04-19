@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, MessagesSquare, XCircle } from "lucide-react";
+import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, MessagesSquare, XCircle, Play } from "lucide-react";
 import InterviewerCard, { type InterviewerCardHandle } from "@/components/InterviewerCard";
 import { AuthPrompt } from "@/components/AuthPrompt";
 
@@ -54,6 +54,9 @@ export default function Interview() {
   const [isHeyGenSpeaking, setIsHeyGenSpeaking] = useState(false);
   const [isFinalThankYou, setIsFinalThankYou] = useState(false);
   const [isEndingManually, setIsEndingManually] = useState(false);
+  // iOS requires a user gesture before AudioContext can play audio.
+  // audioUnlocked gates the TTS useEffect until the user taps "Begin".
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
 
   // Refs for user webcam / recording
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -80,6 +83,17 @@ export default function Interview() {
   }, []);
 
   const isAnySpeaking = isHeyGenSpeaking;
+
+  // Tap-to-begin handler — called synchronously from a button onClick so
+  // iOS recognises it as a user gesture and allows AudioContext to resume.
+  const handleBeginInterview = useCallback(async () => {
+    const unlockPromises: Promise<void>[] = [];
+    for (const ref of cardRefsMap.current.values()) {
+      if (ref.current?.unlockAudio) unlockPromises.push(ref.current.unlockAudio());
+    }
+    await Promise.all(unlockPromises);
+    setAudioUnlocked(true);
+  }, []);
 
   // Persist TTS progress to sessionStorage so hot-reloads don't re-trigger auto-play
   useEffect(() => {
@@ -195,6 +209,7 @@ export default function Interview() {
   }, [sessionId, webcamEnabled]);
 
   useEffect(() => {
+    if (!audioUnlocked) return; // Wait until user has tapped "Begin" (required for iOS audio)
     const currentQ = sessionData?.questions[sessionData.questions.length - 1];
     if (!currentQ || currentQ.id === lastPlayedQuestionId) return;
     if (isEndingManuallyRef.current) return;
@@ -234,7 +249,7 @@ export default function Interview() {
     } else {
       setStatusMessage("Read the question above, then click the mic to answer");
     }
-  }, [sessionData?.questions?.length]);
+  }, [sessionData?.questions?.length, audioUnlocked]);
 
   // After final thank-you TTS finishes, navigate to report
   useEffect(() => {
@@ -469,6 +484,27 @@ export default function Interview() {
         <div className="absolute bottom-0 right-0 w-[500px] h-[400px] rounded-full bg-blue-600/10 blur-[120px]" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[400px] rounded-full bg-purple-600/8 blur-[120px]" />
       </div>
+
+      {/* iOS audio gate — requires one user tap before any audio can play */}
+      {sessionData && !audioUnlocked && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
+          <div className="text-center px-8 max-w-sm">
+            <div className="w-20 h-20 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mx-auto mb-6">
+              <Play className="w-8 h-8 text-primary ml-1" />
+            </div>
+            <h2 className="text-white text-2xl font-bold mb-2">Ready to begin?</h2>
+            <p className="text-white/50 text-sm mb-8">Your interviewers are prepared. Tap below to start — this also enables audio on your device.</p>
+            <Button
+              onClick={handleBeginInterview}
+              size="lg"
+              className="w-full gap-2 text-base font-semibold"
+            >
+              <Play className="w-5 h-5 ml-0.5" />
+              Begin Interview
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Floating timer — mobile only, always visible */}
       <div className={`fixed top-4 right-4 z-50 sm:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full border backdrop-blur-md shadow-lg ${

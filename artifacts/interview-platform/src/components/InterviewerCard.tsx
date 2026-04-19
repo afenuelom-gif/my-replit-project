@@ -9,6 +9,7 @@ export interface InterviewerCardHandle {
   speak: (text: string, gender?: "male" | "female") => Promise<void>;
   stop: () => void;
   destroy: () => void;
+  unlockAudio: () => Promise<void>;
 }
 
 interface Interviewer {
@@ -51,7 +52,7 @@ function SpeakingWaveform({ active }: { active: boolean }) {
 
 const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
   ({ interviewer, isActive, sessionId, onSpeakingChange }, ref) => {
-    const { speak: ttsSpeak, stop: ttsStop, isSpeaking: ttsSpeaking } = useElevenLabsTTS(sessionId);
+    const { speak: ttsSpeak, stop: ttsStop, unlockAudio: ttsUnlock, isSpeaking: ttsSpeaking } = useElevenLabsTTS(sessionId);
 
     const isSpeakingNow = isActive && ttsSpeaking;
 
@@ -71,7 +72,11 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
       ttsStop();
     }, [ttsStop]);
 
-    useImperativeHandle(ref, () => ({ speak, stop, destroy }), [speak, stop, destroy]);
+    const unlockAudio = useCallback(async () => {
+      await ttsUnlock();
+    }, [ttsUnlock]);
+
+    useImperativeHandle(ref, () => ({ speak, stop, destroy, unlockAudio }), [speak, stop, destroy, unlockAudio]);
 
     return (
       <div

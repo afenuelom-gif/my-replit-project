@@ -204,5 +204,20 @@ export function useElevenLabsTTS(sessionId: number) {
     };
   }, []);
 
-  return { speak, stop, pause, resume, seekTime, isSpeaking, isPaused, audioCurrentTime, audioDuration };
+  // Call this synchronously inside a user-gesture handler to unlock the
+  // AudioContext on iOS before any async work (fetch, etc.) begins.
+  const unlockAudio = useCallback(async () => {
+    try {
+      const ctx = getAudioContext();
+      if (ctx.state === "suspended") await ctx.resume();
+      // Play a 1-frame silent buffer — this fully commits the unlock on iOS.
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch { /* non-fatal */ }
+  }, [getAudioContext]);
+
+  return { speak, stop, pause, resume, seekTime, unlockAudio, isSpeaking, isPaused, audioCurrentTime, audioDuration };
 }
