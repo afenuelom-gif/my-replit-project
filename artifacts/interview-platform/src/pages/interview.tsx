@@ -57,6 +57,8 @@ export default function Interview() {
   // iOS requires a user gesture before AudioContext can play audio.
   // audioUnlocked gates the TTS useEffect until the user taps "Begin".
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  // Mobile: allows the user to expand a truncated question to read it in full.
+  const [questionExpanded, setQuestionExpanded] = useState(false);
 
   // Refs for user webcam / recording
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -106,13 +108,14 @@ export default function Interview() {
       sessionStorage.setItem(`interview_welcome_${sessionId}`, "true");
   }, [hasPlayedWelcome, sessionId]);
 
-  // Setup timer
+  // Setup timer — only after the user taps "Begin Interview" so the
+  // countdown doesn't run while the start overlay is still showing.
   useEffect(() => {
-    if (sessionData?.session.durationMinutes && !timerStartedRef.current) {
+    if (sessionData?.session.durationMinutes && !timerStartedRef.current && audioUnlocked) {
       timerStartedRef.current = true;
       setTimeLeft(sessionData.session.durationMinutes * 60);
     }
-  }, [sessionData]);
+  }, [sessionData, audioUnlocked]);
 
   useEffect(() => {
     if (timeLeft <= 0) return;
@@ -349,6 +352,9 @@ export default function Interview() {
 
   const currentQuestion = sessionData?.questions[sessionData.questions.length - 1];
   const activeInterviewerId = currentQuestion?.interviewerId;
+
+  // Collapse the question expansion whenever a new question arrives.
+  useEffect(() => { setQuestionExpanded(false); }, [currentQuestion?.id]);
 
   const handleToggleRecord = () => {
     if (isRecording) {
@@ -650,9 +656,17 @@ export default function Interview() {
         {/* Question text */}
         <div className="flex-1 max-w-3xl w-full">
           <div className="text-xs text-primary mb-1 font-mono uppercase tracking-wider">Current Question</div>
-          <div className="text-sm sm:text-lg font-medium text-white/90 line-clamp-2 sm:line-clamp-3 min-h-[2.5rem] sm:min-h-[4.5rem]">
+          <div className={`text-sm sm:text-lg font-medium text-white/90 sm:line-clamp-3 min-h-[2.5rem] sm:min-h-[4.5rem] ${!questionExpanded ? "line-clamp-2" : ""}`}>
             {currentQuestion?.questionText || "Starting interview — please wait..."}
           </div>
+          {currentQuestion?.questionText && (
+            <button
+              className="sm:hidden mt-1.5 text-xs text-primary font-semibold tracking-wide"
+              onClick={() => setQuestionExpanded(v => !v)}
+            >
+              {questionExpanded ? "Show less ▲" : "Show more ▼"}
+            </button>
+          )}
           <div className="mt-1 text-xs text-zinc-500">{statusMessage}</div>
         </div>
 
