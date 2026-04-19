@@ -34,8 +34,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   // Fetch full user profile from Clerk and sync to our DB.
   let profile: { email?: string; firstName?: string; lastName?: string } = {};
   try {
-    const clerk = clerkClient();
-    const clerkUser = await clerk.users.getUser(userId);
+    const clerkUser = await clerkClient.users.getUser(userId);
     profile = {
       email: clerkUser.emailAddresses?.[0]?.emailAddress,
       firstName: clerkUser.firstName ?? undefined,
@@ -103,6 +102,10 @@ async function logLoginEvent(
   clerkSessionId: string | null,
   req: Request,
 ): Promise<void> {
+  // Without a session ID we cannot deduplicate, so skip to avoid duplicate rows
+  // (PostgreSQL unique constraints allow multiple NULLs).
+  if (!clerkSessionId) return;
+
   const forwarded = req.headers["x-forwarded-for"];
   const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0])?.trim()
     ?? req.socket?.remoteAddress
