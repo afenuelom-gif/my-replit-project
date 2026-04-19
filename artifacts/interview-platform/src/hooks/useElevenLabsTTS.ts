@@ -24,13 +24,24 @@ export function useElevenLabsTTS(sessionId: number) {
   const [audioDuration, setDuration]        = useState(0);
 
   const audioRef                = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef             = useRef<AudioContext | null>(null);
   const isBrowserTTSRef         = useRef(false);
   const resolveCurrentSpeakRef  = useRef<(() => void) | null>(null);
   const fetchAbortRef           = useRef<AbortController | null>(null);
   const destroyedRef            = useRef(false);
 
+  // Shared AudioContext — bypasses the iOS hardware mute/silent switch.
+  // HTMLAudioElement honours the ringer volume; AudioContext uses the media
+  // channel and plays regardless of whether the silent switch is engaged.
+  const getAudioContext = useCallback((): AudioContext => {
+    if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+      const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      audioCtxRef.current = new AC();
+    }
+    return audioCtxRef.current;
+  }, []);
+
   const stop = useCallback(() => {
-    // Abort any in-flight TTS fetch
     fetchAbortRef.current?.abort();
     fetchAbortRef.current = null;
 
@@ -83,6 +94,13 @@ export function useElevenLabsTTS(sessionId: number) {
       const controller = new AbortController();
       fetchAbortRef.current = controller;
 
+      // Resume AudioContext NOW — must happen synchronously within the
+      // user-gesture call stack before any await, otherwise iOS blocks it.
+      try {
+        const ctx = getAudioContext();
+        if (ctx.state === "suspended") await ctx.resume();
+      } catch { /* non-fatal — will fall back to direct playback */ }
+
       try {
         const res = await fetch(`/api/interview/sessions/${sessionId}/tts`, {
           method: "POST",
@@ -91,7 +109,6 @@ export function useElevenLabsTTS(sessionId: number) {
           signal: controller.signal,
         });
 
-        // Guard: component may have unmounted while fetch was in-flight
         if (destroyedRef.current) return;
         fetchAbortRef.current = null;
 
@@ -112,17 +129,32 @@ export function useElevenLabsTTS(sessionId: number) {
 
         if (destroyedRef.current) return;
 
-        const audio = new Audio(`data:audio/${format ?? "mpeg"};base64,${audioBase64}`);
+        // Build a Blob URL — more reliable than a data URI on iOS Safari.
+        const mimeType = `audio/${format ?? "mpeg"}`;
+        const bytes = Uint8Array.from(atob(audioBase64), (c) => c.charCodeAt(0));
+        const blob = new Blob([bytes], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+
+        const audio = new Audio(blobUrl);
         audioRef.current = audio;
 
+        // Route through AudioContext so it bypasses the iOS mute switch.
+        try {
+          const ctx = getAudioContext();
+          if (ctx.state === "suspended") await ctx.resume();
+          const source = ctx.createMediaElementSource(audio);
+          source.connect(ctx.destination);
+        } catch { /* AudioContext unavailable — audio still plays via element */ }
+
         audio.addEventListener("loadedmetadata", () => setDuration(audio.duration));
-        audio.addEventListener("timeupdate", () => setCurrentTime(audio.currentTime));
+        audio.addEventListener("timeupdate",     () => setCurrentTime(audio.currentTime));
 
         await new Promise<void>((resolve) => {
           resolveCurrentSpeakRef.current = resolve;
           const finish = () => {
             resolveCurrentSpeakRef.current = null;
             audioRef.current = null;
+            URL.revokeObjectURL(blobUrl);
             setIsSpeaking(false);
             setIsPaused(false);
             resolve();
@@ -138,7 +170,7 @@ export function useElevenLabsTTS(sessionId: number) {
           }
         });
       } catch (e: unknown) {
-        if (e instanceof Error && e.name === "AbortError") return; // clean stop
+        if (e instanceof Error && e.name === "AbortError") return;
         console.warn("ElevenLabs TTS error, falling back to browser speech:", e);
         if (destroyedRef.current) return;
         isBrowserTTSRef.current = true;
@@ -149,7 +181,7 @@ export function useElevenLabsTTS(sessionId: number) {
         setIsPaused(false);
       }
     },
-    [sessionId, stop]
+    [sessionId, stop, getAudioContext]
   );
 
   useEffect(() => {
@@ -168,6 +200,7 @@ export function useElevenLabsTTS(sessionId: number) {
         window.speechSynthesis?.cancel();
         isBrowserTTSRef.current = false;
       }
+      // AudioContext is intentionally kept alive across renders for reuse.
     };
   }, []);
 
