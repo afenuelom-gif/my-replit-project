@@ -14,6 +14,12 @@ declare global {
 const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
 const DEV_USER_ID = "dev_bypass_user";
 
+// Cache Clerk profile fetches by session ID to avoid a Clerk API call on
+// every authenticated request. Each entry expires after 5 minutes.
+const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000;
+type CachedProfile = { profile: { email?: string; firstName?: string; lastName?: string }; expiresAt: number };
+const profileCache = new Map<string, CachedProfile>();
+
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (BYPASS_AUTH) {
     req.userId = DEV_USER_ID;
@@ -32,31 +38,41 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   req.userId = userId;
 
   // Fetch full user profile from Clerk and sync to our DB.
+  // Cache by Clerk session ID to avoid a Clerk API call on every request.
+  const clerkSessionId = auth?.sessionId ?? null;
   let profile: { email?: string; firstName?: string; lastName?: string } = {};
-  try {
-    const clerkUser = await clerkClient.users.getUser(userId);
-    // Prefer the user's designated primary email; fall back to the first address.
-    const primaryEmail = clerkUser.emailAddresses?.find(
-      e => e.id === clerkUser.primaryEmailAddressId,
-    ) ?? clerkUser.emailAddresses?.[0];
-    profile = {
-      email: primaryEmail?.emailAddress,
-      firstName: clerkUser.firstName ?? undefined,
-      lastName: clerkUser.lastName ?? undefined,
-    };
-  } catch {
-    // Fall back to session claims if Clerk API is unreachable.
-    // Only email is available here; name fields stay undefined so we don't
-    // overwrite existing data on a transient Clerk outage.
-    const fallbackEmail = auth?.sessionClaims?.email as string | undefined;
-    if (fallbackEmail) profile.email = fallbackEmail;
+
+  const cached = clerkSessionId ? profileCache.get(clerkSessionId) : undefined;
+  if (cached && cached.expiresAt > Date.now()) {
+    profile = cached.profile;
+  } else {
+    try {
+      const clerkUser = await clerkClient.users.getUser(userId);
+      // Prefer the user's designated primary email; fall back to the first address.
+      const primaryEmail = clerkUser.emailAddresses?.find(
+        e => e.id === clerkUser.primaryEmailAddressId,
+      ) ?? clerkUser.emailAddresses?.[0];
+      profile = {
+        email: primaryEmail?.emailAddress,
+        firstName: clerkUser.firstName ?? undefined,
+        lastName: clerkUser.lastName ?? undefined,
+      };
+      if (clerkSessionId) {
+        profileCache.set(clerkSessionId, { profile, expiresAt: Date.now() + PROFILE_CACHE_TTL_MS });
+      }
+    } catch {
+      // Fall back to session claims if Clerk API is unreachable.
+      // Only email is available here; name fields stay undefined so we don't
+      // overwrite existing data on a transient Clerk outage.
+      const fallbackEmail = auth?.sessionClaims?.email as string | undefined;
+      if (fallbackEmail) profile.email = fallbackEmail;
+    }
   }
 
   await ensureUserExists(userId, profile);
 
   // Fire-and-forget: log a login event keyed on the Clerk session ID so that
   // repeated API calls within the same session produce only one row.
-  const clerkSessionId = auth?.sessionId ?? null;
   logLoginEvent(userId, clerkSessionId, req).catch(() => {});
 
   next();
