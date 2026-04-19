@@ -14,8 +14,6 @@ declare global {
 const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
 const DEV_USER_ID = "dev_bypass_user";
 
-// Cache Clerk profile fetches by session ID to avoid a Clerk API call on
-// every authenticated request. Each entry expires after 5 minutes.
 const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000;
 type CachedProfile = { profile: { email?: string; firstName?: string; lastName?: string }; expiresAt: number };
 const profileCache = new Map<string, CachedProfile>();
@@ -36,19 +34,15 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   }
 
   req.userId = userId;
-
-  // Fetch full user profile from Clerk and sync to our DB.
-  // Cache by Clerk session ID to avoid a Clerk API call on every request.
   const clerkSessionId = auth?.sessionId ?? null;
-  let profile: { email?: string; firstName?: string; lastName?: string } = {};
 
+  let profile: { email?: string; firstName?: string; lastName?: string } = {};
   const cached = clerkSessionId ? profileCache.get(clerkSessionId) : undefined;
   if (cached && cached.expiresAt > Date.now()) {
     profile = cached.profile;
   } else {
     try {
       const clerkUser = await clerkClient.users.getUser(userId);
-      // Prefer the user's designated primary email; fall back to the first address.
       const primaryEmail = clerkUser.emailAddresses?.find(
         e => e.id === clerkUser.primaryEmailAddressId,
       ) ?? clerkUser.emailAddresses?.[0];
@@ -61,20 +55,13 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
         profileCache.set(clerkSessionId, { profile, expiresAt: Date.now() + PROFILE_CACHE_TTL_MS });
       }
     } catch {
-      // Fall back to session claims if Clerk API is unreachable.
-      // Only email is available here; name fields stay undefined so we don't
-      // overwrite existing data on a transient Clerk outage.
       const fallbackEmail = auth?.sessionClaims?.email as string | undefined;
       if (fallbackEmail) profile.email = fallbackEmail;
     }
   }
 
   await ensureUserExists(userId, profile);
-
-  // Fire-and-forget: log a login event keyed on the Clerk session ID so that
-  // repeated API calls within the same session produce only one row.
   logLoginEvent(userId, clerkSessionId, req).catch(() => {});
-
   next();
 }
 
@@ -96,8 +83,6 @@ async function ensureUserExists(
   userId: string,
   profile: { email?: string; firstName?: string; lastName?: string },
 ): Promise<void> {
-  // Build the update set for existing users — only include fields that were
-  // actually retrieved so a transient Clerk failure never wipes out stored data.
   const updateSet: Partial<typeof usersTable.$inferInsert> = { updatedAt: new Date() };
   if (profile.email !== undefined) updateSet.email = profile.email;
   if (profile.firstName !== undefined) updateSet.firstName = profile.firstName;
@@ -122,8 +107,6 @@ async function logLoginEvent(
   clerkSessionId: string | null,
   req: Request,
 ): Promise<void> {
-  // Without a session ID we cannot deduplicate, so skip to avoid duplicate rows
-  // (PostgreSQL unique constraints allow multiple NULLs).
   if (!clerkSessionId) return;
 
   const forwarded = req.headers["x-forwarded-for"];
@@ -139,22 +122,15 @@ async function logLoginEvent(
       country = geo?.country ?? null;
       city = geo?.city ?? null;
     } catch {
-      // geo lookup is non-fatal
+      // non-fatal
     }
   }
 
-  const userAgent = req.headers["user-agent"] ?? null;
+  const rawUa = req.headers["user-agent"];
+  const userAgent = (Array.isArray(rawUa) ? rawUa[0] : rawUa) ?? null;
 
   await db
     .insert(loginEventsTable)
-    .values({
-      userId,
-      clerkSessionId,
-      ipAddress: ip,
-      country,
-      city,
-      userAgent,
-    })
-    // One row per Clerk session — subsequent API calls in the same session are skipped.
+    .values({ userId, clerkSessionId, ipAddress: ip, country, city, userAgent })
     .onConflictDoNothing();
 }
