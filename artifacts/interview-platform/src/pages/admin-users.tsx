@@ -31,6 +31,7 @@ interface AdminUser {
   sessionCredits: number;
   createdAt: string;
   totalLogins: number;
+  completedSessions: number;
   lastLogin: string | null;
   lastCountry: string | null;
   lastCity: string | null;
@@ -283,6 +284,10 @@ function UserDetailPanel({
               <p className="text-slate-800">{user.totalLogins}</p>
             </div>
             <div>
+              <p className="text-xs font-medium text-slate-500 mb-0.5">Completed Sessions</p>
+              <p className="text-slate-800">{user.completedSessions}</p>
+            </div>
+            <div className="col-span-2 sm:col-span-4">
               <p className="text-xs font-medium text-slate-500 mb-0.5">Last Login</p>
               <p className="text-slate-800">{formatDate(user.lastLogin)}</p>
             </div>
@@ -630,6 +635,9 @@ export default function AdminUsers() {
                                         Logins
                                       </th>
                                       <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                        Sessions
+                                      </th>
+                                      <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
                                         Last Login
                                       </th>
                                       <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
@@ -656,6 +664,9 @@ export default function AdminUsers() {
                                         </td>
                                         <td className="py-3 px-4 text-sm text-slate-600 text-center">
                                           {user.totalLogins}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm text-slate-600 text-center">
+                                          {user.completedSessions}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
                                           {formatDate(user.lastLogin)}

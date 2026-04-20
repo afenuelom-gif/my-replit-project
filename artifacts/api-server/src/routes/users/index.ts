@@ -84,6 +84,11 @@ router.get("/users/admin/users", requireAuth, requireAdmin, async (_req, res): P
         ORDER BY created_at DESC
         LIMIT 1
       )`,
+      completedSessions: sql<number>`(
+        SELECT COUNT(*)::int FROM interview_sessions
+        WHERE user_id = ${usersTable.id}
+        AND status = 'completed'
+      )`,
     })
     .from(usersTable)
     .leftJoin(loginEventsTable, eq(loginEventsTable.userId, usersTable.id))
