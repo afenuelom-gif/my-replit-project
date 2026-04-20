@@ -307,7 +307,7 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
 
           {/* Scrubber */}
           {done ? (
-            <p className="text-xs text-slate-400">The voice walkthrough has finished.</p>
+            <p className="text-xs text-slate-400">Voice walkthrough complete — press Play again to replay.</p>
           ) : (
             <div className="flex items-center gap-2">
               <SpeakingWaveform active={isActivelyPlaying && dragTime === null} />
@@ -341,18 +341,17 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
         </div>
 
         {/* Controls */}
-        {!done && (
-          <div className="flex items-center gap-0.5 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
             <Button variant="ghost" size="icon"
               onClick={handleBack}
-              disabled={stopped || currentIndex <= 0}
+              disabled={stopped || done || currentIndex <= 0}
               className="cursor-pointer h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
               title="Previous section"
             >
               <SkipBack className="w-4 h-4" />
             </Button>
 
-            {stopped ? (
+            {(stopped || done) ? (
               <Button variant="ghost" size="sm" onClick={handleRestart}
                 className="cursor-pointer text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5 px-1.5 sm:px-2">
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -374,7 +373,7 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
 
             <Button variant="ghost" size="icon"
               onClick={handleForward}
-              disabled={stopped || currentIndex >= script.length - 1}
+              disabled={stopped || done || currentIndex >= script.length - 1}
               className="cursor-pointer h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
               title="Next section"
             >
@@ -383,14 +382,13 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
 
             <Button variant="ghost" size="icon"
               onClick={handleStop}
-              disabled={stopped}
+              disabled={stopped || done}
               className="cursor-pointer h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30"
               title="Stop narration"
             >
               <Square className="w-3.5 h-3.5 fill-current" />
             </Button>
           </div>
-        )}
       </div>
     </div>
   );
