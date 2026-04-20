@@ -306,7 +306,7 @@ export default function Interview() {
 
   const CLOSING_LINE = "Thank you for interviewing with PrepInterv AI. Please review your performance report!";
 
-  const handleEndWithThankYou = () => {
+  const handleEndWithThankYou = async () => {
     // Mark as ending FIRST so any in-flight TTS chains bail out
     isEndingManuallyRef.current = true;
     setIsEndingManually(true);
@@ -315,11 +315,20 @@ export default function Interview() {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
-    // Stop ALL cards immediately so nothing overlaps
+    // Stop ALL cards immediately so nothing overlaps the closing line
     for (const ref of cardRefsMap.current.values()) {
       ref.current?.stop();
     }
-    setLocation("/");
+    // Speak the closing line, then call handleComplete() directly so we don't
+    // rely on the isAnySpeaking effect (which has a race between closingTTSStartedRef
+    // being set and the effect firing after the isEndingManually state change).
+    const activeCard = activeInterviewerId
+      ? cardRefsMap.current.get(activeInterviewerId)?.current
+      : [...cardRefsMap.current.values()][0]?.current ?? null;
+    if (activeCard) {
+      try { await activeCard.speak(CLOSING_LINE); } catch { /* non-fatal */ }
+    }
+    handleComplete();
   };
 
   const handleCancel = async () => {
