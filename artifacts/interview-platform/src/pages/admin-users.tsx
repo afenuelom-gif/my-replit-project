@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   Search,
   X,
+  Download,
 } from "lucide-react";
 
 interface AdminUser {
@@ -441,6 +442,28 @@ export default function AdminUsers() {
     setFilters({ search: "", signedUpFrom: "", signedUpTo: "", lastLoginFrom: "", lastLoginTo: "" });
   }
 
+  function exportCSV() {
+    const headers = ["Name", "Email", "Signed Up", "Last Login", "Total Logins", "Location"];
+    const rows = filteredUsers.map((user) => [
+      fullName(user),
+      user.email ?? "",
+      formatDate(user.createdAt),
+      formatDate(user.lastLogin),
+      String(user.totalLogins),
+      locationStr(user.lastCountry, user.lastCity),
+    ]);
+    const sanitize = (v: string) => /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+    const escape = (v: string) => `"${sanitize(v).replace(/"/g, '""')}"`;
+    const csv = [headers, ...rows].map((row) => row.map(escape).join(",")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `users-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const { data: meData, isError: isMeError } = useQuery<{ userId: string }>({
     queryKey: ["users-me"],
     queryFn: async () => {
@@ -483,13 +506,25 @@ export default function AdminUsers() {
               <p className="text-slate-500 text-sm">All registered users and their login activity</p>
             </div>
             {!isUnauthorized && users && (
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
-                <Users className="h-4 w-4 text-slate-400" />
-                <span className="text-sm font-medium text-slate-700">
-                  {hasActiveFilters
-                    ? `${filteredUsers.length} of ${users.length} user${users.length !== 1 ? "s" : ""}`
-                    : `${users.length} user${users.length !== 1 ? "s" : ""}`}
-                </span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
+                  <Users className="h-4 w-4 text-slate-400" />
+                  <span className="text-sm font-medium text-slate-700">
+                    {hasActiveFilters
+                      ? `${filteredUsers.length} of ${users.length} user${users.length !== 1 ? "s" : ""}`
+                      : `${users.length} user${users.length !== 1 ? "s" : ""}`}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={filteredUsers.length === 0}
+                  className="gap-1.5 text-slate-600 border-slate-200 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={exportCSV}
+                >
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </Button>
               </div>
             )}
           </div>
