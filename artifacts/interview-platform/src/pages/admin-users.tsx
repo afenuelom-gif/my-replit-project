@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useClerk } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,6 +19,8 @@ import {
   Copy,
   Check,
   ChevronLeft,
+  Search,
+  X,
 } from "lucide-react";
 
 interface AdminUser {
@@ -348,10 +351,29 @@ function UserDetailPanel({
   );
 }
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState<T>(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 export default function AdminUsers() {
   const [, setLocation] = useLocation();
   const { openSignIn } = useClerk();
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+
+  const [filters, setFilters] = useState({
+    search: "",
+    signedUpFrom: "",
+    signedUpTo: "",
+    lastLoginFrom: "",
+    lastLoginTo: "",
+  });
+
+  const debouncedFilters = useDebounce(filters, 250);
 
   const { data: users, isLoading, isError, error } = useQuery<AdminUser[]>({
     queryKey: ["admin-users"],
@@ -376,6 +398,43 @@ export default function AdminUsers() {
     errorMsg === "NO_ADMINS_CONFIGURED";
 
   const showUserId = errorMsg === "NO_ADMINS_CONFIGURED" || errorMsg === "FORBIDDEN";
+
+  const filteredUsers = (users ?? []).filter((user) => {
+    if (debouncedFilters.search) {
+      const q = debouncedFilters.search.toLowerCase();
+      const name = [user.firstName, user.lastName].filter(Boolean).join(" ").toLowerCase();
+      const email = (user.email ?? "").toLowerCase();
+      if (!name.includes(q) && !email.includes(q)) return false;
+    }
+    if (debouncedFilters.signedUpFrom) {
+      if (new Date(user.createdAt) < new Date(debouncedFilters.signedUpFrom)) return false;
+    }
+    if (debouncedFilters.signedUpTo) {
+      const to = new Date(debouncedFilters.signedUpTo);
+      to.setDate(to.getDate() + 1);
+      if (new Date(user.createdAt) >= to) return false;
+    }
+    if (debouncedFilters.lastLoginFrom) {
+      if (!user.lastLogin || new Date(user.lastLogin) < new Date(debouncedFilters.lastLoginFrom)) return false;
+    }
+    if (debouncedFilters.lastLoginTo) {
+      const to = new Date(debouncedFilters.lastLoginTo);
+      to.setDate(to.getDate() + 1);
+      if (!user.lastLogin || new Date(user.lastLogin) >= to) return false;
+    }
+    return true;
+  });
+
+  const hasActiveFilters =
+    debouncedFilters.search ||
+    debouncedFilters.signedUpFrom ||
+    debouncedFilters.signedUpTo ||
+    debouncedFilters.lastLoginFrom ||
+    debouncedFilters.lastLoginTo;
+
+  function clearFilters() {
+    setFilters({ search: "", signedUpFrom: "", signedUpTo: "", lastLoginFrom: "", lastLoginTo: "" });
+  }
 
   const { data: meData, isError: isMeError } = useQuery<{ userId: string }>({
     queryKey: ["users-me"],
@@ -421,7 +480,11 @@ export default function AdminUsers() {
             {!isUnauthorized && users && (
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
                 <Users className="h-4 w-4 text-slate-400" />
-                <span className="text-sm font-medium text-slate-700">{users.length} user{users.length !== 1 ? "s" : ""}</span>
+                <span className="text-sm font-medium text-slate-700">
+                  {hasActiveFilters
+                    ? `${filteredUsers.length} of ${users.length} user${users.length !== 1 ? "s" : ""}`
+                    : `${users.length} user${users.length !== 1 ? "s" : ""}`}
+                </span>
               </div>
             )}
           </div>
@@ -467,66 +530,150 @@ export default function AdminUsers() {
                           </CardContent>
                         </Card>
                       ) : (
-                        <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
-                          <div className="overflow-x-auto">
-                            <table className="w-full">
-                              <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200">
-                                  <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                    Name
-                                  </th>
-                                  <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                    Email
-                                  </th>
-                                  <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                    Signed Up
-                                  </th>
-                                  <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                    Logins
-                                  </th>
-                                  <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                    Last Login
-                                  </th>
-                                  <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                    Last Location
-                                  </th>
-                                  <th className="py-2.5 px-4" />
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {users.map((user) => (
-                                  <tr
-                                    key={user.id}
-                                    className="border-b border-slate-100 last:border-0 hover:bg-blue-50/50 transition-colors cursor-pointer"
-                                    onClick={() => setSelectedUser(user)}
+                        <>
+                          <Card className="bg-white border-slate-200 shadow-sm">
+                            <CardContent className="p-4 space-y-3">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                <Input
+                                  value={filters.search}
+                                  onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+                                  placeholder="Search by name or email…"
+                                  className="pl-9 pr-9 bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 focus-visible:ring-blue-500"
+                                />
+                                {filters.search && (
+                                  <button
+                                    onClick={() => setFilters((f) => ({ ...f, search: "" }))}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                                   >
-                                    <td className="py-3 px-4 text-sm font-medium text-slate-800 whitespace-nowrap">
-                                      {fullName(user)}
-                                    </td>
-                                    <td className="py-3 px-4 text-sm text-slate-600 max-w-[200px] truncate">
-                                      {user.email ?? "—"}
-                                    </td>
-                                    <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
-                                      {formatDateShort(user.createdAt)}
-                                    </td>
-                                    <td className="py-3 px-4 text-sm text-slate-600 text-center">
-                                      {user.totalLogins}
-                                    </td>
-                                    <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
-                                      {formatDate(user.lastLogin)}
-                                    </td>
-                                    <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
-                                      {locationStr(user.lastCountry, user.lastCity)}
-                                    </td>
-                                    <td className="py-3 px-4">
-                                      <ArrowRight className="h-4 w-4 text-slate-300" />
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </Card>
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-medium text-slate-500">Signed up from</label>
+                                  <Input
+                                    type="date"
+                                    value={filters.signedUpFrom}
+                                    onChange={(e) => setFilters((f) => ({ ...f, signedUpFrom: e.target.value }))}
+                                    className="bg-slate-50 border-slate-200 text-slate-800 text-sm focus-visible:ring-blue-500"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-medium text-slate-500">Signed up to</label>
+                                  <Input
+                                    type="date"
+                                    value={filters.signedUpTo}
+                                    onChange={(e) => setFilters((f) => ({ ...f, signedUpTo: e.target.value }))}
+                                    className="bg-slate-50 border-slate-200 text-slate-800 text-sm focus-visible:ring-blue-500"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-medium text-slate-500">Last login from</label>
+                                  <Input
+                                    type="date"
+                                    value={filters.lastLoginFrom}
+                                    onChange={(e) => setFilters((f) => ({ ...f, lastLoginFrom: e.target.value }))}
+                                    className="bg-slate-50 border-slate-200 text-slate-800 text-sm focus-visible:ring-blue-500"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-medium text-slate-500">Last login to</label>
+                                  <Input
+                                    type="date"
+                                    value={filters.lastLoginTo}
+                                    onChange={(e) => setFilters((f) => ({ ...f, lastLoginTo: e.target.value }))}
+                                    className="bg-slate-50 border-slate-200 text-slate-800 text-sm focus-visible:ring-blue-500"
+                                  />
+                                </div>
+                              </div>
+                              {hasActiveFilters && (
+                                <div className="flex items-center justify-between pt-0.5">
+                                  <p className="text-xs text-slate-500">
+                                    Showing {filteredUsers.length} of {users.length} users
+                                  </p>
+                                  <button
+                                    onClick={clearFilters}
+                                    className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 transition-colors"
+                                  >
+                                    <X className="h-3 w-3" />
+                                    Clear filters
+                                  </button>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+
+                          {filteredUsers.length === 0 ? (
+                            <Card className="bg-white border-slate-200 shadow-sm">
+                              <CardContent className="py-12 text-center text-slate-500 text-sm">
+                                No users match the current filters.
+                              </CardContent>
+                            </Card>
+                          ) : (
+                            <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
+                              <div className="overflow-x-auto">
+                                <table className="w-full">
+                                  <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-200">
+                                      <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                        Name
+                                      </th>
+                                      <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                        Email
+                                      </th>
+                                      <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                        Signed Up
+                                      </th>
+                                      <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                        Logins
+                                      </th>
+                                      <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                        Last Login
+                                      </th>
+                                      <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                        Last Location
+                                      </th>
+                                      <th className="py-2.5 px-4" />
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {filteredUsers.map((user) => (
+                                      <tr
+                                        key={user.id}
+                                        className="border-b border-slate-100 last:border-0 hover:bg-blue-50/50 transition-colors cursor-pointer"
+                                        onClick={() => setSelectedUser(user)}
+                                      >
+                                        <td className="py-3 px-4 text-sm font-medium text-slate-800 whitespace-nowrap">
+                                          {fullName(user)}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm text-slate-600 max-w-[200px] truncate">
+                                          {user.email ?? "—"}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
+                                          {formatDateShort(user.createdAt)}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm text-slate-600 text-center">
+                                          {user.totalLogins}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
+                                          {formatDate(user.lastLogin)}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
+                                          {locationStr(user.lastCountry, user.lastCity)}
+                                        </td>
+                                        <td className="py-3 px-4">
+                                          <ArrowRight className="h-4 w-4 text-slate-300" />
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </Card>
+                          )}
+                        </>
                       )}
                     </>
                   )}
