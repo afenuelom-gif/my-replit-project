@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, sessionsTable, reportsTable, usersTable, loginEventsTable } from "@workspace/db";
-import { eq, desc, inArray, sql, max, count } from "drizzle-orm";
+import { eq, and, desc, inArray, sql, max, count } from "drizzle-orm";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { isAdminUser, getAdminIds } from "../../lib/adminAuth.js";
 
@@ -108,6 +108,24 @@ router.get("/users/admin/users/:userId/login-events", requireAuth, requireAdmin,
     .orderBy(desc(loginEventsTable.createdAt));
 
   res.json(events);
+});
+
+router.get("/users/admin/users/:userId/sessions", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  const { userId } = req.params;
+
+  const sessions = await db
+    .select({
+      id: sessionsTable.id,
+      jobRole: sessionsTable.jobRole,
+      durationMinutes: sessionsTable.durationMinutes,
+      status: sessionsTable.status,
+      createdAt: sessionsTable.createdAt,
+    })
+    .from(sessionsTable)
+    .where(and(eq(sessionsTable.userId, userId), eq(sessionsTable.status, "completed")))
+    .orderBy(desc(sessionsTable.createdAt));
+
+  res.json(sessions);
 });
 
 export default router;

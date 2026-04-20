@@ -49,6 +49,14 @@ interface LoginEvent {
   createdAt: string;
 }
 
+interface InterviewSession {
+  id: number;
+  jobRole: string;
+  durationMinutes: number;
+  status: string;
+  createdAt: string;
+}
+
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-US", {
@@ -231,6 +239,22 @@ function LoginEventRow({ event }: { event: LoginEvent }) {
   );
 }
 
+function SessionRow({ session }: { session: InterviewSession }) {
+  return (
+    <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+      <td className="py-3 px-4 text-sm text-slate-700 whitespace-nowrap">
+        {formatDate(session.createdAt)}
+      </td>
+      <td className="py-3 px-4 text-sm text-slate-700">
+        {session.jobRole}
+      </td>
+      <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
+        {session.durationMinutes} min
+      </td>
+    </tr>
+  );
+}
+
 function UserDetailPanel({
   user,
   onBack,
@@ -238,10 +262,22 @@ function UserDetailPanel({
   user: AdminUser;
   onBack: () => void;
 }) {
-  const { data: events, isLoading, isError } = useQuery<LoginEvent[]>({
+  const { data: events, isLoading: eventsLoading, isError: eventsError } = useQuery<LoginEvent[]>({
     queryKey: ["admin-user-login-events", user.id],
     queryFn: async () => {
       const res = await fetch(`/api/users/admin/users/${encodeURIComponent(user.id)}/login-events`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("FETCH_FAILED");
+      return res.json();
+    },
+    retry: false,
+  });
+
+  const { data: sessions, isLoading: sessionsLoading, isError: sessionsError } = useQuery<InterviewSession[]>({
+    queryKey: ["admin-user-sessions", user.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/admin/users/${encodeURIComponent(user.id)}/sessions`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error("FETCH_FAILED");
@@ -297,15 +333,70 @@ function UserDetailPanel({
       </Card>
 
       <div>
-        <h2 className="text-base font-semibold text-slate-800 mb-3">Login History</h2>
+        <h2 className="text-base font-semibold text-slate-800 mb-3">Interview Sessions</h2>
 
-        {isLoading && (
+        {sessionsLoading && (
           <div className="flex justify-center py-12">
             <Loader2 className="h-7 w-7 animate-spin text-blue-500" />
           </div>
         )}
 
-        {isError && (
+        {sessionsError && (
+          <Card className="bg-white border-red-200 shadow-sm">
+            <CardContent className="py-8 text-center text-red-600 text-sm">
+              Failed to load interview sessions. Please try again.
+            </CardContent>
+          </Card>
+        )}
+
+        {!sessionsLoading && !sessionsError && sessions && (
+          <>
+            {sessions.length === 0 ? (
+              <Card className="bg-white border-slate-200 shadow-sm">
+                <CardContent className="py-8 text-center text-slate-500 text-sm">
+                  No completed interview sessions for this user.
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200">
+                        <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                          Date
+                        </th>
+                        <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                          Job Role
+                        </th>
+                        <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                          Duration
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sessions.map((session) => (
+                        <SessionRow key={session.id} session={session} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
+          </>
+        )}
+      </div>
+
+      <div>
+        <h2 className="text-base font-semibold text-slate-800 mb-3">Login History</h2>
+
+        {eventsLoading && (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-7 w-7 animate-spin text-blue-500" />
+          </div>
+        )}
+
+        {eventsError && (
           <Card className="bg-white border-red-200 shadow-sm">
             <CardContent className="py-8 text-center text-red-600 text-sm">
               Failed to load login history. Please try again.
@@ -313,7 +404,7 @@ function UserDetailPanel({
           </Card>
         )}
 
-        {!isLoading && !isError && events && (
+        {!eventsLoading && !eventsError && events && (
           <>
             {events.length === 0 ? (
               <Card className="bg-white border-slate-200 shadow-sm">
