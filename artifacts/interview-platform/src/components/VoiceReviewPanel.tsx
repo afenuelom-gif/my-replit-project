@@ -137,9 +137,19 @@ interface VoiceReviewPanelProps {
   onReviewComplete?: () => void;
 }
 
+// iOS requires a user gesture before AudioContext can play audio.
+// Detect iPad/iPhone/iPod and iPad-as-Mac (iOS 13+ reports MacIntel).
+function detectsIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
 export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFeedback = false, onReviewComplete }: VoiceReviewPanelProps) {
   const {
-    speak, stop, pause, resume, seekTime,
+    speak, stop, pause, resume, seekTime, unlockAudio,
     isSpeaking, isPaused, audioCurrentTime, audioDuration,
   } = useElevenLabsTTS(sessionId);
 
@@ -147,6 +157,8 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
   const [stopped, setStopped]           = useState(false);
   const [done, setDone]                 = useState(false);
   const [paused, setPaused]             = useState(false);
+  // waitingForGesture: true on iOS until the user taps Play for the first time.
+  const [waitingForGesture, setWaitingForGesture] = useState(detectsIOS);
   // dragTime: non-null while user is dragging the scrubber (visual-only, no seek yet)
   const [dragTime, setDragTime]         = useState<number | null>(null);
 
@@ -192,6 +204,9 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
   }, [speak, interviewer.id, waitUntilResumed]);
 
   useEffect(() => {
+    // On iOS, skip auto-start — user must tap Play to provide the gesture
+    // that unlocks the AudioContext. On all other platforms, auto-start.
+    if (detectsIOS()) return;
     const timer = setTimeout(() => { runScript(); }, 800);
     return () => { clearTimeout(timer); stoppedRef.current = true; stop(); };
   }, []);
@@ -224,13 +239,22 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
     setCurrentIndex(-1);
   }, [stop]);
 
-  const handleRestart = useCallback(() => {
+  // handleStart: called by the Play button when the user hasn't started yet (iOS).
+  // Must be called directly from a click handler so iOS treats it as a user gesture.
+  const handleStart = useCallback(async () => {
+    setWaitingForGesture(false);
+    await unlockAudio();
+    runScript();
+  }, [unlockAudio, runScript]);
+
+  const handleRestart = useCallback(async () => {
     setStopped(false);
     setPaused(false);
     setDone(false);
     setCurrentIndex(-1);
+    await unlockAudio(); // Re-unlock in case AudioContext was suspended since last play
     runScript();
-  }, [runScript]);
+  }, [runScript, unlockAudio]);
 
   // Jump to a different section
   const seekToSection = useCallback((targetIndex: number) => {
@@ -296,6 +320,8 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
               </span>
             ) : stopped ? (
               <span className="text-xs text-slate-400 font-medium shrink-0">Stopped</span>
+            ) : waitingForGesture ? (
+              <span className="text-xs text-blue-500 font-medium shrink-0">Tap Play to hear your review</span>
             ) : paused ? (
               <ScrollingText className="text-xs text-amber-600 font-medium">Paused — {currentItem?.label}</ScrollingText>
             ) : (
@@ -344,14 +370,20 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
         <div className="flex items-center gap-0.5 shrink-0">
             <Button variant="ghost" size="icon"
               onClick={handleBack}
-              disabled={stopped || done || currentIndex <= 0}
+              disabled={stopped || done || waitingForGesture || currentIndex <= 0}
               className="cursor-pointer h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
               title="Previous section"
             >
               <SkipBack className="w-4 h-4" />
             </Button>
 
-            {(stopped || done) ? (
+            {waitingForGesture ? (
+              <Button variant="ghost" size="sm" onClick={handleStart}
+                className="cursor-pointer text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5 px-1.5 sm:px-2">
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span className="text-xs hidden sm:inline">Play</span>
+              </Button>
+            ) : (stopped || done) ? (
               <Button variant="ghost" size="sm" onClick={handleRestart}
                 className="cursor-pointer text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5 px-1.5 sm:px-2">
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -373,7 +405,7 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
 
             <Button variant="ghost" size="icon"
               onClick={handleForward}
-              disabled={stopped || done || currentIndex >= script.length - 1}
+              disabled={stopped || done || waitingForGesture || currentIndex >= script.length - 1}
               className="cursor-pointer h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
               title="Next section"
             >
@@ -382,7 +414,7 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
 
             <Button variant="ghost" size="icon"
               onClick={handleStop}
-              disabled={stopped || done}
+              disabled={stopped || done || waitingForGesture}
               className="cursor-pointer h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30"
               title="Stop narration"
             >

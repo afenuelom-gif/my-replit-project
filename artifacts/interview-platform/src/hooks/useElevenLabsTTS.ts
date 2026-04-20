@@ -200,7 +200,12 @@ export function useElevenLabsTTS(sessionId: number) {
         window.speechSynthesis?.cancel();
         isBrowserTTSRef.current = false;
       }
-      // AudioContext is intentionally kept alive across renders for reuse.
+      // Close the AudioContext so iOS does not accumulate suspended contexts
+      // across interview sessions (iOS limits active AudioContexts to ~4).
+      if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+      }
     };
   }, []);
 
