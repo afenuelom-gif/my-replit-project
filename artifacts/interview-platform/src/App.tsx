@@ -15,6 +15,7 @@ import Contact from "@/pages/contact";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import AdminFeedback from "@/pages/admin-feedback";
+import AdminUsers from "@/pages/admin-users";
 
 const queryClient = new QueryClient();
 
@@ -221,6 +222,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/privacy" component={Privacy} />
             <Route path="/terms" component={Terms} />
             <Route path="/admin/feedback" component={AdminFeedback} />
+            <Route path="/admin/users" component={AdminUsers} />
             <Route component={NotFound} />
           </Switch>
           <Toaster />
@@ -248,6 +250,7 @@ function App() {
               <Route path="/privacy" component={Privacy} />
               <Route path="/terms" component={Terms} />
               <Route path="/admin/feedback" component={AdminFeedback} />
+              <Route path="/admin/users" component={AdminUsers} />
               <Route component={NotFound} />
             </Switch>
           </WouterRouter>

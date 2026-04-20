@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
-import { db, sessionsTable, reportsTable } from "@workspace/db";
-import { eq, desc, inArray } from "drizzle-orm";
+import { db, sessionsTable, reportsTable, usersTable, loginEventsTable } from "@workspace/db";
+import { eq, desc, inArray, sql, max, count } from "drizzle-orm";
 import { requireAuth } from "../../middlewares/requireAuth.js";
-import { isAdminUser } from "../../lib/adminAuth.js";
+import { isAdminUser, getAdminIds } from "../../lib/adminAuth.js";
 
 const router: IRouter = Router();
 
@@ -46,6 +46,63 @@ router.get("/users/me/sessions", requireAuth, async (req, res): Promise<void> =>
   }));
 
   res.json(result);
+});
+
+function requireAdmin(req: Parameters<typeof requireAuth>[0], res: Parameters<typeof requireAuth>[1], next: Parameters<typeof requireAuth>[2]): void {
+  const adminIds = getAdminIds();
+  if (adminIds.length === 0) {
+    res.status(403).json({ error: "Forbidden", code: "NO_ADMINS_CONFIGURED" });
+    return;
+  }
+  if (!isAdminUser(req.userId)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  next();
+}
+
+router.get("/users/admin/users", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
+  const users = await db
+    .select({
+      id: usersTable.id,
+      email: usersTable.email,
+      firstName: usersTable.firstName,
+      lastName: usersTable.lastName,
+      sessionCredits: usersTable.sessionCredits,
+      createdAt: usersTable.createdAt,
+      totalLogins: count(loginEventsTable.id),
+      lastLogin: max(loginEventsTable.createdAt),
+      lastCountry: sql<string | null>`(
+        SELECT country FROM login_events
+        WHERE user_id = ${usersTable.id}
+        ORDER BY created_at DESC
+        LIMIT 1
+      )`,
+      lastCity: sql<string | null>`(
+        SELECT city FROM login_events
+        WHERE user_id = ${usersTable.id}
+        ORDER BY created_at DESC
+        LIMIT 1
+      )`,
+    })
+    .from(usersTable)
+    .leftJoin(loginEventsTable, eq(loginEventsTable.userId, usersTable.id))
+    .groupBy(usersTable.id)
+    .orderBy(desc(usersTable.createdAt));
+
+  res.json(users);
+});
+
+router.get("/users/admin/users/:userId/login-events", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  const { userId } = req.params;
+
+  const events = await db
+    .select()
+    .from(loginEventsTable)
+    .where(eq(loginEventsTable.userId, userId))
+    .orderBy(desc(loginEventsTable.createdAt));
+
+  res.json(events);
 });
 
 export default router;
