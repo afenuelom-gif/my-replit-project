@@ -224,6 +224,14 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
     setCurrentIndex(-1);
   }, [stop]);
 
+  const handleRestart = useCallback(() => {
+    setStopped(false);
+    setPaused(false);
+    setDone(false);
+    setCurrentIndex(-1);
+    runScript();
+  }, [runScript]);
+
   // Jump to a different section
   const seekToSection = useCallback((targetIndex: number) => {
     const script = scriptRef.current;
@@ -298,10 +306,8 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
           </div>
 
           {/* Scrubber */}
-          {done || stopped ? (
-            <p className="text-xs text-slate-400">
-              {done ? "The voice walkthrough has finished." : "Narration stopped."}
-            </p>
+          {done ? (
+            <p className="text-xs text-slate-400">The voice walkthrough has finished.</p>
           ) : (
             <div className="flex items-center gap-2">
               <SpeakingWaveform active={isActivelyPlaying && dragTime === null} />
@@ -335,18 +341,24 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
         </div>
 
         {/* Controls */}
-        {!done && !stopped && (
+        {!done && (
           <div className="flex items-center gap-0.5 shrink-0">
             <Button variant="ghost" size="icon"
               onClick={handleBack}
-              disabled={currentIndex <= 0}
+              disabled={stopped || currentIndex <= 0}
               className="cursor-pointer h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
               title="Previous section"
             >
               <SkipBack className="w-4 h-4" />
             </Button>
 
-            {paused ? (
+            {stopped ? (
+              <Button variant="ghost" size="sm" onClick={handleRestart}
+                className="cursor-pointer text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5 px-1.5 sm:px-2">
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span className="text-xs hidden sm:inline">Play again</span>
+              </Button>
+            ) : paused ? (
               <Button variant="ghost" size="sm" onClick={handleResume}
                 className="cursor-pointer text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5 px-1.5 sm:px-2">
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -362,7 +374,7 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
 
             <Button variant="ghost" size="icon"
               onClick={handleForward}
-              disabled={currentIndex >= script.length - 1}
+              disabled={stopped || currentIndex >= script.length - 1}
               className="cursor-pointer h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30"
               title="Next section"
             >
@@ -371,7 +383,8 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
 
             <Button variant="ghost" size="icon"
               onClick={handleStop}
-              className="cursor-pointer h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
+              disabled={stopped}
+              className="cursor-pointer h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30"
               title="Stop narration"
             >
               <Square className="w-3.5 h-3.5 fill-current" />
