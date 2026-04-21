@@ -6,3 +6,4 @@ export * from "./posture";
 export * from "./reports";
 export * from "./session_feedback";
 export * from "./login_events";
+export * from "./resume_tailoring";

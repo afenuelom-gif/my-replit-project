@@ -61,6 +61,7 @@ export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
         </Link>
 
         <div className="hidden sm:flex items-center gap-1">
+          <Link href="/resume-tailor" className={navLinkClass("/resume-tailor")}>Resume Tailor</Link>
           <Link href="/pricing" className={navLinkClass("/pricing")}>Pricing</Link>
           <Link href="/contact" className={navLinkClass("/contact")}>Contact</Link>
           {isAdmin && (
@@ -105,6 +106,9 @@ export function AppHeader({ right, mobileMenuExtra }: AppHeaderProps) {
 
           {menuOpen && (
             <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5">
+              <Link href="/resume-tailor" className={dropdownLinkClass("/resume-tailor")}>
+                Resume Tailor
+              </Link>
               <Link href="/pricing" className={dropdownLinkClass("/pricing")}>
                 Pricing
               </Link>

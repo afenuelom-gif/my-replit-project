@@ -44,6 +44,16 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `artifacts/interview-platform/src/hooks/useElevenLabsTTS.ts` — TTS hook (ElevenLabs backend + browser speech fallback)
 - `artifacts/interview-platform/src/components/InterviewerCard.tsx` — Interviewer card with static portrait + speaking waveform animation
 
+## Features
+
+- **AI Interview Simulator** — Multi-interviewer sessions with GPT-4o questions, ElevenLabs TTS, STT transcription, performance reports
+- **AI Resume Tailoring** — `/resume-tailor` page; upload JD + resume (PDF/DOCX/TXT), choose scope (full/role-specific) and aggressiveness (conservative/balanced/strong); returns tailored resume, ATS keywords, change summary, improvement tips. Credits tracked via `resume_tailoring_credits` on users table (default 1 free try).
+
+## Credit System
+
+- `sessionCredits` — interview session credits (0 = no paid credits; trial = trialUsed flag)
+- `resumeTailoringCredits` — resume tailoring credits (default 1 for all new users = 1 free try); Starter plan = 1/month, Pro = 3/month (enforced when Stripe is wired up)
+
 ## API Endpoints
 
 - `GET /api/interview/interviewers` — List all interviewer personas
@@ -59,6 +69,10 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `GET /api/users/me` — Get current user info (requires auth)
 - `GET /api/users/me/sessions` — Get user's interview history (requires auth)
 - `GET /api/dev/status` — Dev mode status (BYPASS_AUTH flag)
+- `POST /api/resume/parse-file` — Extract text from uploaded file (PDF/DOCX/TXT)
+- `POST /api/resume/tailor` — AI resume tailoring (multipart: resumeFile/resumeText + jdFile/jdText + scope + aggressiveness)
+- `GET /api/resume/history` — User's tailoring history + credits remaining
+- `GET /api/resume/result/:id` — Full tailoring result by ID
 
 ## ElevenLabs TTS Integration
 

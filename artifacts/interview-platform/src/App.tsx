@@ -19,6 +19,7 @@ import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import AdminFeedback from "@/pages/admin-feedback";
 import AdminUsers from "@/pages/admin-users";
+import ResumeTailor from "@/pages/resume-tailor";
 
 const queryClient = new QueryClient();
 
@@ -200,6 +201,22 @@ function Auth0StartRoute() {
   );
 }
 
+function Auth0ResumeTailorRoute() {
+  const bypassActive = useDevMode();
+  const { isAuthenticated, isLoading } = useAuth0();
+  if (bypassActive) return <ResumeTailor />;
+  if (isLoading) return null;
+  const authMenu = <><Auth0UserMenu /><Auth0DesktopActions /></>;
+  const authMobileMenu = <Auth0MobileActions />;
+  return (
+    <ResumeTailor
+      showAuthPrompt={!isAuthenticated}
+      authMenu={authMenu}
+      authMobileMenu={authMobileMenu}
+    />
+  );
+}
+
 function Auth0SignInRedirect() {
   const { loginWithRedirect } = useAuth0();
   useEffect(() => {
@@ -265,6 +282,7 @@ function Auth0ProviderWithRoutes() {
               )}
             />
             <Route path="/start" component={Auth0StartRoute} />
+            <Route path="/resume-tailor" component={Auth0ResumeTailorRoute} />
             <Route path="/sign-in/*?" component={Auth0SignInRedirect} />
             <Route path="/sign-up/*?" component={Auth0SignInRedirect} />
             <Route path="/interview/:sessionId" component={Interview} />
@@ -401,6 +419,28 @@ function ClerkStartRoute() {
   );
 }
 
+function ClerkResumeTailorRoute() {
+  const bypassActive = useDevMode();
+  if (bypassActive) return <ResumeTailor />;
+  return (
+    <>
+      <Show when="signed-in">
+        <ResumeTailor
+          authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>}
+          authMobileMenu={<ClerkMobileActions />}
+        />
+      </Show>
+      <Show when="signed-out">
+        <ResumeTailor
+          showAuthPrompt
+          authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>}
+          authMobileMenu={<ClerkMobileActions />}
+        />
+      </Show>
+    </>
+  );
+}
+
 function ClerkGate({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn, getToken } = useAuth();
 
@@ -464,6 +504,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/pricing" component={() => <Pricing authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />} />
             <Route path="/contact" component={() => <Contact authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />} />
             <Route path="/start" component={ClerkStartRoute} />
+            <Route path="/resume-tailor" component={ClerkResumeTailorRoute} />
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
             <Route path="/interview/:sessionId" component={Interview} />
@@ -509,6 +550,7 @@ function App() {
               <Route path="/pricing" component={() => <Pricing />} />
               <Route path="/contact" component={() => <Contact />} />
               <Route path="/start" component={() => <Start />} />
+              <Route path="/resume-tailor" component={() => <ResumeTailor />} />
               <Route path="/interview/:sessionId" component={Interview} />
               <Route path="/report/:sessionId" component={Report} />
               <Route path="/history" component={() => <Redirect to="/" />} />
