@@ -65,6 +65,16 @@ function DevModeBanner() {
 // Auth0 Components
 // ---------------------------------------------------------------------------
 
+function Auth0LoadingGate({ children }: { children: React.ReactNode }) {
+  const { isLoading } = useAuth0();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background" />
+    );
+  }
+  return <>{children}</>;
+}
+
 function Auth0TokenSetup() {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
   const qc = useQueryClient();
@@ -220,6 +230,7 @@ function Auth0ProviderWithRoutes() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Auth0TokenSetup />
+          <Auth0LoadingGate>
           <DevModeBanner />
           <Switch>
             <Route
@@ -262,6 +273,7 @@ function Auth0ProviderWithRoutes() {
             <Route component={NotFound} />
           </Switch>
           <Toaster />
+          </Auth0LoadingGate>
         </TooltipProvider>
       </QueryClientProvider>
       </Auth0AuthActionsProvider>
