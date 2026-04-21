@@ -7,7 +7,8 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { seedInterviewersIfNeeded, patchFemaleInterviewerVoices } from "./lib/seedInterviewers";
 
-const USE_AUTH0 = Boolean(process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID);
+const IS_REPLIT_DEV = Boolean(process.env.REPL_ID) || process.env.NODE_ENV === "development";
+const USE_AUTH0 = !IS_REPLIT_DEV && Boolean(process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID);
 
 const app: Express = express();
 

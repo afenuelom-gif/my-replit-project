@@ -13,7 +13,8 @@ declare global {
 
 const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
 const DEV_USER_ID = "dev_bypass_user";
-const USE_AUTH0 = Boolean(process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID);
+const IS_REPLIT_DEV = Boolean(process.env.REPL_ID) || process.env.NODE_ENV === "development";
+const USE_AUTH0 = !IS_REPLIT_DEV && Boolean(process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID);
 
 const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000;
 type CachedProfile = { profile: { email?: string; firstName?: string; lastName?: string }; expiresAt: number };

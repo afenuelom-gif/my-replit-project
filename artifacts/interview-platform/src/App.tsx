@@ -30,7 +30,8 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const auth0ClientId: string = import.meta.env.VITE_AUTH0_CLIENT_ID ?? "";
 const auth0Domain: string = import.meta.env.VITE_AUTH0_DOMAIN ?? "";
-const USE_AUTH0 = Boolean(auth0ClientId && auth0Domain);
+const IS_REPLIT_DEV: boolean = import.meta.env.VITE_IS_REPLIT === true || import.meta.env.DEV === true;
+const USE_AUTH0 = !IS_REPLIT_DEV && Boolean(auth0ClientId && auth0Domain);
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
