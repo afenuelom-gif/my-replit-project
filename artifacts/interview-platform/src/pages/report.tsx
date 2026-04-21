@@ -287,18 +287,25 @@ export default function Report() {
     refetchOnMount: true,
   });
 
+  const localFeedbackKey = `feedback_given_${sessionId}`;
+  const localFeedbackGiven = !!localStorage.getItem(localFeedbackKey);
+
   const { data: feedbackStatus } = useQuery({
     queryKey: ["feedback-status", sessionId],
     queryFn: async () => {
       const headers = await getAuthHeaders();
       const res = await fetch(`/api/interview/sessions/${sessionId}/feedback/status`, { credentials: "include", headers });
-      if (!res.ok) return { exists: false };
+      if (!res.ok) return null;
       return res.json() as Promise<{ exists: boolean }>;
     },
     enabled: !!sessionId,
   });
 
-  const hasFeedback = feedbackStatus?.exists ?? false;
+  // Only show the feedback form when we POSITIVELY know feedback hasn't been given.
+  // If the API check fails (e.g. iOS Safari auth token issues), feedbackStatus is null
+  // and we conservatively treat it as "already given". The localStorage flag is a
+  // cross-reload backup so iOS never prompts again after a successful submission.
+  const hasFeedback = localFeedbackGiven || feedbackStatus?.exists !== false;
 
   const firstInterviewer = sessionData?.interviewers?.[0] ?? null;
 

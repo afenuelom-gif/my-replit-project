@@ -41,6 +41,7 @@ export default function FeedbackModal({ sessionId, jobRole, onClose }: FeedbackM
         }),
       });
       if (!res.ok) throw new Error("Failed to submit feedback");
+      try { localStorage.setItem(`feedback_given_${sessionId}`, "1"); } catch { /* storage unavailable */ }
       setSubmitted(true);
       setTimeout(onClose, 2200);
     } catch {
