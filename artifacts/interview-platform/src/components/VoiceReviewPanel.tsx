@@ -161,6 +161,9 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
   const [waitingForGesture, setWaitingForGesture] = useState(detectsIOS);
   // dragTime: non-null while user is dragging the scrubber (visual-only, no seek yet)
   const [dragTime, setDragTime]         = useState<number | null>(null);
+  // Mirror of dragTime in a ref so document-level handlers can read it without
+  // stale closures — needed because onPointerUp doesn't fire on Android Chrome.
+  const dragTimeRef = useRef<number | null>(null);
 
   const scriptRef        = useRef<NarrationItem[]>([]);
   const stoppedRef       = useRef(false);
@@ -172,6 +175,26 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
   useEffect(() => { scriptRef.current = buildScript(report, hasFeedback); }, [report, hasFeedback]);
 
   useEffect(() => { if (done) onReviewComplete?.(); }, [done]);
+
+  // Commit a scrubber drag — called from both onPointerUp (fast path for PC/iOS)
+  // and document-level pointerup/touchend (fallback for Android Chrome where
+  // onPointerUp on the range input doesn't always fire after a touch drag).
+  const commitSeek = useCallback(() => {
+    const v = dragTimeRef.current;
+    if (v === null) return;
+    dragTimeRef.current = null;
+    setDragTime(null);
+    seekTime(v);
+  }, [seekTime]);
+
+  useEffect(() => {
+    document.addEventListener("pointerup", commitSeek);
+    document.addEventListener("touchend", commitSeek);
+    return () => {
+      document.removeEventListener("pointerup", commitSeek);
+      document.removeEventListener("touchend", commitSeek);
+    };
+  }, [commitSeek]);
 
   const waitUntilResumed = useCallback((): Promise<void> => {
     if (!pausedRef.current) return Promise.resolve();
@@ -353,12 +376,15 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
                   max={maxTime}
                   step={0.05}
                   value={displayTime}
-                  onChange={(e) => setDragTime(Number(e.target.value))}
-                  onPointerDown={(e) => setDragTime(Number((e.target as HTMLInputElement).value))}
-                  onPointerUp={(e) => {
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    dragTimeRef.current = v;
+                    setDragTime(v);
+                  }}
+                  onPointerDown={(e) => {
                     const v = Number((e.target as HTMLInputElement).value);
-                    setDragTime(null);
-                    seekTime(v);
+                    dragTimeRef.current = v;
+                    setDragTime(v);
                   }}
                   className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer accent-blue-500"
                 />
