@@ -200,7 +200,6 @@ export default function AdminFeedback() {
       return res.json();
     },
     retry: false,
-    refetchInterval: 60_000,
   });
 
   const { data: allRows } = useQuery<FeedbackRow[]>({
@@ -219,7 +218,6 @@ export default function AdminFeedback() {
     },
     enabled: !!(appliedFilters.relevance || appliedFilters.dateFrom || appliedFilters.dateTo),
     retry: false,
-    refetchInterval: 60_000,
   });
 
   const errorMsg = (error as Error | null)?.message ?? "";

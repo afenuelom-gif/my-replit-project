@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X, CheckCircle2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuthActions } from "@/contexts/auth-actions";
 
 interface FeedbackModalProps {
   sessionId: number;
@@ -17,6 +18,7 @@ const RELEVANCE_OPTIONS = [
 type Relevance = typeof RELEVANCE_OPTIONS[number]["value"];
 
 export default function FeedbackModal({ sessionId, jobRole, onClose }: FeedbackModalProps) {
+  const { getAuthHeaders } = useAuthActions();
   const [relevance, setRelevance]         = useState<Relevance | "">("");
   const [helpful, setHelpful]             = useState<boolean | null>(null);
   const [comments, setComments]           = useState("");
@@ -30,9 +32,10 @@ export default function FeedbackModal({ sessionId, jobRole, onClose }: FeedbackM
     setSubmitting(true);
     setError(null);
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch(`/api/interview/sessions/${sessionId}/feedback`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         credentials: "include",
         body: JSON.stringify({
           questionRelevance: relevance,
