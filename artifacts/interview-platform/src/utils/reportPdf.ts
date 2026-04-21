@@ -100,7 +100,7 @@ function qCard(fb: AnswerFeedbackItem, idx: number): string {
 </div>`;
 }
 
-function buildHtml(report: ReportData, sessionData?: SessionData | null): string {
+function buildHtml(report: ReportData, sessionData?: SessionData | null, logoDataUri?: string): string {
   const filler = analyzeFillerWords(report.answerFeedback.map((f) => f.answerText ?? null));
   const fl = filler.rate < 2 ? "low" : filler.rate < 5 ? "moderate" : "high";
   const fc = fl === "low" ? "#059669" : fl === "moderate" ? "#d97706" : "#dc2626";
@@ -126,11 +126,15 @@ html,body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#1e
 </style></head><body><div class="page">
 
 <div style="display:flex;align-items:center;gap:14px;border-bottom:2.5px solid #1d4ed8;padding-bottom:14px;margin-bottom:20px;">
-  <div style="flex-shrink:0;width:38px;height:38px;border-radius:7px;background:#1d4ed8;display:flex;align-items:center;justify-content:center;">
-    <span style="color:#fff;font-size:6px;font-weight:700;letter-spacing:0.04em;text-align:center;line-height:1.2;">Interview<br/>AI</span>
+  <div style="flex-shrink:0;display:flex;align-items:center;gap:10px;">
+    ${logoDataUri ? `<img src="${logoDataUri}" style="width:44px;height:44px;border-radius:10px;display:block;" />` : `<div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:7px;font-weight:800;">AI</span></div>`}
+    <div style="display:flex;flex-direction:column;gap:1px;">
+      <span style="font-size:19px;font-weight:800;letter-spacing:-0.5px;line-height:1;color:#1e293b;">interv<span style="color:#6366f1;">AI</span></span>
+      <span style="font-size:8.5px;color:#94a3b8;letter-spacing:0.04em;font-weight:500;">AI Interview Platform</span>
+    </div>
   </div>
-  <div style="flex:1;">
-    <h1 style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 2px;">Interview Performance Report</h1>
+  <div style="flex:1;padding-left:6px;border-left:1.5px solid #e2e8f0;margin-left:4px;">
+    <h1 style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 2px;">Interview Performance Report</h1>
     ${sessionData?.session?.jobRole ? `<p style="font-size:10.5px;font-weight:600;color:#1d4ed8;margin:0 0 1px;">Role: ${esc(sessionData.session.jobRole)}</p>` : ""}
     <p style="font-size:9px;color:#64748b;margin:0;">Generated on ${new Date(report.generatedAt).toLocaleString()}</p>
   </div>
@@ -197,6 +201,17 @@ ${postureNotes.length > 0 ? `
 </div>
 </div>
 
+
+<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    ${logoDataUri ? `<img src="${logoDataUri}" style="width:20px;height:20px;border-radius:4px;display:block;" />` : ""}
+    <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:-0.2px;">interv<span style="color:#6366f1;">AI</span></span>
+    <span style="font-size:9px;color:#cbd5e1;">·</span>
+    <span style="font-size:9px;color:#94a3b8;">prepinterv.com</span>
+  </div>
+  <span style="font-size:9px;color:#cbd5e1;">Confidential · For personal use only</span>
+</div>
+
 </div></body></html>`;
 }
 
@@ -205,7 +220,20 @@ export async function downloadReportAsPdf(
   sessionData?: SessionData | null,
   filename = "interview-report.pdf"
 ): Promise<void> {
-  const html = buildHtml(report, sessionData);
+  let logoDataUri: string | undefined;
+  try {
+    const resp = await fetch(`${import.meta.env.BASE_URL}logo.png`);
+    if (resp.ok) {
+      const blob = await resp.blob();
+      logoDataUri = await new Promise<string>((res) => {
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    }
+  } catch {
+  }
+  const html = buildHtml(report, sessionData, logoDataUri);
 
   const iframe = document.createElement("iframe");
   iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:1180px;height:2000px;visibility:hidden;border:none;";

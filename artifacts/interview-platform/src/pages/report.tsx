@@ -671,9 +671,13 @@ export default function Report() {
           {/* Print-only header */}
           <div className="hidden print:block print-header">
             <div className="print-header-logo">
-              <span className="print-header-brand">InterviewAI</span>
+              <img src={`${import.meta.env.BASE_URL}logo.png`} alt="intervAI logo" />
+              <div className="print-header-logo-text">
+                <span className="print-header-brand">interv<span>AI</span></span>
+                <span className="print-header-tagline">AI Interview Platform</span>
+              </div>
             </div>
-            <div className="print-header-body">
+            <div className="print-header-body" style={{ paddingLeft: "0.5rem", borderLeft: "1.5px solid #e2e8f0", marginLeft: "0.25rem" }}>
               <h1 className="print-title">Interview Performance Report</h1>
               {sessionData?.session?.jobRole && (
                 <p className="print-role">Role: {sessionData.session.jobRole}</p>

@@ -303,19 +303,41 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 2.2rem;
-    height: 2.2rem;
-    border-radius: 6px;
-    background: #1d4ed8;
+    gap: 0.5rem;
+  }
+
+  .print-header-logo img {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 8px;
+    display: block;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-header-logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
   }
 
   .print-header-brand {
-    color: #ffffff;
-    font-size: 8pt;
-    font-weight: 700;
+    font-size: 13pt;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    color: #1e293b;
+    line-height: 1;
+  }
+
+  .print-header-brand span {
+    color: #6366f1;
+  }
+
+  .print-header-tagline {
+    font-size: 7pt;
+    color: #94a3b8;
     letter-spacing: 0.04em;
-    writing-mode: initial;
+    font-weight: 500;
   }
 
   .print-header-body {
