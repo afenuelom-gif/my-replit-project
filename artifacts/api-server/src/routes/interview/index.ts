@@ -139,11 +139,23 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
     "/avatars/interviewer-1.png",
     "/avatars/interviewer-3.png",
     "/avatars/interviewer-5.png",
+    "/avatars/interviewer-7.png",
+    "/avatars/interviewer-9.png",
+    "/avatars/interviewer-11.png",
+    "/avatars/interviewer-13.png",
+    "/avatars/interviewer-15.png",
+    "/avatars/interviewer-17.png",
   ];
   const MALE_AVATAR_POOL = [
     "/avatars/interviewer-2.png",
     "/avatars/interviewer-4.png",
     "/avatars/interviewer-6.png",
+    "/avatars/interviewer-8.png",
+    "/avatars/interviewer-10.png",
+    "/avatars/interviewer-12.png",
+    "/avatars/interviewer-14.png",
+    "/avatars/interviewer-16.png",
+    "/avatars/interviewer-18.png",
   ];
   const FEMALE_VOICE_IDS = FEMALE_VOICES;
 

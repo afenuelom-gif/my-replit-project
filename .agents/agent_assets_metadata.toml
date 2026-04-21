@@ -42,6 +42,78 @@ uri = "file://artifacts/interview-platform/public/avatars/interviewer-6.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "lrLV7anNvBdn63e_WfJU9"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-7.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "-mjLpU3rEeJy2v-QbUAby"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-9.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "PKnjJxPmSAeIgrJkVugp3"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-11.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "2TBqMK1zvZFAAnq6hduZT"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-13.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "sjkOymgvorKDS9G4LzxKE"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-15.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "FbypqAWKjBg9UkbaqZJfG"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-17.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "LoPXaohABlNkSnwNrvFXy"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-8.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "yAfjGCCI_UcLWm8hKSW_l"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-10.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "paKrWkaCQbraAeve8HKJP"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-12.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "OMNpdT3A0wef8ZyEQ2fRA"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-14.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "pTdMF-Uw9nFFx7rRricf4"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-16.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "6OH6zKlxjqTZNRg5Tcpbf"
+uri = "file://artifacts/interview-platform/public/avatars/interviewer-18.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "9oZypBaPszA4uHr06dTKu"
 uri = "file://artifacts/interview-platform/public/logo.png"
