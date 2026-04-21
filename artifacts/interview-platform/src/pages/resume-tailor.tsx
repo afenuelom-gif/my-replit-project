@@ -473,11 +473,9 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
             <p className="text-slate-500 text-sm max-w-md mx-auto">
               Tailor your resume to any job description in seconds. ATS-optimized, human tone — never robotic.
             </p>
-            {creditsRemaining !== null && step < 3 && (
-              <p className={`text-xs font-medium ${creditsRemaining === 0 ? "text-red-500" : "text-slate-500"}`}>
-                {creditsRemaining === 0
-                  ? "No credits remaining — upgrade to continue"
-                  : `${creditsRemaining} tailoring credit${creditsRemaining !== 1 ? "s" : ""} remaining`}
+            {creditsRemaining !== null && creditsRemaining > 0 && step < 3 && (
+              <p className="text-xs font-medium text-slate-500">
+                {`${creditsRemaining} tailoring credit${creditsRemaining !== 1 ? "s" : ""} remaining`}
               </p>
             )}
           </div>
@@ -629,7 +627,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                       </Button>
                       <Button
                         onClick={handleSubmit}
-                        disabled={loading || (creditsRemaining !== null && creditsRemaining <= 0)}
+                        disabled={loading}
                         className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 border-0 gap-2"
                       >
                         {loading ? (
@@ -657,9 +655,11 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                       <h2 className="text-xl font-bold text-slate-900">
                         Tailored for: <span className="text-blue-700">{result.jobTitle}</span>
                       </h2>
-                      <p className="text-sm text-slate-500 mt-0.5">
-                        {result.creditsRemaining} credit{result.creditsRemaining !== 1 ? "s" : ""} remaining
-                      </p>
+                      {result.creditsRemaining > 0 && (
+                        <p className="text-sm text-slate-500 mt-0.5">
+                          {result.creditsRemaining} credit{result.creditsRemaining !== 1 ? "s" : ""} remaining
+                        </p>
+                      )}
                     </div>
                     <Button
                       variant="outline"
