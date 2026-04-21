@@ -671,9 +671,9 @@ export default function Report() {
           {/* Print-only header */}
           <div className="hidden print:block print-header">
             <div className="print-header-logo">
-              <img src={`${import.meta.env.BASE_URL}logo.png`} alt="intervAI logo" />
+              <img src={`${import.meta.env.BASE_URL}logo.png`} alt="PrepInterv AI logo" />
               <div className="print-header-logo-text">
-                <span className="print-header-brand">interv<span>AI</span></span>
+                <span className="print-header-brand">PrepInterv <span>AI</span></span>
                 <span className="print-header-tagline">AI Interview Platform</span>
               </div>
             </div>

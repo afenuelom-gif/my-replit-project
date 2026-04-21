@@ -129,7 +129,7 @@ html,body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#1e
   <div style="flex-shrink:0;display:flex;align-items:center;gap:10px;">
     ${logoDataUri ? `<img src="${logoDataUri}" style="width:44px;height:44px;border-radius:10px;display:block;" />` : `<div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:7px;font-weight:800;">AI</span></div>`}
     <div style="display:flex;flex-direction:column;gap:1px;">
-      <span style="font-size:19px;font-weight:800;letter-spacing:-0.5px;line-height:1;color:#1e293b;">interv<span style="color:#6366f1;">AI</span></span>
+      <span style="font-size:19px;font-weight:800;letter-spacing:-0.5px;line-height:1;color:#1e293b;">PrepInterv <span style="color:#6366f1;">AI</span></span>
       <span style="font-size:8.5px;color:#94a3b8;letter-spacing:0.04em;font-weight:500;">AI Interview Platform</span>
     </div>
   </div>
@@ -205,7 +205,7 @@ ${postureNotes.length > 0 ? `
 <div style="margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
   <div style="display:flex;align-items:center;gap:8px;">
     ${logoDataUri ? `<img src="${logoDataUri}" style="width:20px;height:20px;border-radius:4px;display:block;" />` : ""}
-    <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:-0.2px;">interv<span style="color:#6366f1;">AI</span></span>
+    <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:-0.2px;">PrepInterv <span style="color:#6366f1;">AI</span></span>
     <span style="font-size:9px;color:#cbd5e1;">·</span>
     <span style="font-size:9px;color:#94a3b8;">prepinterv.com</span>
   </div>
