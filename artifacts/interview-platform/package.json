@@ -75,6 +75,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "@auth0/auth0-react": "^2.16.2",
     "@clerk/react": "^6.2.0",
     "@heygen/streaming-avatar": "^2.1.0",
     "html2canvas": "^1.4.1",

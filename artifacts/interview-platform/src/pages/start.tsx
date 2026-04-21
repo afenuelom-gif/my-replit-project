@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, Briefcase, FileText, Upload, X, LogIn, UserPlus } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
-import { useClerk } from "@clerk/react";
+import { useAuthActions } from "@/contexts/auth-actions";
 
 interface StartProps {
   authMenu?: React.ReactNode;
@@ -17,8 +17,8 @@ interface StartProps {
 }
 
 function AuthPromptCard() {
-  const { openSignIn, openSignUp } = useClerk();
-  const afterAuthUrl = window.location.href;
+  const { signIn, signUp } = useAuthActions();
+  const redirectUrl = window.location.href;
 
   return (
     <Card className="bg-white shadow-sm border-slate-200">
@@ -32,7 +32,7 @@ function AuthPromptCard() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button
             className="flex-1 sm:flex-none sm:min-w-[140px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 border-0 gap-2"
-            onClick={() => openSignIn({ afterSignInUrl: afterAuthUrl, afterSignUpUrl: afterAuthUrl })}
+            onClick={() => signIn({ redirectUrl })}
           >
             <LogIn className="w-4 h-4" />
             Sign In
@@ -40,7 +40,7 @@ function AuthPromptCard() {
           <Button
             variant="outline"
             className="flex-1 sm:flex-none sm:min-w-[140px] border-slate-300 text-slate-700 hover:bg-slate-50 gap-2"
-            onClick={() => openSignUp({ afterSignUpUrl: afterAuthUrl, afterSignInUrl: afterAuthUrl })}
+            onClick={() => signUp({ redirectUrl })}
           >
             <UserPlus className="w-4 h-4" />
             Create Account

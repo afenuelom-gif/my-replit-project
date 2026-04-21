@@ -1,12 +1,11 @@
 import React from "react";
-import { useClerk } from "@clerk/react";
+import { useAuthActions } from "@/contexts/auth-actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LogIn, UserPlus } from "lucide-react";
 
 export function AuthPrompt() {
-  const { openSignIn, openSignUp } = useClerk();
-  const redirectUrl = window.location.href;
+  const { signIn, signUp } = useAuthActions();
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center text-white p-6 relative overflow-hidden">
@@ -26,7 +25,7 @@ export function AuthPrompt() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
                 className="flex-1 sm:flex-none sm:min-w-[140px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 border-0 gap-2"
-                onClick={() => openSignIn({ redirectUrl })}
+                onClick={() => signIn({ redirectUrl: window.location.href })}
               >
                 <LogIn className="w-4 h-4" />
                 Sign In
@@ -34,7 +33,7 @@ export function AuthPrompt() {
               <Button
                 variant="outline"
                 className="flex-1 sm:flex-none sm:min-w-[140px] border-white/20 text-white hover:bg-white/10 gap-2"
-                onClick={() => openSignUp({ redirectUrl })}
+                onClick={() => signUp({ redirectUrl: window.location.href })}
               >
                 <UserPlus className="w-4 h-4" />
                 Create Account

@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import AppFooter from "@/components/AppFooter";
 import { useQuery } from "@tanstack/react-query";
-import { useClerk } from "@clerk/react";
+import { useAuthActions } from "@/contexts/auth-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +45,7 @@ function statusBadgeVariant(status: string): "default" | "secondary" | "destruct
 
 export default function History() {
   const [, setLocation] = useLocation();
-  const { openSignIn } = useClerk();
+  const { signIn } = useAuthActions();
 
   const { data: sessions, isLoading, isError, error } = useQuery<SessionWithReport[]>({
     queryKey: ["user-sessions"],
@@ -111,7 +111,7 @@ export default function History() {
                 </p>
                 <Button
                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => openSignIn({ redirectUrl: window.location.href })}
+                  onClick={() => signIn({ redirectUrl: window.location.href })}
                 >
                   Sign In
                 </Button>

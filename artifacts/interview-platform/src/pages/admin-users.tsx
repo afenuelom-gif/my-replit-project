@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useClerk } from "@clerk/react";
+import { useAuthActions } from "@/contexts/auth-actions";
 import { useQuery } from "@tanstack/react-query";
 import { AppHeader } from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
@@ -110,13 +110,12 @@ function AccessDenied({
   errorMsg,
   meData,
   isMeError,
-  openSignIn,
 }: {
   errorMsg: string;
   meData: { userId: string } | undefined;
   isMeError: boolean;
-  openSignIn: (opts?: object) => void;
 }) {
+  const { signIn } = useAuthActions();
   const [copied, setCopied] = useState(false);
   const isNoAdmins = errorMsg === "NO_ADMINS_CONFIGURED";
   const isForbidden = errorMsg === "FORBIDDEN";
@@ -208,7 +207,7 @@ function AccessDenied({
             </p>
             <Button
               className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => openSignIn({ redirectUrl: window.location.href })}
+              onClick={() => signIn({ redirectUrl: window.location.href })}
             >
               Sign In
             </Button>
@@ -459,7 +458,6 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function AdminUsers() {
   const [, setLocation] = useLocation();
-  const { openSignIn } = useClerk();
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
   const [filters, setFilters] = useState({
@@ -625,7 +623,6 @@ export default function AdminUsers() {
               errorMsg={errorMsg}
               meData={meData}
               isMeError={isMeError}
-              openSignIn={openSignIn}
             />
           )}
 

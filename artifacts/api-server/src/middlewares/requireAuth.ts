@@ -13,15 +13,67 @@ declare global {
 
 const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
 const DEV_USER_ID = "dev_bypass_user";
+const USE_AUTH0 = Boolean(process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID);
 
 const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000;
 type CachedProfile = { profile: { email?: string; firstName?: string; lastName?: string }; expiresAt: number };
 const profileCache = new Map<string, CachedProfile>();
 
+interface Auth0UserInfo {
+  sub: string;
+  email?: string;
+  given_name?: string;
+  family_name?: string;
+  name?: string;
+}
+
+const auth0TokenCache = new Map<string, { userInfo: Auth0UserInfo; expiresAt: number }>();
+
+async function getAuth0UserInfo(token: string): Promise<Auth0UserInfo | null> {
+  const cached = auth0TokenCache.get(token);
+  if (cached && cached.expiresAt > Date.now()) return cached.userInfo;
+
+  try {
+    const res = await fetch(`https://${process.env.AUTH0_DOMAIN}/userinfo`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const userInfo = (await res.json()) as Auth0UserInfo;
+    auth0TokenCache.set(token, { userInfo, expiresAt: Date.now() + PROFILE_CACHE_TTL_MS });
+    return userInfo;
+  } catch {
+    return null;
+  }
+}
+
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (BYPASS_AUTH) {
     req.userId = DEV_USER_ID;
     await ensureUserExists(DEV_USER_ID, { email: "dev@example.com", firstName: "Dev", lastName: "User" });
+    next();
+    return;
+  }
+
+  if (USE_AUTH0) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const token = authHeader.slice(7);
+    const userInfo = await getAuth0UserInfo(token);
+    if (!userInfo?.sub) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    req.userId = userInfo.sub;
+    const profile = {
+      email: userInfo.email,
+      firstName: userInfo.given_name ?? userInfo.name?.split(" ")[0],
+      lastName: userInfo.family_name ?? (userInfo.name?.split(" ").slice(1).join(" ") || undefined),
+    };
+    await ensureUserExists(userInfo.sub, profile);
     next();
     return;
   }
@@ -65,9 +117,20 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   next();
 }
 
-export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
   if (BYPASS_AUTH) {
     req.userId = DEV_USER_ID;
+    next();
+    return;
+  }
+
+  if (USE_AUTH0) {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.slice(7);
+      const userInfo = await getAuth0UserInfo(token).catch(() => null);
+      if (userInfo?.sub) req.userId = userInfo.sub;
+    }
     next();
     return;
   }

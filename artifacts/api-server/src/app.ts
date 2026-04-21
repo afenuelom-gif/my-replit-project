@@ -7,6 +7,8 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { seedInterviewersIfNeeded, patchFemaleInterviewerVoices } from "./lib/seedInterviewers";
 
+const USE_AUTH0 = Boolean(process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID);
+
 const app: Express = express();
 
 app.use(
@@ -28,13 +30,18 @@ app.use(
     },
   }),
 );
-app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+
+if (!USE_AUTH0) {
+  app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+}
 
 app.use(cors({ credentials: true, origin: true }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-app.use(clerkMiddleware());
+if (!USE_AUTH0) {
+  app.use(clerkMiddleware());
+}
 
 app.use("/api", router);
 

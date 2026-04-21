@@ -19,7 +19,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **AI/TTS/STT**: OpenAI (GPT-4o for questions/evaluation/reports/posture, gpt-4o-mini-transcribe for STT), ElevenLabs (TTS audio)
 - **Frontend**: React + Vite + TailwindCSS + shadcn/ui
-- **Auth**: Clerk (`@clerk/express` server-side, `@clerk/react` client-side)
+- **Auth**: Dual-provider — if `AUTH0_CLIENT_ID` + `AUTH0_DOMAIN` env vars are set, Auth0 is used (`@auth0/auth0-react` frontend, `/userinfo` token verification backend); otherwise Clerk (`@clerk/express` server-side, `@clerk/react` client-side). Auth actions (signIn/signUp) abstracted via `AuthActionsContext` so pages are provider-agnostic.
 - **Dev bypass**: Set `BYPASS_AUTH=true` in env to skip auth; attaches synthetic `dev_bypass_user`
 
 ## Packages
