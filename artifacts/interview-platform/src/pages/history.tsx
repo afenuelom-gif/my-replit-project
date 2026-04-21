@@ -45,12 +45,16 @@ function statusBadgeVariant(status: string): "default" | "secondary" | "destruct
 
 export default function History() {
   const [, setLocation] = useLocation();
-  const { signIn } = useAuthActions();
+  const { signIn, getAuthHeaders } = useAuthActions();
 
   const { data: sessions, isLoading, isError, error } = useQuery<SessionWithReport[]>({
     queryKey: ["user-sessions"],
     queryFn: async () => {
-      const res = await fetch("/api/users/me/sessions", { credentials: "include" });
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch("/api/users/me/sessions", {
+        credentials: "include",
+        headers: authHeaders,
+      });
       if (res.status === 401) throw new Error("UNAUTHORIZED");
       if (!res.ok) throw new Error("Failed to fetch sessions");
       return res.json();

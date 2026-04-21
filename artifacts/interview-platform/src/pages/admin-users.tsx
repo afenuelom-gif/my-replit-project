@@ -261,11 +261,15 @@ function UserDetailPanel({
   user: AdminUser;
   onBack: () => void;
 }) {
+  const { getAuthHeaders } = useAuthActions();
+
   const { data: events, isLoading: eventsLoading, isError: eventsError } = useQuery<LoginEvent[]>({
     queryKey: ["admin-user-login-events", user.id],
     queryFn: async () => {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch(`/api/users/admin/users/${encodeURIComponent(user.id)}/login-events`, {
         credentials: "include",
+        headers: authHeaders,
       });
       if (!res.ok) throw new Error("FETCH_FAILED");
       return res.json();
@@ -276,8 +280,10 @@ function UserDetailPanel({
   const { data: sessions, isLoading: sessionsLoading, isError: sessionsError } = useQuery<InterviewSession[]>({
     queryKey: ["admin-user-sessions", user.id],
     queryFn: async () => {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch(`/api/users/admin/users/${encodeURIComponent(user.id)}/sessions`, {
         credentials: "include",
+        headers: authHeaders,
       });
       if (!res.ok) throw new Error("FETCH_FAILED");
       return res.json();
@@ -458,6 +464,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function AdminUsers() {
   const [, setLocation] = useLocation();
+  const { getAuthHeaders } = useAuthActions();
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
   const [filters, setFilters] = useState({
@@ -473,7 +480,8 @@ export default function AdminUsers() {
   const { data: users, isLoading, isError, error } = useQuery<AdminUser[]>({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      const res = await fetch("/api/users/admin/users", { credentials: "include" });
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch("/api/users/admin/users", { credentials: "include", headers: authHeaders });
       if (res.status === 401) throw new Error("UNAUTHORIZED");
       if (res.status === 403) {
         const body = await res.json().catch(() => ({}));
@@ -556,7 +564,8 @@ export default function AdminUsers() {
   const { data: meData, isError: isMeError } = useQuery<{ userId: string }>({
     queryKey: ["users-me"],
     queryFn: async () => {
-      const res = await fetch("/api/users/me", { credentials: "include" });
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch("/api/users/me", { credentials: "include", headers: authHeaders });
       if (!res.ok) throw new Error("FETCH_FAILED");
       return res.json();
     },

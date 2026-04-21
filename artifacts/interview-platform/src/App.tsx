@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk, useUser } from "@clerk/react";
+import { ClerkProvider, SignIn, SignUp, Show, useClerk, useUser, useAuth } from "@clerk/react";
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -398,14 +398,13 @@ function ClerkStartRoute() {
 }
 
 function ClerkGate({ children }: { children: React.ReactNode }) {
-  const { isLoaded, isSignedIn } = useUser();
-  const { session } = useClerk();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
 
   // Set the token getter synchronously during render — before any child
   // component fires a query — so every API call already has a Bearer token.
   if (isLoaded) {
-    if (isSignedIn && session) {
-      initAuth(() => session.getToken().catch(() => null));
+    if (isSignedIn) {
+      initAuth(() => getToken().catch(() => null));
     } else {
       initAuth(null);
     }

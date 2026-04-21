@@ -1,15 +1,19 @@
-import { createContext, useContext, type ReactNode } from "react";
-import { useClerk } from "@clerk/react";
+import { createContext, useContext, useCallback, type ReactNode } from "react";
+import { useClerk, useAuth } from "@clerk/react";
 import { useAuth0 } from "@auth0/auth0-react";
 
 interface AuthActions {
   signIn: (opts?: { redirectUrl?: string }) => void;
   signUp: (opts?: { redirectUrl?: string }) => void;
+  getAuthHeaders: () => Promise<Record<string, string>>;
 }
+
+const noopHeaders = async (): Promise<Record<string, string>> => ({});
 
 const AuthActionsContext = createContext<AuthActions>({
   signIn: () => {},
   signUp: () => {},
+  getAuthHeaders: noopHeaders,
 });
 
 export function useAuthActions(): AuthActions {
@@ -18,6 +22,17 @@ export function useAuthActions(): AuthActions {
 
 export function ClerkAuthActionsProvider({ children }: { children: ReactNode }) {
   const { openSignIn, openSignUp } = useClerk();
+  const { getToken } = useAuth();
+
+  const getAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {
+    try {
+      const token = await getToken();
+      if (!token) return {};
+      return { Authorization: `Bearer ${token}` };
+    } catch {
+      return {};
+    }
+  }, [getToken]);
 
   const value: AuthActions = {
     signIn: (opts) =>
@@ -30,18 +45,30 @@ export function ClerkAuthActionsProvider({ children }: { children: ReactNode }) 
         afterSignUpUrl: opts?.redirectUrl ?? window.location.href,
         afterSignInUrl: opts?.redirectUrl ?? window.location.href,
       }),
+    getAuthHeaders,
   };
 
   return <AuthActionsContext.Provider value={value}>{children}</AuthActionsContext.Provider>;
 }
 
 export function Auth0AuthActionsProvider({ children }: { children: ReactNode }) {
-  const { loginWithRedirect } = useAuth0();
+  const { loginWithRedirect, getAccessTokenSilently } = useAuth0();
+
+  const getAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {
+    try {
+      const token = await getAccessTokenSilently();
+      if (!token) return {};
+      return { Authorization: `Bearer ${token}` };
+    } catch {
+      return {};
+    }
+  }, [getAccessTokenSilently]);
 
   const value: AuthActions = {
     signIn: () => loginWithRedirect(),
     signUp: () =>
       loginWithRedirect({ authorizationParams: { screen_hint: "signup" } }),
+    getAuthHeaders,
   };
 
   return <AuthActionsContext.Provider value={value}>{children}</AuthActionsContext.Provider>;

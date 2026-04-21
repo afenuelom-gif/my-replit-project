@@ -19,7 +19,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **AI/TTS/STT**: OpenAI (GPT-4o for questions/evaluation/reports/posture, gpt-4o-mini-transcribe for STT), ElevenLabs (TTS audio)
 - **Frontend**: React + Vite + TailwindCSS + shadcn/ui
-- **Auth**: Dual-provider — if `AUTH0_CLIENT_ID` + `AUTH0_DOMAIN` env vars are set, Auth0 is used (`@auth0/auth0-react` frontend, `/userinfo` token verification backend); otherwise Clerk (`@clerk/express` server-side, `@clerk/react` client-side). Auth actions (signIn/signUp) abstracted via `AuthActionsContext` so pages are provider-agnostic.
+- **Auth**: Dual-provider — if `AUTH0_CLIENT_ID` + `AUTH0_DOMAIN` env vars are set, Auth0 is used (`@auth0/auth0-react` frontend, `/userinfo` token verification backend); otherwise Clerk (`@clerk/express` server-side, `@clerk/react` client-side). Auth actions (signIn/signUp/getAuthHeaders) abstracted via `AuthActionsContext` so pages are provider-agnostic. Pages that make auth-required API calls use `getAuthHeaders()` from `useAuthActions()` to attach Bearer tokens explicitly — this is required in the Vite dev proxy setup where cookies alone may not be validated by the Clerk middleware.
 - **Dev bypass**: Set `BYPASS_AUTH=true` in env to skip auth; attaches synthetic `dev_bypass_user`
 
 ## Packages
@@ -134,5 +134,5 @@ When `ADMIN_USER_IDS` is not set, the `/admin/feedback` API returns `403 Forbidd
 - **Trial gate enforcement**: Free trial limit (1 session, 15 min) is shown on pricing page but not yet enforced in code. When ready, redirect users who have used their free session to `/pricing` before allowing a new session to start.
 - **Free trial abuse prevention**: Email-based multi-account abuse is hard to fully prevent. Recommended approach when enforcement matters: enable **phone number (SMS) verification** via Clerk — one config change, stops ~95% of casual abuse. Secondary layers: device fingerprinting, IP rate limiting. Avoid card-on-file for free tier unless conversion drop is acceptable.
 - **Pricing / payments**: Starter ($12/mo, 4 sessions) and Pro ($24/mo, unlimited) tiers defined on `/pricing` page but payment integration (Stripe) not yet implemented.
-- **Session history**: `/history` route exists but redirects non-authed users to home; full history UI pending auth enforcement.
+- **Session history**: `/history` route is fully implemented — shows user's past sessions with scores. Auth is enforced via Bearer token (`getAuthHeaders()` from `useAuthActions()`). Unauthenticated users see a "Sign In Required" prompt.
 - **Admin dashboard** (`/admin`): Private page visible only to designated admin accounts (role flag stored in DB). Will show: total users & sign-up trends, sessions per user, active users, session durations, completion rates. Extend after Stripe integration to include: tier breakdown (Free/Starter/Pro), MRR, free→paid conversion rate, monthly revenue vs. estimated API costs (OpenAI + ElevenLabs usage logged per session).

@@ -165,7 +165,7 @@ function exportToCSV(rows: FeedbackRow[]) {
 
 export default function AdminFeedback() {
   const [, setLocation] = useLocation();
-  const { signIn } = useAuthActions();
+  const { signIn, getAuthHeaders } = useAuthActions();
   const [relevanceFilter, setRelevanceFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -186,7 +186,8 @@ export default function AdminFeedback() {
     queryKey: ["admin-feedback", queryString],
     queryFn: async () => {
       const url = `/api/interview/admin/feedback${queryString ? `?${queryString}` : ""}`;
-      const res = await fetch(url, { credentials: "include" });
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch(url, { credentials: "include", headers: authHeaders });
       if (res.status === 401) throw new Error("UNAUTHORIZED");
       if (res.status === 403) {
         const body = await res.json().catch(() => ({}));
@@ -204,7 +205,8 @@ export default function AdminFeedback() {
   const { data: allRows } = useQuery<FeedbackRow[]>({
     queryKey: ["admin-feedback-total"],
     queryFn: async () => {
-      const res = await fetch("/api/interview/admin/feedback", { credentials: "include" });
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch("/api/interview/admin/feedback", { credentials: "include", headers: authHeaders });
       if (res.status === 401) throw new Error("UNAUTHORIZED");
       if (res.status === 403) {
         const body = await res.json().catch(() => ({}));
@@ -229,7 +231,8 @@ export default function AdminFeedback() {
   const { data: meData, isError: isMeError } = useQuery<{ userId: string }>({
     queryKey: ["users-me"],
     queryFn: async () => {
-      const res = await fetch("/api/users/me", { credentials: "include" });
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch("/api/users/me", { credentials: "include", headers: authHeaders });
       if (!res.ok) throw new Error("FETCH_FAILED");
       return res.json();
     },
