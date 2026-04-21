@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "3YM06nwfU0TzujFTHrnDm"
@@ -42,3 +41,15 @@ id = "pGFKhPJ38FZ_sQuMSdxjJ"
 uri = "file://artifacts/interview-platform/public/avatars/interviewer-6.png"
 type = "image"
 title = "generated_image"
+
+[[outputs]]
+id = "9oZypBaPszA4uHr06dTKu"
+uri = "file://artifacts/interview-platform/public/logo.png"
+type = "image"
+title = "PrepInterv AI — Full Logo"
+
+[[outputs]]
+id = "fM2jfaOOhA8aOHvvfrXyZ"
+uri = "file://artifacts/interview-platform/public/logo-icon.png"
+type = "image"
+title = "PrepInterv AI — Icon"
