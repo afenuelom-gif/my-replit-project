@@ -53,6 +53,20 @@ export default defineConfig({
       "X-Frame-Options": "ALLOWALL",
       "Content-Security-Policy": "",
     },
+    proxy: process.env.REPL_ID
+      ? {
+          "/api": {
+            target: "http://localhost:8080",
+            changeOrigin: true,
+            secure: false,
+          },
+          "/api/__clerk": {
+            target: "http://localhost:8080",
+            changeOrigin: true,
+            secure: false,
+          },
+        }
+      : undefined,
     fs: {
       strict: true,
       deny: ["**/.*"],

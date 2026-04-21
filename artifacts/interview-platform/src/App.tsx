@@ -397,30 +397,25 @@ function ClerkStartRoute() {
   );
 }
 
-function ClerkTokenSetup() {
-  const clerk = useClerk();
+function ClerkGate({ children }: { children: React.ReactNode }) {
+  const { isLoaded, isSignedIn } = useUser();
+  const { session } = useClerk();
 
-  useEffect(() => {
-    function syncToken() {
-      if (clerk.user) {
-        initAuth(async () => {
-          try {
-            return await clerk.session?.getToken() ?? null;
-          } catch {
-            return null;
-          }
-        });
-      } else {
-        initAuth(null);
-      }
+  // Set the token getter synchronously during render — before any child
+  // component fires a query — so every API call already has a Bearer token.
+  if (isLoaded) {
+    if (isSignedIn && session) {
+      initAuth(() => session.getToken().catch(() => null));
+    } else {
+      initAuth(null);
     }
+  }
 
-    syncToken();
-    const unsubscribe = clerk.addListener(() => syncToken());
-    return unsubscribe;
-  }, [clerk]);
+  if (!isLoaded) {
+    return <div className="min-h-screen bg-background" />;
+  }
 
-  return null;
+  return <>{children}</>;
 }
 
 function ClerkQueryClientCacheInvalidator() {
@@ -458,8 +453,8 @@ function ClerkProviderWithRoutes() {
       <ClerkAuthActionsProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <ClerkTokenSetup />
           <ClerkQueryClientCacheInvalidator />
+          <ClerkGate>
           <DevModeBanner />
           <Switch>
             <Route path="/" component={() => <Home authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />} />
@@ -478,6 +473,7 @@ function ClerkProviderWithRoutes() {
             <Route component={NotFound} />
           </Switch>
           <Toaster />
+          </ClerkGate>
         </TooltipProvider>
       </QueryClientProvider>
       </ClerkAuthActionsProvider>
