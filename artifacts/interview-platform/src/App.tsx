@@ -272,6 +272,7 @@ function Auth0ProviderWithRoutes() {
             <Route path="/history" component={History} />
             <Route path="/privacy" component={Privacy} />
             <Route path="/terms" component={Terms} />
+            <Route path="/admin" component={() => <Redirect to="/admin/feedback" />} />
             <Route path="/admin/feedback" component={AdminFeedback} />
             <Route path="/admin/users" component={AdminUsers} />
             <Route component={NotFound} />
@@ -470,6 +471,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/history" component={History} />
             <Route path="/privacy" component={Privacy} />
             <Route path="/terms" component={Terms} />
+            <Route path="/admin" component={() => <Redirect to="/admin/feedback" />} />
             <Route path="/admin/feedback" component={AdminFeedback} />
             <Route path="/admin/users" component={AdminUsers} />
             <Route component={NotFound} />
@@ -512,6 +514,7 @@ function App() {
               <Route path="/history" component={() => <Redirect to="/" />} />
               <Route path="/privacy" component={Privacy} />
               <Route path="/terms" component={Terms} />
+              <Route path="/admin" component={() => <Redirect to="/admin/feedback" />} />
               <Route path="/admin/feedback" component={AdminFeedback} />
               <Route path="/admin/users" component={AdminUsers} />
               <Route component={NotFound} />
