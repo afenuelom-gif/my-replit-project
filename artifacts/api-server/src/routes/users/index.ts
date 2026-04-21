@@ -2,12 +2,13 @@ import { Router, type IRouter } from "express";
 import { db, sessionsTable, reportsTable, usersTable, loginEventsTable } from "@workspace/db";
 import { eq, and, desc, inArray, sql, max, count } from "drizzle-orm";
 import { requireAuth } from "../../middlewares/requireAuth.js";
-import { isAdminUser, getAdminIds } from "../../lib/adminAuth.js";
+import { isAdminUserOrEmail, hasAnyAdminConfigured } from "../../lib/adminAuth.js";
 
 const router: IRouter = Router();
 
 router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
-  res.json({ userId: req.userId, isAdmin: isAdminUser(req.userId) });
+  const isAdmin = await isAdminUserOrEmail(req.userId);
+  res.json({ userId: req.userId, isAdmin });
 });
 
 router.get("/users/me/sessions", requireAuth, async (req, res): Promise<void> => {
@@ -48,13 +49,13 @@ router.get("/users/me/sessions", requireAuth, async (req, res): Promise<void> =>
   res.json(result);
 });
 
-function requireAdmin(req: Parameters<typeof requireAuth>[0], res: Parameters<typeof requireAuth>[1], next: Parameters<typeof requireAuth>[2]): void {
-  const adminIds = getAdminIds();
-  if (adminIds.length === 0) {
+async function requireAdmin(req: Parameters<typeof requireAuth>[0], res: Parameters<typeof requireAuth>[1], next: Parameters<typeof requireAuth>[2]): Promise<void> {
+  if (!hasAnyAdminConfigured()) {
     res.status(403).json({ error: "Forbidden", code: "NO_ADMINS_CONFIGURED" });
     return;
   }
-  if (!isAdminUser(req.userId)) {
+  const isAdmin = await isAdminUserOrEmail(req.userId);
+  if (!isAdmin) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }

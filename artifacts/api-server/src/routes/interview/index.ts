@@ -45,7 +45,7 @@ import {
   generateDynamicInterviewers,
 } from "../../lib/interviewAI.js";
 import { seedInterviewersIfNeeded, HEYGEN_FEMALE_AVATARS, HEYGEN_MALE_AVATARS, FEMALE_VOICES } from "../../lib/seedInterviewers.js";
-import { getAdminIds } from "../../lib/adminAuth.js";
+import { isAdminUserOrEmail, hasAnyAdminConfigured } from "../../lib/adminAuth.js";
 
 const router: IRouter = Router();
 
@@ -959,7 +959,7 @@ router.post("/interview/sessions/:id/feedback", optionalAuth, async (req: Reques
 const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
 const DEV_USER_ID = "dev_bypass_user";
 
-function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (BYPASS_AUTH) {
     req.userId = DEV_USER_ID;
     next();
@@ -971,14 +971,13 @@ function requireAdmin(req: Request, res: Response, next: NextFunction): void {
     return;
   }
 
-  const adminIds = getAdminIds();
-
-  if (adminIds.length === 0) {
-    res.status(403).json({ code: "NO_ADMINS_CONFIGURED", error: "Forbidden: no admin users configured. Set the ADMIN_USER_IDS environment variable." });
+  if (!hasAnyAdminConfigured()) {
+    res.status(403).json({ code: "NO_ADMINS_CONFIGURED", error: "Forbidden: no admin users configured. Set ADMIN_USER_IDS or ADMIN_EMAILS environment variable." });
     return;
   }
 
-  if (!adminIds.includes(req.userId)) {
+  const isAdmin = await isAdminUserOrEmail(req.userId);
+  if (!isAdmin) {
     res.status(403).json({ code: "NOT_ADMIN", error: "Forbidden: admin access required" });
     return;
   }
