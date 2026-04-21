@@ -271,7 +271,18 @@ export default function Report() {
   const { getAuthHeaders } = useAuthActions();
 
   const { data: report, isLoading, error: reportError } = useGetReport(sessionId, {
-    query: { enabled: !!sessionId, queryKey: getGetReportQueryKey(sessionId) }
+    query: {
+      enabled: !!sessionId,
+      queryKey: getGetReportQueryKey(sessionId),
+      // Retry on 401/403 — these happen during Auth0 token refresh windows.
+      // Keep retrying until auth recovers rather than giving up and showing an error.
+      retry: (failureCount, error) => {
+        const status = (error as Error & { status?: number })?.status;
+        if (status === 401 || status === 403) return failureCount < 15;
+        return false;
+      },
+      retryDelay: 2000,
+    }
   });
 
   const { data: sessionData } = useQuery({
@@ -334,8 +345,19 @@ export default function Report() {
     return <div className="min-h-screen bg-background flex items-center justify-center text-slate-600">Analyzing performance…</div>;
   }
 
-  if (reportError instanceof Error && 'status' in reportError && (reportError as Error & { status: number }).status === 401) {
-    return <AuthPrompt />;
+  if (reportError) {
+    const errStatus = (reportError as Error & { status?: number })?.status;
+    if (errStatus === 401) return <AuthPrompt />;
+    // 403 means auth token is refreshing — show a reconnecting state while
+    // the retry loop (above) waits for the token to recover.
+    if (errStatus === 403) {
+      return (
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3 text-slate-500">
+          <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm">Reconnecting to your session…</p>
+        </div>
+      );
+    }
   }
 
   if (!report) {
