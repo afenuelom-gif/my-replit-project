@@ -338,25 +338,31 @@ export default function VoiceReviewPanel({ sessionId, interviewer, report, hasFe
             <div className="flex items-center gap-2">
               <SpeakingWaveform active={isActivelyPlaying && dragTime === null} />
 
-              {/* Time scrubber — drags freely within the current clip */}
-              <input
-                type="range"
-                min={0}
-                max={maxTime}
-                step={0.05}
-                value={displayTime}
-                onChange={(e) => setDragTime(Number(e.target.value))}
-                onPointerDown={(e) => setDragTime(Number((e.target as HTMLInputElement).value))}
-                onPointerUp={(e) => {
-                  const v = Number((e.target as HTMLInputElement).value);
-                  setDragTime(null);
-                  seekTime(v);
-                }}
-                className="flex-1 h-1.5 appearance-none rounded-full cursor-pointer accent-blue-500"
-                style={{
-                  background: `linear-gradient(to right, #3b82f6 ${fillPct}%, #e2e8f0 ${fillPct}%)`,
-                }}
-              />
+              {/* Time scrubber — separate fill div + transparent input avoids
+                  Chrome/Android's native range-input repaint overriding our
+                  inline background gradient after user drag interaction. */}
+              <div className="relative flex-1 flex items-center h-5">
+                {/* Track + fill (plain divs, unaffected by browser range-input paint) */}
+                <div className="absolute inset-x-0 h-1.5 rounded-full bg-slate-200" style={{ top: "50%", transform: "translateY(-50%)" }}>
+                  <div className="h-full rounded-full bg-blue-500" style={{ width: `${fillPct}%` }} />
+                </div>
+                {/* Range input: transparent track, browser-rendered thumb, interaction only */}
+                <input
+                  type="range"
+                  min={0}
+                  max={maxTime}
+                  step={0.05}
+                  value={displayTime}
+                  onChange={(e) => setDragTime(Number(e.target.value))}
+                  onPointerDown={(e) => setDragTime(Number((e.target as HTMLInputElement).value))}
+                  onPointerUp={(e) => {
+                    const v = Number((e.target as HTMLInputElement).value);
+                    setDragTime(null);
+                    seekTime(v);
+                  }}
+                  className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer accent-blue-500"
+                />
+              </div>
 
               {/* Time counter */}
               <span className="text-xs text-slate-400 shrink-0 tabular-nums">

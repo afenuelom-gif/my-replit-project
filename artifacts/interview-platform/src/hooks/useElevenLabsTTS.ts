@@ -77,7 +77,11 @@ export function useElevenLabsTTS(sessionId: number) {
 
   const seekTime = useCallback((seconds: number) => {
     if (audioRef.current) {
-      audioRef.current.currentTime = Math.max(0, Math.min(seconds, audioRef.current.duration || 0));
+      const clamped = Math.max(0, Math.min(seconds, audioRef.current.duration || seconds));
+      audioRef.current.currentTime = clamped;
+      // Immediately update state so the fill bar doesn't snap back to the
+      // pre-seek position while waiting for the next timeupdate event.
+      setCurrentTime(clamped);
     }
   }, []);
 
