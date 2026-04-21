@@ -397,6 +397,32 @@ function ClerkStartRoute() {
   );
 }
 
+function ClerkTokenSetup() {
+  const clerk = useClerk();
+
+  useEffect(() => {
+    function syncToken() {
+      if (clerk.user) {
+        initAuth(async () => {
+          try {
+            return await clerk.session?.getToken() ?? null;
+          } catch {
+            return null;
+          }
+        });
+      } else {
+        initAuth(null);
+      }
+    }
+
+    syncToken();
+    const unsubscribe = clerk.addListener(() => syncToken());
+    return unsubscribe;
+  }, [clerk]);
+
+  return null;
+}
+
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
   const qc = useQueryClient();
@@ -432,6 +458,7 @@ function ClerkProviderWithRoutes() {
       <ClerkAuthActionsProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
+          <ClerkTokenSetup />
           <ClerkQueryClientCacheInvalidator />
           <DevModeBanner />
           <Switch>
