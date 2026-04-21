@@ -221,7 +221,10 @@ function Auth0ProviderWithRoutes() {
       clientId={auth0ClientId}
       authorizationParams={{
         redirect_uri: window.location.origin + (basePath || ""),
+        scope: "openid profile email offline_access",
       }}
+      useRefreshTokens={true}
+      cacheLocation="localstorage"
       onRedirectCallback={(appState) => {
         const returnTo = appState?.returnTo as string | undefined;
         setLocation(returnTo ? stripBase(returnTo) : "/");
