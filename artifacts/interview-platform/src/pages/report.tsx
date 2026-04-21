@@ -5,6 +5,7 @@ import AppFooter from "@/components/AppFooter";
 import { useGetReport, getGetReportQueryKey } from "@workspace/api-client-react";
 import { AuthPrompt } from "@/components/AuthPrompt";
 import { useQuery } from "@tanstack/react-query";
+import { useAuthActions } from "@/contexts/auth-actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import VoiceReviewPanel from "@/components/VoiceReviewPanel";
 import FeedbackModal from "@/components/FeedbackModal";
@@ -267,6 +268,7 @@ export default function Report() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { toast } = useToast();
+  const { getAuthHeaders } = useAuthActions();
 
   const { data: report, isLoading, error: reportError } = useGetReport(sessionId, {
     query: { enabled: !!sessionId, queryKey: getGetReportQueryKey(sessionId) }
@@ -275,7 +277,8 @@ export default function Report() {
   const { data: sessionData } = useQuery({
     queryKey: ["session", sessionId],
     queryFn: async () => {
-      const res = await fetch(`/api/interview/sessions/${sessionId}`, { credentials: "include" });
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/interview/sessions/${sessionId}`, { credentials: "include", headers });
       if (!res.ok) return null;
       return res.json() as Promise<{ session: { jobRole: string } | null; interviewers: Array<{ id: number; name: string; title: string; avatarUrl?: string | null; voiceId?: string }> }>;
     },
@@ -287,7 +290,8 @@ export default function Report() {
   const { data: feedbackStatus } = useQuery({
     queryKey: ["feedback-status", sessionId],
     queryFn: async () => {
-      const res = await fetch(`/api/interview/sessions/${sessionId}/feedback/status`, { credentials: "include" });
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/interview/sessions/${sessionId}/feedback/status`, { credentials: "include", headers });
       if (!res.ok) return { exists: false };
       return res.json() as Promise<{ exists: boolean }>;
     },
