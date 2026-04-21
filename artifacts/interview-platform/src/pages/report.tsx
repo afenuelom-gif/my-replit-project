@@ -268,9 +268,9 @@ export default function Report() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { toast } = useToast();
-  const { getAuthHeaders } = useAuthActions();
+  const { getAuthHeaders, signIn } = useAuthActions();
 
-  const { data: report, isLoading, error: reportError } = useGetReport(sessionId, {
+  const { data: report, isLoading, isFetching, error: reportError } = useGetReport(sessionId, {
     query: {
       enabled: !!sessionId,
       queryKey: getGetReportQueryKey(sessionId),
@@ -348,13 +348,30 @@ export default function Report() {
   if (reportError) {
     const errStatus = (reportError as Error & { status?: number })?.status;
     if (errStatus === 401) return <AuthPrompt />;
-    // 403 means auth token is refreshing — show a reconnecting state while
-    // the retry loop (above) waits for the token to recover.
     if (errStatus === 403) {
+      // While TanStack Query is still working through its retries, show a
+      // reconnecting spinner — auth token may be mid-refresh.
+      if (isFetching) {
+        return (
+          <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3 text-slate-500">
+            <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm">Reconnecting to your session…</p>
+          </div>
+        );
+      }
+      // All retries exhausted — Auth0 session has expired, user must log in again.
       return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3 text-slate-500">
-          <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm">Reconnecting to your session…</p>
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
+          <div className="text-center space-y-2">
+            <h2 className="text-lg font-semibold text-slate-800">Your session has expired</h2>
+            <p className="text-sm text-slate-500">Please sign in again to view your report.</p>
+          </div>
+          <button
+            onClick={() => signIn({ redirectUrl: window.location.href })}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            Sign in
+          </button>
         </div>
       );
     }
