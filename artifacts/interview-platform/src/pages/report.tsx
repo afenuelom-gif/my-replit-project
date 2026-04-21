@@ -284,18 +284,6 @@ export default function Report() {
     refetchOnMount: true,
   });
 
-  const { data: feedbackStatus } = useQuery({
-    queryKey: ["feedback-status", sessionId],
-    queryFn: async () => {
-      const res = await fetch(`/api/interview/sessions/${sessionId}/feedback/status`, { credentials: "include" });
-      if (!res.ok) return { exists: false };
-      return res.json() as Promise<{ exists: boolean }>;
-    },
-    enabled: !!sessionId,
-  });
-
-  const hasFeedback = feedbackStatus?.exists ?? false;
-
   const firstInterviewer = sessionData?.interviewers?.[0] ?? null;
 
   const handleDownloadPdf = useCallback(async () => {
@@ -612,8 +600,7 @@ export default function Report() {
                 sessionId={sessionId}
                 interviewer={firstInterviewer}
                 report={report as { answerFeedback: Array<{ questionText: string; feedback: string; strengths: string[]; improvements: string[] }>; suggestions?: string[] }}
-                hasFeedback={hasFeedback}
-                onReviewComplete={() => { if (report.answerFeedback?.length > 0 && !hasFeedback) setShowFeedback(true); }}
+                onReviewComplete={() => { if (report.answerFeedback?.length > 0) setShowFeedback(true); }}
               />
             </div>
           )}
