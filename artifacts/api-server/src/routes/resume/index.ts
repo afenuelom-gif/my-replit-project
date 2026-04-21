@@ -126,13 +126,14 @@ router.post(
       .where(eq(usersTable.id, userId))
       .limit(1);
 
-    if (!user || user.resumeTailoringCredits <= 0) {
-      res.status(403).json({
-        code: "NO_CREDITS",
-        error: "You have no resume tailoring credits remaining. Upgrade your plan to continue.",
-      });
-      return;
-    }
+    // Credit enforcement disabled for testing
+    // if (!user || user.resumeTailoringCredits <= 0) {
+    //   res.status(403).json({
+    //     code: "NO_CREDITS",
+    //     error: "You have no resume tailoring credits remaining. Upgrade your plan to continue.",
+    //   });
+    //   return;
+    // }
 
     let result;
     try {
@@ -147,10 +148,11 @@ router.post(
       return;
     }
 
-    await db
-      .update(usersTable)
-      .set({ resumeTailoringCredits: sql`${usersTable.resumeTailoringCredits} - 1` })
-      .where(eq(usersTable.id, userId));
+    // Credit deduction disabled for testing
+    // await db
+    //   .update(usersTable)
+    //   .set({ resumeTailoringCredits: sql`${usersTable.resumeTailoringCredits} - 1` })
+    //   .where(eq(usersTable.id, userId));
 
     const [saved] = await db
       .insert(resumeTailoringTable)
@@ -174,7 +176,7 @@ router.post(
       changeSummary: result.changeSummary,
       atsKeywords: result.atsKeywords,
       improvementSuggestions: result.improvementSuggestions,
-      creditsRemaining: user.resumeTailoringCredits - 1,
+      creditsRemaining: user?.resumeTailoringCredits ?? 0,
     });
   },
 );
