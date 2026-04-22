@@ -106,6 +106,25 @@ interface TailoringResult {
   creditsRemaining: number;
 }
 
+interface HistoryItem {
+  id: number;
+  jobTitle: string;
+  scope: string;
+  aggressiveness: string;
+  createdAt: string;
+}
+
+interface FullHistoryResult {
+  id: number;
+  jobTitle: string;
+  scope: string;
+  aggressiveness: string;
+  tailoredResumeText: string;
+  changeSummary: string[];
+  atsKeywords: string[];
+  improvementSuggestions: string[];
+}
+
 type Scope = "full" | "role_specific";
 type Aggressiveness = "conservative" | "balanced" | "strong";
 
@@ -377,18 +396,39 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
   const [showOriginal, setShowOriginal] = useState(false);
   const [expandedSections, setExpandedSections] = useState({ changes: true, keywords: true, suggestions: false });
 
-  const { data: meData } = useQuery<{ resumeTailoringCredits: number; creditsRemaining?: number }>({
-    queryKey: ["resume-credits"],
+  const { data: meData, refetch: refetchHistory } = useQuery<{
+    resumeTailoringCredits: number;
+    history: HistoryItem[];
+  }>({
+    queryKey: ["resume-history"],
     queryFn: async () => {
       const headers = await getAuthHeaders();
       const res = await fetch("/api/resume/history", { credentials: "include", headers });
       if (!res.ok) throw new Error("Failed");
-      const d = await res.json() as { creditsRemaining: number };
-      return { resumeTailoringCredits: d.creditsRemaining };
+      const d = await res.json() as { creditsRemaining: number; history: HistoryItem[] };
+      return { resumeTailoringCredits: d.creditsRemaining, history: d.history ?? [] };
     },
     enabled: !showAuthPrompt,
     retry: false,
   });
+
+  const [expandedHistoryId, setExpandedHistoryId] = useState<number | null>(null);
+  const [historyResult, setHistoryResult] = useState<FullHistoryResult | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  async function openHistoryItem(id: number) {
+    if (expandedHistoryId === id) { setExpandedHistoryId(null); setHistoryResult(null); return; }
+    setHistoryLoading(true);
+    setExpandedHistoryId(id);
+    setHistoryResult(null);
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/resume/result/${id}`, { credentials: "include", headers });
+      if (res.ok) setHistoryResult(await res.json() as FullHistoryResult);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   async function parseFile(file: File, kind: "jd" | "resume") {
     const setter = kind === "jd" ? setJdParsing : setResumeParsing;
@@ -454,6 +494,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
       }
       setResult(data);
       setStep(3);
+      refetchHistory();
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -469,10 +510,11 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
     });
   }
 
-  async function handleDownloadDocx() {
-    if (!result) return;
+  async function handleDownloadDocx(resultOverride?: { jobTitle: string; tailoredResumeText: string }) {
+    const r = resultOverride ?? result;
+    if (!r) return;
     const { Document, Packer, Paragraph, TextRun } = await import("docx");
-    const lines = result.tailoredResumeText.split("\n");
+    const lines = r.tailoredResumeText.split("\n");
     const paragraphs = lines.map((line) => {
       const parsed = parseResumeLine(line);
       if (parsed.kind === "blank") {
@@ -508,13 +550,14 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
     const url = URL.createObjectURL(buffer);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${result.jobTitle.replace(/[^a-z0-9]/gi, "_")}_tailored_resume.docx`;
+    a.download = `${r.jobTitle.replace(/[^a-z0-9]/gi, "_")}_tailored_resume.docx`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  async function handleDownloadPdf() {
-    if (!result) return;
+  async function handleDownloadPdf(resultOverride?: { jobTitle: string; tailoredResumeText: string }) {
+    const r = resultOverride ?? result;
+    if (!r) return;
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "pt", format: "letter" });
     const margin = 60;
@@ -529,7 +572,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
       if (y > pageHeight - margin) { doc.addPage(); y = margin; }
     };
 
-    for (const rawLine of result.tailoredResumeText.split("\n")) {
+    for (const rawLine of r.tailoredResumeText.split("\n")) {
       const parsed = parseResumeLine(rawLine);
 
       if (parsed.kind === "blank") {
@@ -580,7 +623,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
       const wrapped = doc.splitTextToSize(parsed.text || " ", maxWidth) as string[];
       for (const wl of wrapped) { checkPage(); doc.text(wl, margin, y); y += lineHeight; }
     }
-    doc.save(`${result.jobTitle.replace(/[^a-z0-9]/gi, "_")}_tailored_resume.pdf`);
+    doc.save(`${r.jobTitle.replace(/[^a-z0-9]/gi, "_")}_tailored_resume.pdf`);
   }
 
   function toggleSection(key: keyof typeof expandedSections) {
@@ -985,6 +1028,72 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
               )}
             </>
           )}
+        {/* ── Past Tailorings ── */}
+        {!showAuthPrompt && meData?.history && meData.history.length > 0 && (
+          <div className="mt-10 border-t border-slate-200 pt-8">
+            <h2 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-slate-400" />
+              Past Tailorings
+            </h2>
+            <div className="space-y-2">
+              {meData.history.map((item) => {
+                const isOpen = expandedHistoryId === item.id;
+                const isCurrentResult = result?.id === item.id;
+                const date = new Date(item.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+                const scopeLabel = item.scope === "full" ? "Full resume" : "Recent role";
+                const aggLabel = item.aggressiveness === "conservative" ? "Conservative" : item.aggressiveness === "balanced" ? "Balanced" : "Strong";
+                return (
+                  <div key={item.id} className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                    <button
+                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+                      onClick={() => openHistoryItem(item.id)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                          <FileText className="w-4 h-4 text-blue-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-800 text-sm truncate">
+                            {item.jobTitle}
+                            {isCurrentResult && <span className="ml-2 text-xs text-blue-600 font-normal">just tailored</span>}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">{date} · {scopeLabel} · {aggLabel}</p>
+                        </div>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 ml-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    {isOpen && (
+                      <div className="border-t border-slate-100">
+                        {historyLoading && expandedHistoryId === item.id ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                          </div>
+                        ) : historyResult?.id === item.id ? (
+                          <div className="p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs text-slate-500 font-medium">Tailored resume</p>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => handleDownloadDocx(historyResult)} className="h-7 text-xs gap-1 text-slate-500 hover:text-slate-700">
+                                  <Download className="w-3 h-3" /> Word
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleDownloadPdf(historyResult)} className="h-7 text-xs gap-1 text-slate-500 hover:text-slate-700">
+                                  <Download className="w-3 h-3" /> PDF
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 max-h-72 overflow-y-auto">
+                              <ResumeDisplay text={historyResult.tailoredResumeText} />
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         </div>
       </main>
 
