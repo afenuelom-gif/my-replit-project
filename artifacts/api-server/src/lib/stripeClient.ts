@@ -1,60 +1,26 @@
 import Stripe from "stripe";
-import { StripeSync } from "stripe-replit-sync";
 
-async function getStripeCredentials(): Promise<{ secretKey: string; webhookSecret?: string }> {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+let _client: Stripe | null = null;
 
-  if (secretKey) {
-    return { secretKey, webhookSecret };
-  }
-
-  // Fallback: try Replit connector API
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME ?? process.env.CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? "repl " + process.env.REPL_IDENTITY
-    : process.env.WEB_REPL_RENEWAL
-      ? "depl " + process.env.WEB_REPL_RENEWAL
-      : null;
-
-  if (hostname && xReplitToken) {
-    const resp = await fetch(
-      `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=stripe`,
-      {
-        headers: { Accept: "application/json", "X-Replit-Token": xReplitToken },
-        signal: AbortSignal.timeout(10_000),
-      },
-    );
-
-    if (resp.ok) {
-      const data = await resp.json() as { items?: Array<{ settings?: { secret_key?: string; webhook_secret?: string } }> };
-      const settings = data.items?.[0]?.settings;
-      if (settings?.secret_key) {
-        return { secretKey: settings.secret_key, webhookSecret: settings.webhook_secret };
-      }
+export function getStripeClient(): Stripe {
+  if (!_client) {
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    if (!secretKey) {
+      throw new Error("STRIPE_SECRET_KEY environment variable is not set.");
     }
+    _client = new Stripe(secretKey);
   }
-
-  throw new Error(
-    "Stripe secret key not configured. Set the STRIPE_SECRET_KEY environment variable.",
-  );
+  return _client;
 }
 
-export async function getUncachableStripeClient(): Promise<Stripe> {
-  const { secretKey } = await getStripeCredentials();
-  return new Stripe(secretKey);
+export function getWebhookSecret(): string {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new Error("STRIPE_WEBHOOK_SECRET environment variable is not set.");
+  }
+  return secret;
 }
 
-export async function getStripeSync(): Promise<StripeSync> {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL environment variable is required");
-  }
-
-  const { secretKey, webhookSecret } = await getStripeCredentials();
-  return new StripeSync({
-    poolConfig: { connectionString: databaseUrl },
-    stripeSecretKey: secretKey,
-    stripeWebhookSecret: webhookSecret ?? "",
-  });
+export function isStripeConfigured(): boolean {
+  return !!process.env.STRIPE_SECRET_KEY;
 }

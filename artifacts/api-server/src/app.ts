@@ -7,6 +7,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { seedInterviewersIfNeeded, patchFemaleInterviewerVoices } from "./lib/seedInterviewers";
 import { WebhookHandlers } from "./lib/webhookHandlers";
+import { isStripeConfigured } from "./lib/stripeClient";
 
 const IS_REPLIT_DEV = (Boolean(process.env.REPL_ID) || process.env.NODE_ENV === "development") && process.env.NODE_ENV !== "production";
 const USE_AUTH0 = !IS_REPLIT_DEV && Boolean(process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID);
@@ -46,6 +47,12 @@ app.post(
 
     if (!signature) {
       res.status(400).json({ error: "Missing stripe-signature" });
+      return;
+    }
+
+    if (!isStripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
+      logger.warn("Stripe webhook received but Stripe is not configured");
+      res.status(200).json({ received: true, note: "Stripe not configured" });
       return;
     }
 

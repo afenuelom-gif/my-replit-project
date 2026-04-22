@@ -1,9 +1,10 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, usersTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { stripeService } from "../../lib/stripeService.js";
 import { stripeStorage } from "../../lib/stripeStorage.js";
+import { getStripeClient, isStripeConfigured } from "../../lib/stripeClient.js";
 
 const router: IRouter = Router();
 
@@ -13,47 +14,17 @@ function getBaseUrl(req: Request): string {
   return `${proto}://${host}`;
 }
 
-// GET /stripe/products — list all products with prices
-router.get("/stripe/products", async (_req: Request, res: Response): Promise<void> => {
-  try {
-    const rows = await stripeStorage.listProductsWithPrices();
-
-    const productsMap = new Map<string, {
-      id: string; name: string; description: string; metadata: Record<string, string>;
-      prices: Array<{ id: string; unit_amount: number; currency: string; recurring: unknown; metadata: Record<string, string> }>;
-    }>();
-
-    for (const row of rows) {
-      const r = row as Record<string, unknown>;
-      const productId = r.product_id as string;
-      if (!productsMap.has(productId)) {
-        productsMap.set(productId, {
-          id: productId,
-          name: r.product_name as string,
-          description: r.product_description as string ?? "",
-          metadata: (r.product_metadata as Record<string, string>) ?? {},
-          prices: [],
-        });
-      }
-      if (r.price_id) {
-        productsMap.get(productId)!.prices.push({
-          id: r.price_id as string,
-          unit_amount: r.unit_amount as number,
-          currency: r.currency as string,
-          recurring: r.recurring,
-          metadata: (r.price_metadata as Record<string, string>) ?? {},
-        });
-      }
-    }
-
-    res.json({ products: Array.from(productsMap.values()) });
-  } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+function requireStripe(res: Response): boolean {
+  if (!isStripeConfigured()) {
+    res.status(503).json({ error: "Stripe is not configured on this server." });
+    return false;
   }
-});
+  return true;
+}
 
 // POST /stripe/checkout/subscription — create subscription checkout session
 router.post("/stripe/checkout/subscription", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  if (!requireStripe(res)) return;
   try {
     const userId = req.userId!;
     const { priceId } = req.body as { priceId: string };
@@ -83,6 +54,7 @@ router.post("/stripe/checkout/subscription", requireAuth, async (req: Request, r
 
 // POST /stripe/checkout/topup — create one-time top-up checkout session
 router.post("/stripe/checkout/topup", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  if (!requireStripe(res)) return;
   try {
     const userId = req.userId!;
     const { priceId } = req.body as { priceId: string };
@@ -100,7 +72,7 @@ router.post("/stripe/checkout/topup", requireAuth, async (req: Request, res: Res
       customerId,
       priceId,
       userId,
-      successUrl: `${base}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+      successUrl: `${base}/billing/success?session_id={CHECKOUT_SESSION_ID}&type=topup`,
       cancelUrl: `${base}/resume-tailor`,
     });
 
@@ -112,6 +84,7 @@ router.post("/stripe/checkout/topup", requireAuth, async (req: Request, res: Res
 
 // POST /stripe/portal — create billing portal session
 router.post("/stripe/portal", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  if (!requireStripe(res)) return;
   try {
     const userId = req.userId!;
     const user = await stripeStorage.getUser(userId);
@@ -152,8 +125,9 @@ router.get("/stripe/subscription", requireAuth, async (req: Request, res: Respon
     }
 
     let subscription = null;
-    if (user.stripeSubscriptionId) {
-      subscription = await stripeStorage.getSubscription(user.stripeSubscriptionId);
+    if (user.stripeSubscriptionId && isStripeConfigured()) {
+      const stripe = getStripeClient();
+      subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId).catch(() => null);
     }
 
     res.json({
@@ -167,49 +141,90 @@ router.get("/stripe/subscription", requireAuth, async (req: Request, res: Respon
   }
 });
 
-// POST /stripe/webhook/handle-subscription — internal: sync subscription changes to user record
-// Called after Stripe webhooks update the stripe schema, we react to subscription events
+// POST /stripe/sync-user-plan — called after checkout redirect to sync plan
 router.post("/stripe/sync-user-plan", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  if (!requireStripe(res)) return;
   try {
     const userId = req.userId!;
-    const user = await stripeStorage.getUser(userId);
+    const { sessionId } = req.body as { sessionId?: string };
 
-    if (!user?.stripeCustomerId) {
+    const user = await stripeStorage.getUser(userId);
+    if (!user) {
+      res.json({ plan: "free" });
+      return;
+    }
+
+    const stripe = getStripeClient();
+
+    // If we have a checkout session ID, retrieve it for accuracy
+    if (sessionId) {
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ["line_items", "subscription"],
+      });
+
+      if (session.mode === "payment" && session.payment_status === "paid") {
+        // Top-up purchase
+        const priceId = session.line_items?.data[0]?.price?.id ?? "";
+        const tailorCredits = stripeService.getTopUpCreditsForPrice(priceId);
+
+        const [updated] = await db
+          .update(usersTable)
+          .set({
+            resumeTailoringCredits: (user.resumeTailoringCredits ?? 0) + tailorCredits,
+            stripeCustomerId: user.stripeCustomerId ?? (session.customer as string ?? null),
+          })
+          .where(eq(usersTable.id, userId))
+          .returning();
+
+        res.json({ plan: updated.plan, resumeTailoringCredits: updated.resumeTailoringCredits, type: "topup" });
+        return;
+      }
+
+      if (session.mode === "subscription" && session.subscription) {
+        const sub = typeof session.subscription === "string"
+          ? await stripe.subscriptions.retrieve(session.subscription)
+          : session.subscription;
+
+        const { plan, sessionCredits, resumeCredits } = await stripeService.getPlanFromSubscription(sub as Parameters<typeof stripeService.getPlanFromSubscription>[0]);
+
+        const [updated] = await db
+          .update(usersTable)
+          .set({
+            plan,
+            stripeSubscriptionId: (sub as { id: string }).id,
+            stripeCustomerId: user.stripeCustomerId ?? (session.customer as string ?? null),
+            sessionCredits,
+            resumeTailoringCredits: resumeCredits,
+          })
+          .where(eq(usersTable.id, userId))
+          .returning();
+
+        res.json({ plan: updated.plan, sessionCredits: updated.sessionCredits, resumeTailoringCredits: updated.resumeTailoringCredits, type: "subscription" });
+        return;
+      }
+    }
+
+    // Fallback: look up active subscription by customer ID
+    if (!user.stripeCustomerId) {
       res.json({ plan: "free" });
       return;
     }
 
     const activeSub = await stripeService.getActiveSubscriptionForCustomer(user.stripeCustomerId);
-
     if (!activeSub) {
       await db.update(usersTable).set({ plan: "free", stripeSubscriptionId: null }).where(eq(usersTable.id, userId));
       res.json({ plan: "free" });
       return;
     }
 
-    const priceId = activeSub.items.data[0]?.price?.id;
-    const productId = activeSub.items.data[0]?.price?.product as string | undefined;
-
-    const result = await db.execute(
-      sql`SELECT metadata FROM stripe.products WHERE id = ${productId ?? ""}`,
-    );
-    const metadata = (result.rows[0] as Record<string, unknown> | undefined)?.metadata as Record<string, string> | undefined;
-    const plan = (metadata?.plan ?? "starter") as string;
-
-    const sessionCredits = plan === "pro" ? 999 : parseInt(metadata?.session_credits ?? "4", 10);
-    const resumeCredits = plan === "pro" ? 3 : parseInt(metadata?.resume_tailoring_credits ?? "1", 10);
-
-    await db
+    const { plan, sessionCredits, resumeCredits } = await stripeService.getPlanFromSubscription(activeSub);
+    const [updated] = await db
       .update(usersTable)
-      .set({
-        plan,
-        stripeSubscriptionId: activeSub.id,
-        sessionCredits,
-        resumeTailoringCredits: resumeCredits,
-      })
-      .where(eq(usersTable.id, userId));
+      .set({ plan, stripeSubscriptionId: activeSub.id, sessionCredits, resumeTailoringCredits: resumeCredits })
+      .where(eq(usersTable.id, userId))
+      .returning();
 
-    res.json({ plan, priceId, subscriptionId: activeSub.id });
+    res.json({ plan: updated.plan, sessionCredits: updated.sessionCredits, resumeTailoringCredits: updated.resumeTailoringCredits });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

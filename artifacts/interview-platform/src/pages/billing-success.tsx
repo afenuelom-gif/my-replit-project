@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import { CheckCircle, Loader2, Crown, Zap } from "lucide-react";
+import { useLocation, useSearch } from "wouter";
+import { CheckCircle, Loader2, Crown, Zap, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
@@ -12,17 +12,25 @@ interface BillingSuccessProps {
 
 export default function BillingSuccess({ authMenu, authMobileMenu }: BillingSuccessProps) {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const [syncing, setSyncing] = useState(true);
-  const [plan, setPlan] = useState<string | null>(null);
+  const [result, setResult] = useState<{ plan?: string; type?: string; resumeTailoringCredits?: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function syncPlan() {
       try {
-        const res = await fetch("/api/stripe/sync-user-plan", { method: "POST" });
+        const params = new URLSearchParams(search);
+        const sessionId = params.get("session_id");
+
+        const res = await fetch("/api/stripe/sync-user-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
         if (!res.ok) throw new Error("Failed to sync plan");
-        const data = await res.json() as { plan?: string };
-        setPlan(data.plan ?? "starter");
+        const data = await res.json() as { plan?: string; type?: string; resumeTailoringCredits?: number };
+        setResult(data);
       } catch (err) {
         setError("Could not sync your subscription — please refresh the page.");
         console.error(err);
@@ -31,8 +39,11 @@ export default function BillingSuccess({ authMenu, authMobileMenu }: BillingSucc
       }
     }
     syncPlan();
-  }, []);
+  }, [search]);
 
+  const plan = result?.plan;
+  const type = result?.type;
+  const isTopUp = type === "topup";
   const isPro = plan === "pro";
 
   return (
@@ -52,7 +63,7 @@ export default function BillingSuccess({ authMenu, authMobileMenu }: BillingSucc
             <div className="space-y-4">
               <Loader2 className="w-16 h-16 animate-spin text-blue-500 mx-auto" />
               <h1 className="text-2xl font-bold text-slate-900">Setting up your account…</h1>
-              <p className="text-slate-500">Activating your subscription, just a moment.</p>
+              <p className="text-slate-500">Activating your plan, just a moment.</p>
             </div>
           ) : error ? (
             <div className="space-y-4">
@@ -64,6 +75,33 @@ export default function BillingSuccess({ authMenu, authMobileMenu }: BillingSucc
               <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
                 Refresh
               </Button>
+            </div>
+          ) : isTopUp ? (
+            <div className="space-y-6">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto shadow-lg bg-gradient-to-br from-emerald-500 to-teal-600">
+                <Gift className="w-10 h-10 text-white" />
+              </div>
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-full px-4 py-1.5 text-sm text-emerald-700 font-medium">
+                  <CheckCircle className="w-4 h-4" />
+                  Credits added
+                </div>
+                <h1 className="text-3xl font-bold text-slate-900">Top-up complete!</h1>
+                <p className="text-slate-500">
+                  Your resume tailoring credits have been added to your account.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={() => setLocation("/resume-tailor")}
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold shadow-lg"
+                >
+                  Tailor a resume now
+                </Button>
+                <Button onClick={() => setLocation("/start")} variant="outline" className="w-full">
+                  Start an interview
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">
