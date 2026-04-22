@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk, useUser, useAuth } from "@clerk/react";
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
@@ -20,6 +20,8 @@ import Terms from "@/pages/terms";
 import AdminFeedback from "@/pages/admin-feedback";
 import AdminUsers from "@/pages/admin-users";
 import ResumeTailor from "@/pages/resume-tailor";
+import ResumeHistory from "@/pages/resume-history";
+import { ChevronDown } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -141,11 +143,18 @@ function Auth0MobileActions() {
 
   return (
     <>
+      <div className="px-4 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">History</div>
       <button
-        className="cursor-pointer flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+        className="cursor-pointer flex items-center w-full px-6 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
         onClick={() => setLocation("/history")}
       >
-        History
+        Interviews
+      </button>
+      <button
+        className="cursor-pointer flex items-center w-full px-6 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+        onClick={() => setLocation("/resume-history")}
+      >
+        Resume Tailor
       </button>
       <button
         className="cursor-pointer flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
@@ -162,17 +171,48 @@ function Auth0MobileActions() {
 function Auth0DesktopActions() {
   const { isAuthenticated, logout } = useAuth0();
   const [, setLocation] = useLocation();
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const historyRef = useRef<HTMLDivElement>(null);
+
+  const closeHistory = useCallback(() => setHistoryOpen(false), []);
+
+  useEffect(() => {
+    if (!historyOpen) return;
+    function onClickOutside(e: MouseEvent) {
+      if (historyRef.current && !historyRef.current.contains(e.target as Node)) closeHistory();
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [historyOpen, closeHistory]);
 
   if (!isAuthenticated) return null;
 
   return (
     <div className="hidden sm:flex items-center gap-1">
-      <button
-        className="cursor-pointer text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
-        onClick={() => setLocation("/history")}
-      >
-        History
-      </button>
+      <div ref={historyRef} className="relative">
+        <button
+          className="cursor-pointer text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1"
+          onClick={() => setHistoryOpen((o) => !o)}
+        >
+          History <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+        </button>
+        {historyOpen && (
+          <div className="absolute left-0 top-full mt-1.5 w-44 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5 z-50">
+            <button
+              className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+              onClick={() => { closeHistory(); setLocation("/history"); }}
+            >
+              Interviews
+            </button>
+            <button
+              className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+              onClick={() => { closeHistory(); setLocation("/resume-history"); }}
+            >
+              Resume Tailor
+            </button>
+          </div>
+        )}
+      </div>
       <button
         className="cursor-pointer text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
         onClick={() =>
@@ -295,6 +335,7 @@ function Auth0ProviderWithRoutes() {
             <Route path="/interview/:sessionId" component={Interview} />
             <Route path="/report/:sessionId" component={Report} />
             <Route path="/history" component={History} />
+            <Route path="/resume-history" component={ResumeHistory} />
             <Route path="/privacy" component={Privacy} />
             <Route path="/terms" component={Terms} />
             <Route path="/admin" component={() => <Redirect to="/admin/feedback" />} />
@@ -360,11 +401,18 @@ function ClerkMobileActions() {
 
   return (
     <Show when="signed-in">
+      <div className="px-4 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">History</div>
       <button
-        className="cursor-pointer flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+        className="cursor-pointer flex items-center w-full px-6 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
         onClick={() => setLocation("/history")}
       >
-        History
+        Interviews
+      </button>
+      <button
+        className="cursor-pointer flex items-center w-full px-6 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+        onClick={() => setLocation("/resume-history")}
+      >
+        Resume Tailor
       </button>
       <button
         className="cursor-pointer flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
@@ -379,16 +427,47 @@ function ClerkMobileActions() {
 function ClerkDesktopActions() {
   const { signOut } = useClerk();
   const [, setLocation] = useLocation();
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const historyRef = useRef<HTMLDivElement>(null);
+
+  const closeHistory = useCallback(() => setHistoryOpen(false), []);
+
+  useEffect(() => {
+    if (!historyOpen) return;
+    function onClickOutside(e: MouseEvent) {
+      if (historyRef.current && !historyRef.current.contains(e.target as Node)) closeHistory();
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [historyOpen, closeHistory]);
 
   return (
     <Show when="signed-in">
       <div className="hidden sm:flex items-center gap-1">
-        <button
-          className="cursor-pointer text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
-          onClick={() => setLocation("/history")}
-        >
-          History
-        </button>
+        <div ref={historyRef} className="relative">
+          <button
+            className="cursor-pointer text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1"
+            onClick={() => setHistoryOpen((o) => !o)}
+          >
+            History <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+          </button>
+          {historyOpen && (
+            <div className="absolute left-0 top-full mt-1.5 w-44 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5 z-50">
+              <button
+                className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+                onClick={() => { closeHistory(); setLocation("/history"); }}
+              >
+                Interviews
+              </button>
+              <button
+                className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+                onClick={() => { closeHistory(); setLocation("/resume-history"); }}
+              >
+                Resume Tailor
+              </button>
+            </div>
+          )}
+        </div>
         <button
           className="cursor-pointer text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
           onClick={() => signOut({ redirectUrl: window.location.href })}
@@ -517,6 +596,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/interview/:sessionId" component={Interview} />
             <Route path="/report/:sessionId" component={Report} />
             <Route path="/history" component={History} />
+            <Route path="/resume-history" component={ResumeHistory} />
             <Route path="/privacy" component={Privacy} />
             <Route path="/terms" component={Terms} />
             <Route path="/admin" component={() => <Redirect to="/admin/feedback" />} />
