@@ -78,7 +78,7 @@ function Auth0LoadingGate({ children }: { children: React.ReactNode }) {
 }
 
 function Auth0TokenSetup() {
-  const { getAccessTokenSilently, isAuthenticated } = useAuth0();
+  const { getAccessTokenSilently, isAuthenticated, loginWithRedirect } = useAuth0();
   const qc = useQueryClient();
   const prevAuthRef = useRef<boolean | undefined>(undefined);
 
@@ -87,7 +87,14 @@ function Auth0TokenSetup() {
       const getter = async () => {
         try {
           return await getAccessTokenSilently();
-        } catch {
+        } catch (err) {
+          const code = (err as { error?: string })?.error ?? (err as Error)?.message ?? "";
+          const needsLogin = ["login_required", "consent_required", "missing_refresh_token", "invalid_grant"].some(
+            (e) => code.includes(e),
+          );
+          if (needsLogin) {
+            loginWithRedirect({ appState: { returnTo: window.location.pathname } });
+          }
           return null;
         }
       };
@@ -100,7 +107,7 @@ function Auth0TokenSetup() {
       qc.clear();
     }
     prevAuthRef.current = isAuthenticated;
-  }, [isAuthenticated, getAccessTokenSilently, qc]);
+  }, [isAuthenticated, getAccessTokenSilently, loginWithRedirect, qc]);
 
   return null;
 }

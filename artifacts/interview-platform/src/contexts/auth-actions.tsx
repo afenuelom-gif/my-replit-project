@@ -59,10 +59,17 @@ export function Auth0AuthActionsProvider({ children }: { children: ReactNode }) 
       const token = await getAccessTokenSilently();
       if (!token) return {};
       return { Authorization: `Bearer ${token}` };
-    } catch {
+    } catch (err) {
+      const code = (err as { error?: string })?.error ?? (err as Error)?.message ?? "";
+      const needsLogin = ["login_required", "consent_required", "missing_refresh_token", "invalid_grant"].some(
+        (e) => code.includes(e),
+      );
+      if (needsLogin) {
+        loginWithRedirect({ appState: { returnTo: window.location.pathname } });
+      }
       return {};
     }
-  }, [getAccessTokenSilently]);
+  }, [getAccessTokenSilently, loginWithRedirect]);
 
   const value: AuthActions = {
     signIn: () => loginWithRedirect(),

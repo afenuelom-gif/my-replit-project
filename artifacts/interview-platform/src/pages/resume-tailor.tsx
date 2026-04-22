@@ -344,7 +344,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
       });
       const data = await res.json() as { text?: string; error?: string };
       if (!res.ok || !data.text) {
-        setError(data.error ?? "Could not parse file");
+        setError(res.status === 401 ? "Your session has expired. Please sign in again." : (data.error ?? "Could not parse file"));
       } else {
         textSetter(data.text);
       }
@@ -381,7 +381,9 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
       });
       const data = await res.json() as TailoringResult & { code?: string; error?: string };
       if (!res.ok) {
-        if (data.code === "NO_CREDITS") {
+        if (res.status === 401) {
+          setError("Your session has expired. Please sign in again to continue.");
+        } else if (data.code === "NO_CREDITS") {
           setError("You have no resume tailoring credits remaining. Upgrade your plan to continue.");
         } else {
           setError(data.error ?? "Something went wrong. Please try again.");
