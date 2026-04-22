@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk, useUser, useAuth } from "@clerk/react";
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
@@ -117,21 +117,65 @@ function Auth0TokenSetup() {
 }
 
 function Auth0UserMenu() {
-  const { user, isAuthenticated, loginWithRedirect } = useAuth0();
+  const { user, isAuthenticated, loginWithRedirect, logout } = useAuth0();
+  const [, setLocation] = useLocation();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
+
+  if (!isAuthenticated) {
+    return (
+      <button
+        className="cursor-pointer text-sm text-slate-600 font-medium hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+        onClick={() => loginWithRedirect()}
+      >
+        Sign In
+      </button>
+    );
+  }
+
+  const navigate = (path: string) => { setOpen(false); setLocation(path); };
 
   return (
-    <div className="flex items-center">
-      {isAuthenticated ? (
-        <span className="text-sm font-medium text-slate-600 truncate max-w-[120px]">
+    <div ref={menuRef} className="hidden sm:block relative">
+      <button
+        className="cursor-pointer flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-blue-700 px-2 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="truncate max-w-[120px]">
           {user?.given_name ?? user?.name ?? user?.email ?? "Account"}
         </span>
-      ) : (
-        <button
-          className="cursor-pointer text-sm text-slate-600 font-medium hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
-          onClick={() => loginWithRedirect()}
-        >
-          Sign In
-        </button>
+        <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5 z-50">
+          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">History</div>
+          <button className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left" onClick={() => navigate("/history")}>
+            Interviews
+          </button>
+          <button className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left" onClick={() => navigate("/resume-history")}>
+            Resume Tailor
+          </button>
+          <div className="my-1 border-t border-slate-100" />
+          <button className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left" onClick={() => navigate("/account")}>
+            Billing &amp; Plan
+          </button>
+          <div className="my-1 border-t border-slate-100" />
+          <button
+            className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-red-600 hover:bg-red-50 transition-colors text-left"
+            onClick={() => { setOpen(false); logout({ logoutParams: { returnTo: window.location.origin + basePath || window.location.origin } }); }}
+          >
+            Sign Out
+          </button>
+        </div>
       )}
     </div>
   );
@@ -178,67 +222,7 @@ function Auth0MobileActions() {
 }
 
 function Auth0DesktopActions() {
-  const { isAuthenticated, logout } = useAuth0();
-  const [, setLocation] = useLocation();
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const historyRef = useRef<HTMLDivElement>(null);
-
-  const closeHistory = useCallback(() => setHistoryOpen(false), []);
-
-  useEffect(() => {
-    if (!historyOpen) return;
-    function onClickOutside(e: MouseEvent) {
-      if (historyRef.current && !historyRef.current.contains(e.target as Node)) closeHistory();
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [historyOpen, closeHistory]);
-
-  if (!isAuthenticated) return null;
-
-  return (
-    <div className="hidden sm:flex items-center gap-1">
-      <div ref={historyRef} className="relative">
-        <button
-          className="cursor-pointer text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1"
-          onClick={() => setHistoryOpen((o) => !o)}
-        >
-          History <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-        </button>
-        {historyOpen && (
-          <div className="absolute left-0 top-full mt-1.5 w-48 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5 z-50">
-            <button
-              className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
-              onClick={() => { closeHistory(); setLocation("/history"); }}
-            >
-              Interviews
-            </button>
-            <button
-              className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
-              onClick={() => { closeHistory(); setLocation("/resume-history"); }}
-            >
-              Resume Tailor
-            </button>
-            <div className="my-1 border-t border-slate-100" />
-            <button
-              className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
-              onClick={() => { closeHistory(); setLocation("/account"); }}
-            >
-              Billing & Plan
-            </button>
-          </div>
-        )}
-      </div>
-      <button
-        className="cursor-pointer text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
-        onClick={() =>
-          logout({ logoutParams: { returnTo: window.location.origin + basePath || window.location.origin } })
-        }
-      >
-        Sign Out
-      </button>
-    </div>
-  );
+  return null;
 }
 
 function Auth0StartRoute() {
@@ -405,24 +389,67 @@ function SignUpPage() {
 }
 
 function ClerkUserMenu() {
-  const { user } = useUser();
-  const { openSignIn } = useClerk();
+  const { user, isSignedIn } = useUser();
+  const { openSignIn, signOut } = useClerk();
+  const [, setLocation] = useLocation();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
+
+  if (!isSignedIn) {
+    return (
+      <button
+        className="cursor-pointer text-sm text-slate-600 font-medium hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+        onClick={() => openSignIn()}
+      >
+        Sign In
+      </button>
+    );
+  }
+
+  const navigate = (path: string) => { setOpen(false); setLocation(path); };
 
   return (
-    <div className="flex items-center">
-      <Show when="signed-in">
-        <span className="text-sm font-medium text-slate-600 truncate max-w-[120px]">
+    <div ref={menuRef} className="hidden sm:block relative">
+      <button
+        className="cursor-pointer flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-blue-700 px-2 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="truncate max-w-[120px]">
           {user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress ?? "Account"}
         </span>
-      </Show>
-      <Show when="signed-out">
-        <button
-          className="cursor-pointer text-sm text-slate-600 font-medium hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
-          onClick={() => openSignIn()}
-        >
-          Sign In
-        </button>
-      </Show>
+        <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5 z-50">
+          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">History</div>
+          <button className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left" onClick={() => navigate("/history")}>
+            Interviews
+          </button>
+          <button className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left" onClick={() => navigate("/resume-history")}>
+            Resume Tailor
+          </button>
+          <div className="my-1 border-t border-slate-100" />
+          <button className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left" onClick={() => navigate("/account")}>
+            Billing &amp; Plan
+          </button>
+          <div className="my-1 border-t border-slate-100" />
+          <button
+            className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-red-600 hover:bg-red-50 transition-colors text-left"
+            onClick={() => { setOpen(false); signOut({ redirectUrl: window.location.href }); }}
+          >
+            Sign Out
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -464,65 +491,7 @@ function ClerkMobileActions() {
 }
 
 function ClerkDesktopActions() {
-  const { signOut } = useClerk();
-  const [, setLocation] = useLocation();
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const historyRef = useRef<HTMLDivElement>(null);
-
-  const closeHistory = useCallback(() => setHistoryOpen(false), []);
-
-  useEffect(() => {
-    if (!historyOpen) return;
-    function onClickOutside(e: MouseEvent) {
-      if (historyRef.current && !historyRef.current.contains(e.target as Node)) closeHistory();
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [historyOpen, closeHistory]);
-
-  return (
-    <Show when="signed-in">
-      <div className="hidden sm:flex items-center gap-1">
-        <div ref={historyRef} className="relative">
-          <button
-            className="cursor-pointer text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1"
-            onClick={() => setHistoryOpen((o) => !o)}
-          >
-            History <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-          </button>
-          {historyOpen && (
-            <div className="absolute left-0 top-full mt-1.5 w-48 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5 z-50">
-              <button
-                className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
-                onClick={() => { closeHistory(); setLocation("/history"); }}
-              >
-                Interviews
-              </button>
-              <button
-                className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
-                onClick={() => { closeHistory(); setLocation("/resume-history"); }}
-              >
-                Resume Tailor
-              </button>
-              <div className="my-1 border-t border-slate-100" />
-              <button
-                className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
-                onClick={() => { closeHistory(); setLocation("/account"); }}
-              >
-                Billing & Plan
-              </button>
-            </div>
-          )}
-        </div>
-        <button
-          className="cursor-pointer text-sm font-medium text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
-          onClick={() => signOut({ redirectUrl: window.location.href })}
-        >
-          Sign Out
-        </button>
-      </div>
-    </Show>
-  );
+  return null;
 }
 
 function ClerkStartRoute() {
