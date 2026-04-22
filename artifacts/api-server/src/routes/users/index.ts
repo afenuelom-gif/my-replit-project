@@ -8,7 +8,25 @@ const router: IRouter = Router();
 
 router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
   const isAdmin = await isAdminUserOrEmail(req.userId);
-  res.json({ userId: req.userId, isAdmin });
+  const [user] = await db.select({
+    plan: usersTable.plan,
+    sessionCredits: usersTable.sessionCredits,
+    resumeTailoringCredits: usersTable.resumeTailoringCredits,
+    trialUsed: usersTable.trialUsed,
+    stripeCustomerId: usersTable.stripeCustomerId,
+    stripeSubscriptionId: usersTable.stripeSubscriptionId,
+  }).from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
+
+  res.json({
+    userId: req.userId,
+    isAdmin,
+    plan: user?.plan ?? "free",
+    sessionCredits: user?.sessionCredits ?? 0,
+    resumeTailoringCredits: user?.resumeTailoringCredits ?? 0,
+    trialUsed: user?.trialUsed ?? false,
+    stripeCustomerId: user?.stripeCustomerId ?? null,
+    stripeSubscriptionId: user?.stripeSubscriptionId ?? null,
+  });
 });
 
 router.get("/users/me/sessions", requireAuth, async (req, res): Promise<void> => {

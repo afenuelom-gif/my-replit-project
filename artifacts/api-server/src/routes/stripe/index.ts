@@ -230,4 +230,58 @@ router.post("/stripe/sync-user-plan", requireAuth, async (req: Request, res: Res
   }
 });
 
+// POST /stripe/cancel — cancel subscription at period end
+router.post("/stripe/cancel", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  if (!requireStripe(res)) return;
+  try {
+    const userId = req.userId!;
+    const user = await stripeStorage.getUser(userId);
+
+    if (!user?.stripeSubscriptionId) {
+      res.status(400).json({ error: "No active subscription found" });
+      return;
+    }
+
+    const stripe = getStripeClient();
+    const updated = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+      cancel_at_period_end: true,
+    });
+
+    res.json({
+      cancelled: true,
+      cancelAtPeriodEnd: updated.cancel_at_period_end,
+      currentPeriodEnd: updated.current_period_end,
+    });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// POST /stripe/reactivate — undo cancel_at_period_end
+router.post("/stripe/reactivate", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  if (!requireStripe(res)) return;
+  try {
+    const userId = req.userId!;
+    const user = await stripeStorage.getUser(userId);
+
+    if (!user?.stripeSubscriptionId) {
+      res.status(400).json({ error: "No active subscription found" });
+      return;
+    }
+
+    const stripe = getStripeClient();
+    const updated = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+      cancel_at_period_end: false,
+    });
+
+    res.json({
+      reactivated: true,
+      cancelAtPeriodEnd: updated.cancel_at_period_end,
+      currentPeriodEnd: updated.current_period_end,
+    });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 export default router;

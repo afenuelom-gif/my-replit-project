@@ -22,6 +22,7 @@ import AdminUsers from "@/pages/admin-users";
 import ResumeTailor from "@/pages/resume-tailor";
 import ResumeHistory from "@/pages/resume-history";
 import BillingSuccess from "@/pages/billing-success";
+import AccountPage from "@/pages/account";
 import { ChevronDown } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -157,6 +158,13 @@ function Auth0MobileActions() {
       >
         Resume Tailor
       </button>
+      <div className="px-4 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Account</div>
+      <button
+        className="cursor-pointer flex items-center w-full px-6 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+        onClick={() => setLocation("/account")}
+      >
+        Billing & Plan
+      </button>
       <button
         className="cursor-pointer flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
         onClick={() =>
@@ -198,7 +206,7 @@ function Auth0DesktopActions() {
           History <ChevronDown className="w-3.5 h-3.5 opacity-60" />
         </button>
         {historyOpen && (
-          <div className="absolute left-0 top-full mt-1.5 w-44 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5 z-50">
+          <div className="absolute left-0 top-full mt-1.5 w-48 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5 z-50">
             <button
               className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
               onClick={() => { closeHistory(); setLocation("/history"); }}
@@ -210,6 +218,13 @@ function Auth0DesktopActions() {
               onClick={() => { closeHistory(); setLocation("/resume-history"); }}
             >
               Resume Tailor
+            </button>
+            <div className="my-1 border-t border-slate-100" />
+            <button
+              className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+              onClick={() => { closeHistory(); setLocation("/account"); }}
+            >
+              Billing & Plan
             </button>
           </div>
         )}
@@ -352,6 +367,12 @@ function Auth0ProviderWithRoutes() {
                 ? <BillingSuccess authMenu={<><Auth0UserMenu /><Auth0DesktopActions /></>} authMobileMenu={<Auth0MobileActions />} />
                 : <Redirect to="/sign-in" />;
             }} />
+            <Route path="/account" component={() => {
+              const { isAuthenticated } = useAuth0();
+              return isAuthenticated
+                ? <AccountPage authMenu={<><Auth0UserMenu /><Auth0DesktopActions /></>} authMobileMenu={<Auth0MobileActions />} />
+                : <Redirect to="/sign-in" />;
+            }} />
             <Route component={NotFound} />
           </Switch>
           <Toaster />
@@ -425,6 +446,13 @@ function ClerkMobileActions() {
       >
         Resume Tailor
       </button>
+      <div className="px-4 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Account</div>
+      <button
+        className="cursor-pointer flex items-center w-full px-6 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+        onClick={() => setLocation("/account")}
+      >
+        Billing & Plan
+      </button>
       <button
         className="cursor-pointer flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
         onClick={() => signOut({ redirectUrl: window.location.href })}
@@ -463,7 +491,7 @@ function ClerkDesktopActions() {
             History <ChevronDown className="w-3.5 h-3.5 opacity-60" />
           </button>
           {historyOpen && (
-            <div className="absolute left-0 top-full mt-1.5 w-44 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5 z-50">
+            <div className="absolute left-0 top-full mt-1.5 w-48 rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-100/50 py-1.5 z-50">
               <button
                 className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
                 onClick={() => { closeHistory(); setLocation("/history"); }}
@@ -475,6 +503,13 @@ function ClerkDesktopActions() {
                 onClick={() => { closeHistory(); setLocation("/resume-history"); }}
               >
                 Resume Tailor
+              </button>
+              <div className="my-1 border-t border-slate-100" />
+              <button
+                className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
+                onClick={() => { closeHistory(); setLocation("/account"); }}
+              >
+                Billing & Plan
               </button>
             </div>
           )}
@@ -620,6 +655,12 @@ function ClerkProviderWithRoutes() {
               const { isSignedIn } = useUser();
               return isSignedIn
                 ? <BillingSuccess authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />
+                : <Redirect to="/sign-in" />;
+            }} />
+            <Route path="/account" component={() => {
+              const { isSignedIn } = useUser();
+              return isSignedIn
+                ? <AccountPage authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />
                 : <Redirect to="/sign-in" />;
             }} />
             <Route component={NotFound} />

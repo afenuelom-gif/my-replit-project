@@ -298,6 +298,19 @@ export default function Report() {
     refetchOnMount: true,
   });
 
+  const { data: userMe } = useQuery({
+    queryKey: ["users-me"],
+    queryFn: async () => {
+      const headers = await getAuthHeaders();
+      const res = await fetch("/api/users/me", { headers });
+      if (!res.ok) return null;
+      return res.json() as Promise<{ plan: string; sessionCredits: number; resumeTailoringCredits: number }>;
+    },
+    retry: false,
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+
   const localFeedbackKey = `feedback_given_${sessionId}`;
   const localFeedbackGiven = !!localStorage.getItem(localFeedbackKey);
 
@@ -920,6 +933,58 @@ export default function Report() {
           </div>
         </div>
       </div>
+      {/* Sessions remaining banner */}
+      {userMe && userMe.plan !== "pro" && (
+        <div className="print:hidden max-w-6xl mx-auto w-full px-6 lg:px-12 pb-4">
+          <div className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 border ${
+            userMe.sessionCredits === 0
+              ? "bg-red-50 border-red-200"
+              : userMe.sessionCredits === 1
+              ? "bg-amber-50 border-amber-200"
+              : "bg-blue-50 border-blue-200"
+          }`}>
+            <div className="flex items-center gap-2.5">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-black text-sm ${
+                userMe.sessionCredits === 0
+                  ? "bg-red-100 text-red-600"
+                  : userMe.sessionCredits === 1
+                  ? "bg-amber-100 text-amber-600"
+                  : "bg-blue-100 text-blue-600"
+              }`}>
+                {userMe.sessionCredits}
+              </div>
+              <div>
+                <p className={`text-sm font-semibold ${
+                  userMe.sessionCredits === 0 ? "text-red-800" : userMe.sessionCredits === 1 ? "text-amber-800" : "text-blue-800"
+                }`}>
+                  {userMe.sessionCredits === 0
+                    ? "No sessions remaining this month"
+                    : `${userMe.sessionCredits} session${userMe.sessionCredits !== 1 ? "s" : ""} remaining`}
+                </p>
+                <p className={`text-xs ${
+                  userMe.sessionCredits === 0 ? "text-red-600" : userMe.sessionCredits === 1 ? "text-amber-600" : "text-blue-500"
+                }`}>
+                  {userMe.sessionCredits === 0
+                    ? "Upgrade your plan or wait for your next billing cycle"
+                    : userMe.plan === "starter"
+                    ? "Starter plan · resets monthly"
+                    : "Resets at the start of your next billing cycle"}
+                </p>
+              </div>
+            </div>
+            {userMe.sessionCredits <= 1 && (
+              <a href="/pricing" className={`text-xs font-semibold px-3 py-1.5 rounded-lg shrink-0 ${
+                userMe.sessionCredits === 0
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-amber-500 text-white hover:bg-amber-600"
+              }`}>
+                Upgrade
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="print:hidden">
         <AppFooter />
       </div>

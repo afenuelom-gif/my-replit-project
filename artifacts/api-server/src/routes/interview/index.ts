@@ -15,6 +15,7 @@ import {
   postureAnalysisTable,
   reportsTable,
   sessionFeedbackTable,
+  usersTable,
 } from "@workspace/db";
 import { sendFeedbackEmail } from "../../lib/sendEmail.js";
 import { sendContactEmail } from "../../lib/sendContactEmail.js";
@@ -573,8 +574,28 @@ router.post("/interview/sessions/:id/complete", optionalAuth, async (req, res): 
     .where(eq(sessionsTable.id, params.data.id))
     .returning();
 
+  // Decrement session credits for logged-in users
+  let sessionCreditsRemaining: number | null = null;
+  if (session.userId) {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
+    if (user) {
+      if (user.plan === "free") {
+        await db.update(usersTable).set({ trialUsed: true }).where(eq(usersTable.id, session.userId));
+        sessionCreditsRemaining = 0;
+      } else if (user.plan !== "pro" && user.sessionCredits > 0) {
+        const newCredits = user.sessionCredits - 1;
+        await db.update(usersTable).set({ sessionCredits: newCredits }).where(eq(usersTable.id, session.userId));
+        sessionCreditsRemaining = newCredits;
+      } else if (user.plan === "pro") {
+        sessionCreditsRemaining = null; // unlimited
+      } else {
+        sessionCreditsRemaining = user.sessionCredits;
+      }
+    }
+  }
+
   const interviewerIds: number[] = JSON.parse(updated.interviewerIds as string);
-  res.json({ ...updated, interviewerIds });
+  res.json({ ...updated, interviewerIds, sessionCreditsRemaining });
 });
 
 router.delete("/interview/sessions/:id", optionalAuth, async (req, res): Promise<void> => {
