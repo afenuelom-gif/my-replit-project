@@ -1,14 +1,18 @@
 import { useLocation } from "wouter";
-import { Check, Zap, Crown, Sparkles } from "lucide-react";
+import { Check, Zap, Crown, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
-import React from "react";
+import React, { useState } from "react";
 
 interface PricingProps {
   authMenu?: React.ReactNode;
   authMobileMenu?: React.ReactNode;
+  isSignedIn?: boolean;
 }
+
+const STARTER_PRICE_ID = "price_1TP7dFRtEcuSwbZwGirNXwpc";
+const PRO_PRICE_ID = "price_1TP7dZRtEcuSwbZw0Sb4ywUP";
 
 const FREE_FEATURES = [
   "1 session, up to 15 minutes",
@@ -37,17 +41,50 @@ const PRO_FEATURES = [
   "Early access to new features",
 ];
 
-function FeatureItem({ text }: { text: string }) {
+function FeatureItem({ text, dark = false }: { text: string; dark?: boolean }) {
   return (
     <li className="flex items-start gap-3">
-      <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-      <span className="text-sm text-slate-600">{text}</span>
+      <Check className={`w-4 h-4 mt-0.5 shrink-0 ${dark ? "text-emerald-300" : "text-emerald-500"}`} />
+      <span className={`text-sm ${dark ? "text-blue-50" : "text-slate-600"}`}>{text}</span>
     </li>
   );
 }
 
-export default function Pricing({ authMenu, authMobileMenu }: PricingProps) {
+async function startCheckout(priceId: string, type: "subscription" | "topup" = "subscription"): Promise<void> {
+  const endpoint = type === "topup" ? "/api/stripe/checkout/topup" : "/api/stripe/checkout/subscription";
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ priceId }),
+  });
+  if (!res.ok) {
+    const err = await res.json() as { error?: string };
+    throw new Error(err.error ?? "Failed to start checkout");
+  }
+  const data = await res.json() as { url?: string };
+  if (data.url) window.location.href = data.url;
+}
+
+export default function Pricing({ authMenu, authMobileMenu, isSignedIn }: PricingProps) {
   const [, setLocation] = useLocation();
+  const [loadingStarter, setLoadingStarter] = useState(false);
+  const [loadingPro, setLoadingPro] = useState(false);
+
+  async function handleStarterClick() {
+    if (!isSignedIn) { setLocation("/sign-up"); return; }
+    setLoadingStarter(true);
+    try { await startCheckout(STARTER_PRICE_ID); }
+    catch (err) { console.error(err); }
+    finally { setLoadingStarter(false); }
+  }
+
+  async function handleProClick() {
+    if (!isSignedIn) { setLocation("/sign-up"); return; }
+    setLoadingPro(true);
+    try { await startCheckout(PRO_PRICE_ID); }
+    catch (err) { console.error(err); }
+    finally { setLoadingPro(false); }
+  }
 
   return (
     <div className="min-h-screen w-full bg-white flex flex-col relative overflow-hidden">
@@ -117,7 +154,13 @@ export default function Pricing({ authMenu, authMobileMenu }: PricingProps) {
               <ul className="space-y-3 flex-1">
                 {STARTER_FEATURES.map((f) => <FeatureItem key={f} text={f} />)}
               </ul>
-              <Button onClick={() => setLocation("/sign-up")} variant="outline" className="w-full border-blue-400 text-blue-700 hover:bg-blue-50 hover:text-blue-900">
+              <Button
+                onClick={handleStarterClick}
+                disabled={loadingStarter}
+                variant="outline"
+                className="w-full border-blue-400 text-blue-700 hover:bg-blue-50 hover:text-blue-900 disabled:opacity-60"
+              >
+                {loadingStarter ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Get started
               </Button>
             </div>
@@ -145,17 +188,14 @@ export default function Pricing({ authMenu, authMobileMenu }: PricingProps) {
                 <span className="text-blue-200 text-sm ml-2">/ month</span>
               </div>
               <ul className="space-y-3 flex-1 relative z-10">
-                {PRO_FEATURES.map((f) => (
-                  <li key={f} className="flex items-start gap-3">
-                    <Check className="w-4 h-4 text-emerald-300 mt-0.5 shrink-0" />
-                    <span className="text-sm text-blue-50">{f}</span>
-                  </li>
-                ))}
+                {PRO_FEATURES.map((f) => <FeatureItem key={f} text={f} dark />)}
               </ul>
               <Button
-                onClick={() => setLocation("/sign-up")}
-                className="relative z-10 w-full bg-white hover:bg-blue-50 text-purple-700 font-bold border-0 shadow-lg hover:text-purple-900 transition-colors"
+                onClick={handleProClick}
+                disabled={loadingPro}
+                className="relative z-10 w-full bg-white hover:bg-blue-50 text-purple-700 font-bold border-0 shadow-lg hover:text-purple-900 transition-colors disabled:opacity-60"
               >
+                {loadingPro ? <Loader2 className="w-4 h-4 animate-spin mr-2 text-purple-700" /> : null}
                 Get Pro
               </Button>
             </div>

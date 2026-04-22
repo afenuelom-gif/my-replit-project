@@ -21,6 +21,7 @@ import AdminFeedback from "@/pages/admin-feedback";
 import AdminUsers from "@/pages/admin-users";
 import ResumeTailor from "@/pages/resume-tailor";
 import ResumeHistory from "@/pages/resume-history";
+import BillingSuccess from "@/pages/billing-success";
 import { ChevronDown } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -312,12 +313,16 @@ function Auth0ProviderWithRoutes() {
             />
             <Route
               path="/pricing"
-              component={() => (
-                <Pricing
-                  authMenu={<><Auth0UserMenu /><Auth0DesktopActions /></>}
-                  authMobileMenu={<Auth0MobileActions />}
-                />
-              )}
+              component={() => {
+                const { isAuthenticated } = useAuth0();
+                return (
+                  <Pricing
+                    authMenu={<><Auth0UserMenu /><Auth0DesktopActions /></>}
+                    authMobileMenu={<Auth0MobileActions />}
+                    isSignedIn={isAuthenticated}
+                  />
+                );
+              }}
             />
             <Route
               path="/contact"
@@ -341,6 +346,12 @@ function Auth0ProviderWithRoutes() {
             <Route path="/admin" component={() => <Redirect to="/admin/feedback" />} />
             <Route path="/admin/feedback" component={AdminFeedback} />
             <Route path="/admin/users" component={AdminUsers} />
+            <Route path="/billing/success" component={() => {
+              const { isAuthenticated } = useAuth0();
+              return isAuthenticated
+                ? <BillingSuccess authMenu={<><Auth0UserMenu /><Auth0DesktopActions /></>} authMobileMenu={<Auth0MobileActions />} />
+                : <Redirect to="/sign-in" />;
+            }} />
             <Route component={NotFound} />
           </Switch>
           <Toaster />
@@ -587,7 +598,10 @@ function ClerkProviderWithRoutes() {
           <DevModeBanner />
           <Switch>
             <Route path="/" component={() => <Home authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />} />
-            <Route path="/pricing" component={() => <Pricing authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />} />
+            <Route path="/pricing" component={() => {
+              const { isSignedIn } = useUser();
+              return <Pricing authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} isSignedIn={isSignedIn ?? false} />;
+            }} />
             <Route path="/contact" component={() => <Contact authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />} />
             <Route path="/start" component={ClerkStartRoute} />
             <Route path="/resume-tailor" component={ClerkResumeTailorRoute} />
@@ -602,6 +616,12 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin" component={() => <Redirect to="/admin/feedback" />} />
             <Route path="/admin/feedback" component={AdminFeedback} />
             <Route path="/admin/users" component={AdminUsers} />
+            <Route path="/billing/success" component={() => {
+              const { isSignedIn } = useUser();
+              return isSignedIn
+                ? <BillingSuccess authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />
+                : <Redirect to="/sign-in" />;
+            }} />
             <Route component={NotFound} />
           </Switch>
           <Toaster />
@@ -646,6 +666,7 @@ function App() {
               <Route path="/admin" component={() => <Redirect to="/admin/feedback" />} />
               <Route path="/admin/feedback" component={AdminFeedback} />
               <Route path="/admin/users" component={AdminUsers} />
+              <Route path="/billing/success" component={() => <BillingSuccess />} />
               <Route component={NotFound} />
             </Switch>
           </WouterRouter>

@@ -6,6 +6,7 @@ import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxy
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { seedInterviewersIfNeeded, patchFemaleInterviewerVoices } from "./lib/seedInterviewers";
+import { WebhookHandlers } from "./lib/webhookHandlers";
 
 const IS_REPLIT_DEV = (Boolean(process.env.REPL_ID) || process.env.NODE_ENV === "development") && process.env.NODE_ENV !== "production";
 const USE_AUTH0 = !IS_REPLIT_DEV && Boolean(process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID);
@@ -35,6 +36,37 @@ app.use(
 if (!USE_AUTH0) {
   app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 }
+
+// ─── Stripe webhook MUST come before express.json() ───────────────────────────
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const signature = req.headers["stripe-signature"];
+
+    if (!signature) {
+      res.status(400).json({ error: "Missing stripe-signature" });
+      return;
+    }
+
+    try {
+      const sig = Array.isArray(signature) ? signature[0] : signature;
+
+      if (!Buffer.isBuffer(req.body)) {
+        logger.error("Stripe webhook: req.body is not a Buffer — express.json() ran first");
+        res.status(500).json({ error: "Webhook processing error" });
+        return;
+      }
+
+      await WebhookHandlers.processWebhook(req.body as Buffer, sig);
+      res.status(200).json({ received: true });
+    } catch (err: unknown) {
+      logger.error({ err }, "Stripe webhook error");
+      res.status(400).json({ error: "Webhook processing error" });
+    }
+  },
+);
+// ─────────────────────────────────────────────────────────────────────────────
 
 app.use(cors({ credentials: true, origin: true }));
 app.use(express.json({ limit: "50mb" }));
