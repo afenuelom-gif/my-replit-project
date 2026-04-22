@@ -28,6 +28,68 @@ import {
   RotateCcw,
 } from "lucide-react";
 
+interface ParsedLine {
+  kind: "section" | "bold" | "bullet" | "blank" | "text";
+  text: string;
+}
+
+function parseResumeLine(line: string): ParsedLine {
+  const trimmed = line.trim();
+  if (!trimmed) return { kind: "blank", text: "" };
+  if (trimmed.startsWith("• ")) return { kind: "bullet", text: trimmed.slice(2) };
+  if (trimmed.startsWith("**") && trimmed.endsWith("**") && trimmed.length > 4) {
+    const inner = trimmed.slice(2, -2);
+    const isSection = /^[A-Z][A-Z\s&/,\-–]+$/.test(inner) && inner.length >= 3;
+    return { kind: isSection ? "section" : "bold", text: inner };
+  }
+  return { kind: "text", text: line };
+}
+
+function stripMarkdown(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("**") && trimmed.endsWith("**") && trimmed.length > 4) {
+        return trimmed.slice(2, -2);
+      }
+      if (trimmed.startsWith("• ")) return "• " + trimmed.slice(2);
+      return line;
+    })
+    .join("\n");
+}
+
+function ResumeDisplay({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return (
+    <div className="font-sans text-sm text-slate-700 leading-relaxed">
+      {lines.map((line, i) => {
+        const parsed = parseResumeLine(line);
+        if (parsed.kind === "blank") return <div key={i} className="h-2" />;
+        if (parsed.kind === "section") {
+          return (
+            <div key={i} className="font-bold text-slate-900 text-[13px] uppercase tracking-wide border-b border-slate-200 pb-0.5 mt-4 mb-1 first:mt-0">
+              {parsed.text}
+            </div>
+          );
+        }
+        if (parsed.kind === "bold") {
+          return <div key={i} className="font-bold text-slate-900">{parsed.text}</div>;
+        }
+        if (parsed.kind === "bullet") {
+          return (
+            <div key={i} className="flex gap-2 pl-1 mt-0.5">
+              <span className="shrink-0 select-none">•</span>
+              <span>{parsed.text}</span>
+            </div>
+          );
+        }
+        return <div key={i}>{parsed.text}</div>;
+      })}
+    </div>
+  );
+}
+
 interface ResumeTailorProps {
   authMenu?: React.ReactNode;
   authMobileMenu?: React.ReactNode;
@@ -401,7 +463,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
 
   function handleCopy() {
     if (!result) return;
-    navigator.clipboard.writeText(result.tailoredResumeText).then(() => {
+    navigator.clipboard.writeText(stripMarkdown(result.tailoredResumeText)).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -409,20 +471,35 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
 
   async function handleDownloadDocx() {
     if (!result) return;
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import("docx");
+    const { Document, Packer, Paragraph, TextRun } = await import("docx");
     const lines = result.tailoredResumeText.split("\n");
     const paragraphs = lines.map((line) => {
-      const trimmed = line.trim();
-      const isHeading = /^[A-Z][A-Z\s]{2,}$/.test(trimmed) && trimmed.length < 50;
-      if (isHeading && trimmed.length > 0) {
+      const parsed = parseResumeLine(line);
+      if (parsed.kind === "blank") {
+        return new Paragraph({ children: [new TextRun({ text: "" })], spacing: { after: 60 } });
+      }
+      if (parsed.kind === "section") {
         return new Paragraph({
-          heading: HeadingLevel.HEADING_2,
-          children: [new TextRun({ text: trimmed, bold: true })],
-          spacing: { before: 200, after: 80 },
+          children: [new TextRun({ text: parsed.text, bold: true, size: 22, allCaps: true })],
+          spacing: { before: 240, after: 60 },
+          border: { bottom: { style: "single", size: 6, color: "AAAAAA", space: 4 } },
+        });
+      }
+      if (parsed.kind === "bold") {
+        return new Paragraph({
+          children: [new TextRun({ text: parsed.text, bold: true, size: 20 })],
+          spacing: { after: 20 },
+        });
+      }
+      if (parsed.kind === "bullet") {
+        return new Paragraph({
+          children: [new TextRun({ text: parsed.text, size: 20 })],
+          bullet: { level: 0 },
+          spacing: { after: 40 },
         });
       }
       return new Paragraph({
-        children: [new TextRun({ text: line })],
+        children: [new TextRun({ text: parsed.text, size: 20 })],
         spacing: { after: 40 },
       });
     });
@@ -441,32 +518,67 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "pt", format: "letter" });
     const margin = 60;
+    const bulletIndent = 14;
     const pageWidth = doc.internal.pageSize.getWidth();
     const maxWidth = pageWidth - margin * 2;
-    const lineHeight = 14;
-    const lines = result.tailoredResumeText.split("\n");
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const lineHeight = 15;
     let y = margin;
 
-    for (const rawLine of lines) {
-      const trimmed = rawLine.trim();
-      const isHeading = /^[A-Z][A-Z\s]{2,}$/.test(trimmed) && trimmed.length < 50 && trimmed.length > 0;
-      if (isHeading) {
+    const checkPage = () => {
+      if (y > pageHeight - margin) { doc.addPage(); y = margin; }
+    };
+
+    for (const rawLine of result.tailoredResumeText.split("\n")) {
+      const parsed = parseResumeLine(rawLine);
+
+      if (parsed.kind === "blank") {
+        y += 6;
+        continue;
+      }
+
+      if (parsed.kind === "section") {
+        y += 10;
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
-        y += 8;
-      } else {
+        doc.setFontSize(10.5);
+        checkPage();
+        doc.text(parsed.text.toUpperCase(), margin, y);
+        y += 3;
+        doc.setDrawColor(170);
+        doc.line(margin, y, pageWidth - margin, y);
+        doc.setDrawColor(0);
+        y += lineHeight - 2;
+        continue;
+      }
+
+      if (parsed.kind === "bold") {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        const wrapped = doc.splitTextToSize(parsed.text, maxWidth) as string[];
+        for (const wl of wrapped) { checkPage(); doc.text(wl, margin, y); y += lineHeight; }
+        continue;
+      }
+
+      if (parsed.kind === "bullet") {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-      }
-      const wrapped = doc.splitTextToSize(rawLine || " ", maxWidth) as string[];
-      for (const wl of wrapped) {
-        if (y > doc.internal.pageSize.getHeight() - margin) {
-          doc.addPage();
-          y = margin;
-        }
-        doc.text(wl, margin, y);
+        const wrapped = doc.splitTextToSize(parsed.text, maxWidth - bulletIndent) as string[];
+        checkPage();
+        doc.text("•", margin, y);
+        doc.text(wrapped[0], margin + bulletIndent, y);
         y += lineHeight;
+        for (let i = 1; i < wrapped.length; i++) {
+          checkPage();
+          doc.text(wrapped[i], margin + bulletIndent, y);
+          y += lineHeight;
+        }
+        continue;
       }
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      const wrapped = doc.splitTextToSize(parsed.text || " ", maxWidth) as string[];
+      for (const wl of wrapped) { checkPage(); doc.text(wl, margin, y); y += lineHeight; }
     }
     doc.save(`${result.jobTitle.replace(/[^a-z0-9]/gi, "_")}_tailored_resume.pdf`);
   }
@@ -765,9 +877,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                       </div>
                     </div>
                     <CardContent className="p-5">
-                      <pre className="whitespace-pre-wrap font-sans text-sm text-slate-700 leading-relaxed">
-                        {result.tailoredResumeText}
-                      </pre>
+                      <ResumeDisplay text={result.tailoredResumeText} />
                     </CardContent>
                   </Card>
 

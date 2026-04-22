@@ -53,10 +53,18 @@ Your rules:
 ${scopeInstruction}
 ${aggressivenessInstruction}
 
+FORMAT RULES for tailoredResumeText — follow these exactly:
+- The candidate's full name (first line): wrap in **double asterisks** e.g. **Jane Smith**
+- The headline/tagline line (job titles with pipes): wrap in **double asterisks** e.g. **Security Analyst | Data Specialist | Process Advocate**
+- Every section heading (PROFESSIONAL EXPERIENCE, EDUCATION, CERTIFICATIONS, SKILLS, TRAINING, SUMMARY, etc.): wrap in **double asterisks** e.g. **PROFESSIONAL EXPERIENCE**
+- Under each job: the company name on its own line wrapped in **double asterisks**, then the job title + dates on the next line also wrapped in **double asterisks**
+- All bullet points: use the • character (not a hyphen or dash). For multi-line bullets, the wrapped continuation lines should be indented with two spaces so text aligns under the first word, not under the bullet.
+- All other text (summaries, body text): plain, no asterisks.
+
 Respond ONLY with a valid JSON object in exactly this structure:
 {
   "jobTitle": "extracted job title from the job description",
-  "tailoredResumeText": "the full tailored resume as plain text, preserving section headers and structure",
+  "tailoredResumeText": "the full tailored resume using the format rules above",
   "changeSummary": ["list of specific changes made, each as a short descriptive sentence"],
   "atsKeywords": ["keyword1", "keyword2", "...list of ATS keywords incorporated"],
   "improvementSuggestions": ["optional suggestion 1", "optional suggestion 2", "...additional tips not covered by the tailoring"]
