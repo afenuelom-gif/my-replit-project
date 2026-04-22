@@ -902,7 +902,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={handleDownloadDocx}
+                          onClick={() => handleDownloadDocx()}
                           className="gap-1.5 text-slate-500 hover:text-slate-700 h-8"
                         >
                           <Download className="w-3.5 h-3.5" />
@@ -911,7 +911,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={handleDownloadPdf}
+                          onClick={() => handleDownloadPdf()}
                           className="gap-1.5 text-slate-500 hover:text-slate-700 h-8"
                         >
                           <Download className="w-3.5 h-3.5" />
