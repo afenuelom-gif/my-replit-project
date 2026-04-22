@@ -24,6 +24,7 @@ const STARTER_FEATURES = [
   "Full performance reports",
   "Questions personalized to your role & background",
   "Question history",
+  "1 AI resume tailor per month",
 ];
 
 const PRO_FEATURES = [
@@ -32,6 +33,7 @@ const PRO_FEATURES = [
   "Full performance reports",
   "Questions personalized to your role & background",
   "Question history",
+  "3 AI resume tailors per month",
   "Early access to new features",
 ];
 
