@@ -405,15 +405,68 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
     });
   }
 
-  function handleDownload() {
+  async function handleDownloadDocx() {
     if (!result) return;
-    const blob = new Blob([result.tailoredResumeText], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import("docx");
+    const lines = result.tailoredResumeText.split("\n");
+    const paragraphs = lines.map((line) => {
+      const trimmed = line.trim();
+      const isHeading = /^[A-Z][A-Z\s]{2,}$/.test(trimmed) && trimmed.length < 50;
+      if (isHeading && trimmed.length > 0) {
+        return new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          children: [new TextRun({ text: trimmed, bold: true })],
+          spacing: { before: 200, after: 80 },
+        });
+      }
+      return new Paragraph({
+        children: [new TextRun({ text: line })],
+        spacing: { after: 40 },
+      });
+    });
+    const doc = new Document({ sections: [{ properties: {}, children: paragraphs }] });
+    const buffer = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(buffer);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${result.jobTitle.replace(/[^a-z0-9]/gi, "_")}_tailored_resume.txt`;
+    a.download = `${result.jobTitle.replace(/[^a-z0-9]/gi, "_")}_tailored_resume.docx`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function handleDownloadPdf() {
+    if (!result) return;
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "pt", format: "letter" });
+    const margin = 60;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const maxWidth = pageWidth - margin * 2;
+    const lineHeight = 14;
+    const lines = result.tailoredResumeText.split("\n");
+    let y = margin;
+
+    for (const rawLine of lines) {
+      const trimmed = rawLine.trim();
+      const isHeading = /^[A-Z][A-Z\s]{2,}$/.test(trimmed) && trimmed.length < 50 && trimmed.length > 0;
+      if (isHeading) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        y += 8;
+      } else {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+      }
+      const wrapped = doc.splitTextToSize(rawLine || " ", maxWidth) as string[];
+      for (const wl of wrapped) {
+        if (y > doc.internal.pageSize.getHeight() - margin) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(wl, margin, y);
+        y += lineHeight;
+      }
+    }
+    doc.save(`${result.jobTitle.replace(/[^a-z0-9]/gi, "_")}_tailored_resume.pdf`);
   }
 
   function toggleSection(key: keyof typeof expandedSections) {
@@ -692,11 +745,20 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={handleDownload}
+                          onClick={handleDownloadDocx}
                           className="gap-1.5 text-slate-500 hover:text-slate-700 h-8"
                         >
                           <Download className="w-3.5 h-3.5" />
-                          Download
+                          Word
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleDownloadPdf}
+                          className="gap-1.5 text-slate-500 hover:text-slate-700 h-8"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          PDF
                         </Button>
                       </div>
                     </div>
