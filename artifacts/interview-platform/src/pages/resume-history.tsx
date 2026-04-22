@@ -110,9 +110,7 @@ async function handleDownloadDocx(r: FullHistoryResult) {
     return new Paragraph({ children: [new TextRun({ text: parsed.text || " ", size: 20 })] });
   });
   const doc = new Document({ sections: [{ children: paragraphs }] });
-  const blob = new Blob([await Packer.toBuffer(doc)], {
-    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  });
+  const blob = await Packer.toBlob(doc);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
