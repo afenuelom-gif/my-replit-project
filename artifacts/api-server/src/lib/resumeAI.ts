@@ -35,10 +35,17 @@ export async function tailorResume(opts: {
 
   const aggressivenessInstruction =
     aggressiveness === "conservative"
-      ? "Make light, minimal edits. Preserve the original phrasing as much as possible. Only make changes where they are clearly beneficial for ATS alignment."
+      ? "Make light, minimal edits. Preserve the original phrasing as much as possible. Only make changes where they are clearly beneficial for ATS alignment. Touch as little as possible."
       : aggressiveness === "balanced"
-      ? "Apply standard ATS optimization. Rephrase sentences to incorporate relevant keywords naturally. Maintain a professional, human tone throughout."
-      : "Apply extensive rewriting where needed. Strongly align the resume language, achievements, and skills to the job description. This user has weaker alignment and needs maximum optimization — but never fabricate experience.";
+      ? "Apply standard ATS optimization. Rephrase sentences to incorporate relevant keywords naturally. Rewrite bullet points that are vague or generic. Maintain a professional, human tone throughout."
+      : `Apply maximum rewriting. Treat every bullet point, sentence, and section as rewriteable unless it already perfectly mirrors the job description's language.
+- Rewrite the professional summary entirely to position the candidate specifically for this role.
+- Rewrite every bullet point to use the exact action verbs, terminology, and keywords from the job description wherever the candidate's experience supports it.
+- Tighten vague, generic phrasing into specific, impactful statements.
+- If a skill or competency appears in the job description and the candidate has demonstrated it anywhere in their history, make it prominent.
+- Do NOT preserve original phrasing simply to preserve it — assume all phrasing can and should be improved.
+- The output resume should read as if the candidate wrote it specifically for this job, not as a generic resume that has been lightly edited.
+- Never fabricate experience, invent titles, or add companies not in the original.`;
 
   const systemPrompt = `You are an expert resume writer and ATS optimization specialist. You help job seekers tailor their resumes to specific job descriptions.
 
@@ -85,8 +92,8 @@ ${resumeText}`;
       { role: "user", content: userPrompt },
     ],
     response_format: { type: "json_object" },
-    temperature: 0.4,
-    max_tokens: 4000,
+    temperature: aggressiveness === "strong" ? 0.7 : aggressiveness === "balanced" ? 0.5 : 0.3,
+    max_tokens: 6000,
   });
 
   const raw = response.choices[0]?.message?.content ?? "{}";
