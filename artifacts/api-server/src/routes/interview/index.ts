@@ -4,6 +4,13 @@ import type { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import { optionalAuth, requireAuth } from "../../middlewares/requireAuth.js";
 import { emailService } from "../../lib/emailService.js";
+import {
+  sessionCreateLimiter,
+  nextQuestionLimiter,
+  transcribeLimiter,
+  ttsLimiter,
+  postureLimiter,
+} from "../../lib/rateLimiters.js";
 
 function isForbidden(session: { userId: string | null }, req: Request): boolean {
   return !!(session.userId && session.userId !== req.userId);
@@ -124,7 +131,7 @@ router.get("/interview/interviewers", async (_req, res): Promise<void> => {
   res.json(interviewers);
 });
 
-router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void> => {
+router.post("/interview/sessions", optionalAuth, sessionCreateLimiter, async (req, res): Promise<void> => {
   const parsed = CreateSessionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -336,7 +343,7 @@ router.get("/interview/sessions/:id", optionalAuth, async (req, res): Promise<vo
   });
 });
 
-router.post("/interview/sessions/:id/next-question", optionalAuth, async (req, res): Promise<void> => {
+router.post("/interview/sessions/:id/next-question", optionalAuth, nextQuestionLimiter, async (req, res): Promise<void> => {
   const params = GetNextQuestionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -519,7 +526,7 @@ router.post("/interview/sessions/:id/next-question", optionalAuth, async (req, r
   });
 });
 
-router.post("/interview/sessions/:id/posture", optionalAuth, async (req, res): Promise<void> => {
+router.post("/interview/sessions/:id/posture", optionalAuth, postureLimiter, async (req, res): Promise<void> => {
   const params = AnalyzePostureParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -844,7 +851,7 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
   });
 });
 
-router.post("/interview/sessions/:id/tts", optionalAuth, async (req, res): Promise<void> => {
+router.post("/interview/sessions/:id/tts", optionalAuth, ttsLimiter, async (req, res): Promise<void> => {
   const params = TextToSpeechParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -888,7 +895,7 @@ router.post("/interview/sessions/:id/tts", optionalAuth, async (req, res): Promi
   });
 });
 
-router.post("/interview/sessions/:id/transcribe", optionalAuth, async (req, res): Promise<void> => {
+router.post("/interview/sessions/:id/transcribe", optionalAuth, transcribeLimiter, async (req, res): Promise<void> => {
   const params = TranscribeAnswerParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

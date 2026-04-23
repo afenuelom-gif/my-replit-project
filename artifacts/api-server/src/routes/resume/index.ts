@@ -5,6 +5,7 @@ import { eq, desc, and, sql } from "drizzle-orm";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { tailorResume } from "../../lib/resumeAI.js";
 import { emailService } from "../../lib/emailService.js";
+import { resumeTailorLimiter } from "../../lib/rateLimiters.js";
 
 const router: IRouter = Router();
 
@@ -64,6 +65,7 @@ router.post(
 router.post(
   "/resume/tailor",
   requireAuth,
+  resumeTailorLimiter,
   upload.fields([
     { name: "resumeFile", maxCount: 1 },
     { name: "jdFile", maxCount: 1 },
