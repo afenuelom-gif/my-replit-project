@@ -500,6 +500,8 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
         } else if (data.code === "NO_CREDITS") {
           setNoCreditsError(true);
           setError(data.error ?? "You have no resume tailoring credits remaining.");
+        } else if (data.code === "AI_RATE_LIMIT" || res.status === 429) {
+          setError("The AI service is temporarily busy — please wait 30 seconds and try again. Your credit has not been used.");
         } else {
           setError(data.error ?? "Something went wrong. Please try again.");
         }

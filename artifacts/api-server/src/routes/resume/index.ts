@@ -6,6 +6,7 @@ import { requireAuth } from "../../middlewares/requireAuth.js";
 import { tailorResume } from "../../lib/resumeAI.js";
 import { emailService } from "../../lib/emailService.js";
 import { resumeTailorLimiter } from "../../lib/rateLimiters.js";
+import OpenAI from "openai";
 
 const router: IRouter = Router();
 
@@ -154,7 +155,11 @@ router.post(
         aggressiveness: aggressiveness as "conservative" | "balanced" | "strong",
       });
     } catch (err) {
-      res.status(500).json({ error: (err as Error).message ?? "AI tailoring failed" });
+      if (err instanceof OpenAI.APIError && err.status === 429) {
+        res.status(429).json({ code: "AI_RATE_LIMIT", error: "The AI service is temporarily busy. Please wait 30 seconds and try again." });
+      } else {
+        res.status(500).json({ error: (err as Error).message ?? "AI tailoring failed" });
+      }
       return;
     }
 
@@ -270,7 +275,11 @@ router.post(
         aggressiveness: aggressiveness as "conservative" | "balanced" | "strong",
       });
     } catch (err) {
-      res.status(500).json({ error: (err as Error).message ?? "AI tailoring failed" });
+      if (err instanceof OpenAI.APIError && err.status === 429) {
+        res.status(429).json({ code: "AI_RATE_LIMIT", error: "The AI service is temporarily busy. Please wait 30 seconds and try again." });
+      } else {
+        res.status(500).json({ error: (err as Error).message ?? "AI tailoring failed" });
+      }
       return;
     }
 
