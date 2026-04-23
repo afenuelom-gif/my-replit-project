@@ -131,9 +131,11 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
   }
 
   // Credit gate — enforce session limits before doing any expensive work
+  let userPlan: string | null = null;
   if (req.userId) {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId)).limit(1);
     if (user) {
+      userPlan = user.plan;
       if (user.plan === "free" && user.trialUsed) {
         res.status(403).json({ error: "You have used your free trial session. Upgrade to continue.", code: "NO_CREDITS" });
         return;
@@ -146,8 +148,10 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
   }
 
   const { jobRole, jobDescription, resumeText, durationMinutes: rawDuration } = parsed.data;
-  const VALID_DURATIONS = [2, 30, 35, 40, 45];
-  const durationMinutes = VALID_DURATIONS.includes(rawDuration) ? rawDuration : 35;
+  const VALID_DURATIONS = [15, 30, 35, 40, 45];
+  const parsedDuration = VALID_DURATIONS.includes(rawDuration) ? rawDuration : 30;
+  // Free trial users are always capped at 15 minutes
+  const durationMinutes = (!userPlan || userPlan === "free") ? 15 : parsedDuration;
 
   await seedInterviewersIfNeeded();
 
