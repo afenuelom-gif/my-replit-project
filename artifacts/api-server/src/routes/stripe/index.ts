@@ -5,6 +5,7 @@ import { requireAuth } from "../../middlewares/requireAuth.js";
 import { stripeService } from "../../lib/stripeService.js";
 import { stripeStorage } from "../../lib/stripeStorage.js";
 import { getStripeClient, isStripeConfigured } from "../../lib/stripeClient.js";
+import { emailService } from "../../lib/emailService.js";
 
 const router: IRouter = Router();
 
@@ -286,6 +287,14 @@ router.post("/stripe/reactivate", requireAuth, async (req: Request, res: Respons
     const updated = await stripe.subscriptions.update(user.stripeSubscriptionId, {
       cancel_at_period_end: false,
     });
+
+    const dbUser = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1).then(r => r[0]);
+    if (dbUser?.email) {
+      const renewDate = updated.current_period_end
+        ? new Date(updated.current_period_end * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+        : undefined;
+      emailService.sendSubscriptionReactivated(dbUser.email, dbUser.firstName, dbUser.plan ?? "starter", renewDate);
+    }
 
     res.json({
       reactivated: true,

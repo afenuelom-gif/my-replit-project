@@ -120,6 +120,24 @@ export const emailService = {
     `)).catch(() => {});
   },
 
+  sendSubscriptionReactivated(to: string, firstName: string | null | undefined, plan: string, accessUntil?: string): void {
+    const label = plan === "pro" ? "Pro" : "Starter";
+    const renewNote = accessUntil
+      ? `<p style="margin:0 0 16px;font-size:15px;color:#334155;line-height:1.65;">Your plan will continue to renew normally on <strong>${accessUntil}</strong>.</p>`
+      : "";
+    deliver(to, "Your PrepInterv AI subscription has been reactivated", wrap(`
+      <p style="margin:0 0 8px;font-size:17px;font-weight:700;color:#0f172a;">${hi(firstName)}</p>
+      <p style="margin:0 0 16px;font-size:15px;color:#334155;line-height:1.65;">
+        Great news — your <strong>PrepInterv AI ${label}</strong> subscription is back on. Your cancellation has been reversed and nothing has changed about your plan.
+      </p>
+      ${renewNote}
+      <p style="margin:0 0 20px;font-size:15px;color:#334155;line-height:1.65;">
+        Head back to the dashboard to keep practising.
+      </p>
+      ${btn("Go to Dashboard", `${APP_URL}/dashboard`)}
+    `)).catch(() => {});
+  },
+
   sendPaymentFailed(to: string, firstName: string | null | undefined): void {
     deliver(to, "Action required: payment failed for PrepInterv AI", wrap(`
       <p style="margin:0 0 8px;font-size:17px;font-weight:700;color:#0f172a;">${hi(firstName)}</p>
