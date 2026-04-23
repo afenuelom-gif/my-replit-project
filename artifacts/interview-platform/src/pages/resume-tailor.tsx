@@ -371,6 +371,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [noCreditsError, setNoCreditsError] = useState(false);
   const [result, setResult] = useState<TailoringResult | null>(null);
 
   const [copied, setCopied] = useState(false);
@@ -421,6 +422,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
 
   async function handleSubmit() {
     setError("");
+    setNoCreditsError(false);
     setLoading(true);
     try {
       const headers = await getAuthHeaders();
@@ -448,7 +450,8 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
         if (res.status === 401) {
           setError("Your session has expired. Please sign in again to continue.");
         } else if (data.code === "NO_CREDITS") {
-          setError("You have no resume tailoring credits remaining. Upgrade your plan to continue.");
+          setNoCreditsError(true);
+          setError(data.error ?? "You have no resume tailoring credits remaining.");
         } else {
           setError(data.error ?? "Something went wrong. Please try again.");
         }
@@ -659,8 +662,14 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
               {step < 3 && <StepIndicator current={step} />}
 
               {error && (
-                <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-                  {error}
+                <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5 font-black">!</span>
+                  <span>
+                    {error}
+                    {noCreditsError && (
+                      <> <a href="/pricing" className="underline underline-offset-2 font-medium hover:text-red-900">View plans &amp; upgrade →</a></>
+                    )}
+                  </span>
                 </div>
               )}
 

@@ -126,14 +126,13 @@ router.post(
       .where(eq(usersTable.id, userId))
       .limit(1);
 
-    // Credit enforcement disabled for testing
-    // if (!user || user.resumeTailoringCredits <= 0) {
-    //   res.status(403).json({
-    //     code: "NO_CREDITS",
-    //     error: "You have no resume tailoring credits remaining. Upgrade your plan to continue.",
-    //   });
-    //   return;
-    // }
+    if (!user || user.resumeTailoringCredits <= 0) {
+      res.status(403).json({
+        code: "NO_CREDITS",
+        error: "You have no resume tailoring credits remaining. Upgrade your plan or purchase a top-up to continue.",
+      });
+      return;
+    }
 
     let result;
     try {
@@ -148,11 +147,10 @@ router.post(
       return;
     }
 
-    // Credit deduction disabled for testing
-    // await db
-    //   .update(usersTable)
-    //   .set({ resumeTailoringCredits: sql`${usersTable.resumeTailoringCredits} - 1` })
-    //   .where(eq(usersTable.id, userId));
+    await db
+      .update(usersTable)
+      .set({ resumeTailoringCredits: sql`${usersTable.resumeTailoringCredits} - 1` })
+      .where(eq(usersTable.id, userId));
 
     const [saved] = await db
       .insert(resumeTailoringTable)
