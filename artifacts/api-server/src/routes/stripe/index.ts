@@ -105,6 +105,7 @@ router.post("/stripe/portal", requireAuth, async (req: Request, res: Response): 
 
 // GET /stripe/subscription — get current user's subscription status
 router.get("/stripe/subscription", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store, no-cache");
   try {
     const userId = req.userId!;
     const [user] = await db

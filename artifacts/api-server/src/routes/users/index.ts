@@ -7,6 +7,7 @@ import { isAdminUserOrEmail, hasAnyAdminConfigured } from "../../lib/adminAuth.j
 const router: IRouter = Router();
 
 router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store, no-cache");
   const isAdmin = await isAdminUserOrEmail(req.userId);
   const [user] = await db.select({
     plan: usersTable.plan,

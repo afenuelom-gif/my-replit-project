@@ -55,22 +55,26 @@ export default function AccountPage({ authMenu, authMobileMenu }: AccountPagePro
   const { data: me, isLoading: meLoading } = useQuery<UserMe>({
     queryKey: ["users-me"],
     queryFn: async () => {
-      const res = await fetch("/api/users/me", { headers: await getAuthHeaders() });
+      const res = await fetch("/api/users/me", { headers: await getAuthHeaders(), cache: "no-store" });
       if (!res.ok) throw new Error("Unauthorized");
       return res.json() as Promise<UserMe>;
     },
     retry: false,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const { data: sub, isLoading: subLoading } = useQuery<SubscriptionData>({
     queryKey: ["stripe-subscription"],
     queryFn: async () => {
-      const res = await fetch("/api/stripe/subscription", { headers: await getAuthHeaders() });
+      const res = await fetch("/api/stripe/subscription", { headers: await getAuthHeaders(), cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load subscription");
       return res.json() as Promise<SubscriptionData>;
     },
     enabled: !!me,
     retry: false,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const cancelMutation = useMutation({
