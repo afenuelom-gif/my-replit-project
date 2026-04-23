@@ -51,7 +51,7 @@ export class WebhookHandlers {
         if (invoice.billing_reason === "subscription_cycle") {
           await WebhookHandlers.handleSubscriptionRenewal(sub);
         } else {
-          await WebhookHandlers.handleSubscriptionUpsert(sub);
+          await WebhookHandlers.handleSubscriptionUpsert(sub, false);
         }
         break;
       }
@@ -135,6 +135,10 @@ export class WebhookHandlers {
     logger.info({ userId, plan }, "Subscription upserted via webhook");
 
     const user = await WebhookHandlers.getUser(userId);
+    logger.info(
+      { userId, hasEmail: !!user?.email, isNew, cancelAtPeriodEnd: sub.cancel_at_period_end, subStatus: sub.status },
+      "Email condition check"
+    );
     if (user?.email) {
       if (isNew && sub.status === "active") {
         emailService.sendSubscriptionConfirmed(user.email, user.firstName, plan);
