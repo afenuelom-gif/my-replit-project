@@ -165,20 +165,15 @@ router.post("/stripe/sync-user-plan", requireAuth, async (req: Request, res: Res
       });
 
       if (session.mode === "payment" && session.payment_status === "paid") {
-        // Top-up purchase
-        const priceId = session.line_items?.data[0]?.price?.id ?? "";
-        const tailorCredits = stripeService.getTopUpCreditsForPrice(priceId);
-
-        const [updated] = await db
-          .update(usersTable)
-          .set({
-            resumeTailoringCredits: (user.resumeTailoringCredits ?? 0) + tailorCredits,
-            stripeCustomerId: user.stripeCustomerId ?? (session.customer as string ?? null),
-          })
-          .where(eq(usersTable.id, userId))
-          .returning();
-
-        res.json({ plan: updated.plan, resumeTailoringCredits: updated.resumeTailoringCredits, type: "topup" });
+        // Top-up purchase — credits are added exclusively by the webhook (checkout.session.completed).
+        // Here we only return the current DB state so the billing-success page can display it.
+        // Adding credits here would double-count every purchase.
+        if (user.stripeCustomerId == null && session.customer) {
+          await db.update(usersTable)
+            .set({ stripeCustomerId: session.customer as string })
+            .where(eq(usersTable.id, userId));
+        }
+        res.json({ plan: user.plan, resumeTailoringCredits: user.resumeTailoringCredits, type: "topup" });
         return;
       }
 
