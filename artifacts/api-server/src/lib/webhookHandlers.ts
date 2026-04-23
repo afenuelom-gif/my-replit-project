@@ -41,9 +41,12 @@ export class WebhookHandlers {
       }
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
-        if (invoice.subscription) {
-          const stripe = getStripeClient();
-          const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
+        if (!invoice.subscription) break;
+        const stripe = getStripeClient();
+        const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
+        if (invoice.billing_reason === "subscription_cycle") {
+          await WebhookHandlers.handleSubscriptionRenewal(sub);
+        } else {
           await WebhookHandlers.handleSubscriptionUpsert(sub);
         }
         break;
@@ -85,6 +88,23 @@ export class WebhookHandlers {
     }).where(eq(usersTable.id, userId));
 
     logger.info({ userId, plan }, "Subscription upserted via webhook");
+  }
+
+  private static async handleSubscriptionRenewal(sub: Stripe.Subscription): Promise<void> {
+    const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+
+    const stripe = getStripeClient();
+    const customers = await stripe.customers.search({ query: `id:'${customerId}'`, limit: 1 });
+    const userId = customers.data[0]?.metadata?.userId;
+    if (!userId) return;
+
+    const { plan, sessionCredits } = await stripeService.getPlanFromSubscription(sub);
+
+    await db.update(usersTable)
+      .set({ sessionCredits })
+      .where(eq(usersTable.id, userId));
+
+    logger.info({ userId, plan, sessionCredits }, "Session credits reset on billing renewal");
   }
 
   private static async handleSubscriptionDeleted(sub: Stripe.Subscription): Promise<void> {
