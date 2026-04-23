@@ -448,7 +448,7 @@ function ClerkUserMenu() {
           <div className="my-1 border-t border-slate-100" />
           <button
             className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-red-600 hover:bg-red-50 transition-colors text-left"
-            onClick={() => { setOpen(false); signOut({ redirectUrl: window.location.href }); }}
+            onClick={() => { setOpen(false); signOut({ redirectUrl: window.location.origin + (basePath || "") }); }}
           >
             Sign Out
           </button>
@@ -486,7 +486,7 @@ function ClerkMobileActions() {
       </button>
       <button
         className="cursor-pointer flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
-        onClick={() => signOut({ redirectUrl: window.location.href })}
+        onClick={() => signOut({ redirectUrl: window.location.origin + (basePath || "") })}
       >
         Sign Out
       </button>
