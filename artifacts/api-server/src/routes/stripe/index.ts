@@ -185,17 +185,23 @@ router.post("/stripe/sync-user-plan", requireAuth, async (req: Request, res: Res
         const sub = typeof session.subscription === "string"
           ? await stripe.subscriptions.retrieve(session.subscription)
           : session.subscription;
+        const subId = (sub as { id: string }).id;
 
         const { plan, sessionCredits, resumeCredits } = await stripeService.getPlanFromSubscription(sub as Parameters<typeof stripeService.getPlanFromSubscription>[0]);
+
+        // Only reset credits when this is a genuinely new subscription or a plan change.
+        // If the user already has this exact subscription ID stored, they have already
+        // received their initial credits — don't overwrite whatever they've used.
+        const isNewSub = user.stripeSubscriptionId !== subId;
+        const isPlanChange = user.plan !== plan;
 
         const [updated] = await db
           .update(usersTable)
           .set({
             plan,
-            stripeSubscriptionId: (sub as { id: string }).id,
+            stripeSubscriptionId: subId,
             stripeCustomerId: user.stripeCustomerId ?? (session.customer as string ?? null),
-            sessionCredits,
-            resumeTailoringCredits: resumeCredits,
+            ...(isNewSub || isPlanChange ? { sessionCredits, resumeTailoringCredits: resumeCredits } : {}),
           })
           .where(eq(usersTable.id, userId))
           .returning();
@@ -219,9 +225,15 @@ router.post("/stripe/sync-user-plan", requireAuth, async (req: Request, res: Res
     }
 
     const { plan, sessionCredits, resumeCredits } = await stripeService.getPlanFromSubscription(activeSub);
+    const isNewSub = user.stripeSubscriptionId !== activeSub.id;
+    const isPlanChange = user.plan !== plan;
     const [updated] = await db
       .update(usersTable)
-      .set({ plan, stripeSubscriptionId: activeSub.id, sessionCredits, resumeTailoringCredits: resumeCredits })
+      .set({
+        plan,
+        stripeSubscriptionId: activeSub.id,
+        ...(isNewSub || isPlanChange ? { sessionCredits, resumeTailoringCredits: resumeCredits } : {}),
+      })
       .where(eq(usersTable.id, userId))
       .returning();
 
