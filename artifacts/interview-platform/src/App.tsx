@@ -27,6 +27,7 @@ import BillingSuccess from "@/pages/billing-success";
 import AccountPage from "@/pages/account";
 import { ChevronDown, ShieldCheck } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
 
 const queryClient = new QueryClient();
 
@@ -368,6 +369,7 @@ function Auth0ProviderWithRoutes() {
             }} />
             <Route component={NotFound} />
           </Switch>
+          <CookieConsentBanner />
           <Toaster />
           </Auth0LoadingGate>
         </TooltipProvider>
@@ -706,6 +708,7 @@ function ClerkProviderWithRoutes() {
             }} />
             <Route component={NotFound} />
           </Switch>
+          <CookieConsentBanner />
           <Toaster />
           </ClerkGate>
         </TooltipProvider>
@@ -754,6 +757,7 @@ function App() {
               <Route component={NotFound} />
             </Switch>
           </WouterRouter>
+          <CookieConsentBanner />
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>
