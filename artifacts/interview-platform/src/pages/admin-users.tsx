@@ -29,10 +29,12 @@ interface AdminUser {
   email: string | null;
   firstName: string | null;
   lastName: string | null;
+  plan: string;
   sessionCredits: number;
   createdAt: string;
   totalLogins: number;
   completedSessions: number;
+  sessionsThisMonth: number;
   lastLogin: string | null;
   lastCountry: string | null;
   lastCity: string | null;
@@ -74,6 +76,21 @@ function formatDateShort(iso: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function planBadge(plan: string) {
+  const styles: Record<string, string> = {
+    pro: "bg-purple-100 text-purple-700 border border-purple-200",
+    starter: "bg-blue-100 text-blue-700 border border-blue-200",
+    free: "bg-slate-100 text-slate-500 border border-slate-200",
+  };
+  const label: Record<string, string> = { pro: "Pro", starter: "Starter", free: "Free" };
+  const cls = styles[plan] ?? styles.free;
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${cls}`}>
+      {label[plan] ?? plan}
+    </span>
+  );
 }
 
 function fullName(user: AdminUser): string {
@@ -318,6 +335,10 @@ function UserDetailPanel({
               <p className="text-slate-800 break-all">{user.email ?? "—"}</p>
             </div>
             <div>
+              <p className="text-xs font-medium text-slate-500 mb-0.5">Plan</p>
+              <div>{planBadge(user.plan)}</div>
+            </div>
+            <div>
               <p className="text-xs font-medium text-slate-500 mb-0.5">Signed Up</p>
               <p className="text-slate-800">{formatDateShort(user.createdAt)}</p>
             </div>
@@ -326,10 +347,22 @@ function UserDetailPanel({
               <p className="text-slate-800">{user.totalLogins}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500 mb-0.5">Completed Sessions</p>
+              <p className="text-xs font-medium text-slate-500 mb-0.5">Sessions This Month</p>
+              <p className="text-slate-800 font-semibold">
+                {user.sessionsThisMonth}
+                {user.plan === "starter" && (
+                  <span className="ml-1 text-xs font-normal text-slate-400">/ 4</span>
+                )}
+                {user.plan === "pro" && (
+                  <span className="ml-1 text-xs font-normal text-purple-400">unlimited</span>
+                )}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-500 mb-0.5">Total Completed</p>
               <p className="text-slate-800">{user.completedSessions}</p>
             </div>
-            <div className="col-span-2 sm:col-span-4">
+            <div className="col-span-2">
               <p className="text-xs font-medium text-slate-500 mb-0.5">Last Login</p>
               <p className="text-slate-800">{formatDate(user.lastLogin)}</p>
             </div>
@@ -540,13 +573,16 @@ export default function AdminUsers() {
   }
 
   function exportCSV() {
-    const headers = ["Name", "Email", "Signed Up", "Last Login", "Total Logins", "Location"];
+    const headers = ["Name", "Email", "Plan", "Signed Up", "Last Login", "Total Logins", "Sessions This Month", "Total Sessions", "Location"];
     const rows = filteredUsers.map((user) => [
       fullName(user),
       user.email ?? "",
+      user.plan,
       formatDate(user.createdAt),
       formatDate(user.lastLogin),
       String(user.totalLogins),
+      String(user.sessionsThisMonth),
+      String(user.completedSessions),
       locationStr(user.lastCountry, user.lastCity),
     ]);
     const sanitize = (v: string) => /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
@@ -784,13 +820,19 @@ export default function AdminUsers() {
                                         Email
                                       </th>
                                       <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                        Plan
+                                      </th>
+                                      <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
                                         Signed Up
                                       </th>
                                       <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
                                         Logins
                                       </th>
                                       <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                        Sessions
+                                        This Month
+                                      </th>
+                                      <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                        Total
                                       </th>
                                       <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
                                         Last Login
@@ -814,11 +856,17 @@ export default function AdminUsers() {
                                         <td className="py-3 px-4 text-sm text-slate-600 max-w-[200px] truncate">
                                           {user.email ?? "—"}
                                         </td>
+                                        <td className="py-3 px-4 whitespace-nowrap">
+                                          {planBadge(user.plan)}
+                                        </td>
                                         <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
                                           {formatDateShort(user.createdAt)}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-slate-600 text-center">
                                           {user.totalLogins}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm text-slate-600 text-center font-medium">
+                                          {user.sessionsThisMonth}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-slate-600 text-center">
                                           {user.completedSessions}

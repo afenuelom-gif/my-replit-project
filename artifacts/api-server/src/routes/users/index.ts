@@ -88,6 +88,7 @@ router.get("/users/admin/users", requireAuth, requireAdmin, async (_req, res): P
       email: usersTable.email,
       firstName: usersTable.firstName,
       lastName: usersTable.lastName,
+      plan: usersTable.plan,
       sessionCredits: usersTable.sessionCredits,
       createdAt: usersTable.createdAt,
       totalLogins: count(loginEventsTable.id),
@@ -108,6 +109,12 @@ router.get("/users/admin/users", requireAuth, requireAdmin, async (_req, res): P
         SELECT COUNT(*)::int FROM interview_sessions
         WHERE user_id = ${usersTable.id}
         AND status = 'completed'
+      )`,
+      sessionsThisMonth: sql<number>`(
+        SELECT COUNT(*)::int FROM interview_sessions
+        WHERE user_id = ${usersTable.id}
+        AND status != 'cancelled'
+        AND created_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC')
       )`,
     })
     .from(usersTable)
