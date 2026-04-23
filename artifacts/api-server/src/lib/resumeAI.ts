@@ -64,6 +64,7 @@ ${aggressivenessInstruction}
 FORMAT RULES for tailoredResumeText — follow these exactly:
 - The candidate's full name (first line): wrap in **double asterisks** e.g. **Jane Smith**. If the name was not provided, use **[Your Name]** as a placeholder — never skip this line.
 - Contact info line (address, phone, email): if not present in the original, include a placeholder line immediately after the name: **[Your Address] | [Phone Number] | [Email Address]** — so the user knows exactly where to insert their details. If contact info is present, keep it unchanged.
+- Leave one blank line between the contact info line and the headline/tagline line.
 - The headline/tagline line (job titles with pipes): wrap in **double asterisks** e.g. **Security Analyst | Data Specialist | Process Advocate**
 - Every section heading (PROFESSIONAL EXPERIENCE, EDUCATION, CERTIFICATIONS, SKILLS, TRAINING, SUMMARY, etc.): wrap in **double asterisks** e.g. **PROFESSIONAL EXPERIENCE**
 - Under each job: the company name on its own line wrapped in **double asterisks**, then the job title + dates on the next line also wrapped in **double asterisks**
