@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useAuthActions } from "@/contexts/auth-actions";
 import { useQuery } from "@tanstack/react-query";
 import { AppHeader } from "@/components/AppHeader";
+import { AdminNav } from "@/components/AdminNav";
 import AppFooter from "@/components/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -323,28 +324,7 @@ export default function AdminFeedback() {
         }
       />
 
-      <div className="relative z-10 border-b border-slate-200/80 bg-white/60 backdrop-blur-sm">
-        <div className="max-w-5xl mx-auto px-6">
-          <nav className="-mb-px flex gap-6">
-            {[
-              { label: "Feedback", path: "/admin/feedback" },
-              { label: "Users", path: "/admin/users" },
-            ].map(({ label, path }) => (
-              <button
-                key={path}
-                onClick={() => setLocation(path)}
-                className={`py-3 text-sm font-medium border-b-2 transition-colors ${
-                  location === path
-                    ? "border-blue-600 text-blue-700"
-                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
+      <AdminNav />
 
       <div className="flex-1 p-6 relative z-10">
         <div className="max-w-5xl mx-auto space-y-6">

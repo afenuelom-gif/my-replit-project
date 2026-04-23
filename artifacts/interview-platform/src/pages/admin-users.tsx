@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useAuthActions } from "@/contexts/auth-actions";
 import { useQuery } from "@tanstack/react-query";
 import { AppHeader } from "@/components/AppHeader";
+import { AdminNav } from "@/components/AdminNav";
 import AppFooter from "@/components/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -632,28 +633,7 @@ export default function AdminUsers() {
         }
       />
 
-      <div className="relative z-10 border-b border-slate-200/80 bg-white/60 backdrop-blur-sm">
-        <div className="max-w-5xl mx-auto px-6">
-          <nav className="-mb-px flex gap-6">
-            {[
-              { label: "Feedback", path: "/admin/feedback" },
-              { label: "Users", path: "/admin/users" },
-            ].map(({ label, path }) => (
-              <button
-                key={path}
-                onClick={() => setLocation(path)}
-                className={`py-3 text-sm font-medium border-b-2 transition-colors ${
-                  location === path
-                    ? "border-blue-600 text-blue-700"
-                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
+      <AdminNav />
 
       <div className="flex-1 p-6 relative z-10">
         <div className="max-w-5xl mx-auto space-y-6">
@@ -820,9 +800,6 @@ export default function AdminUsers() {
                                         Email
                                       </th>
                                       <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                        Plan
-                                      </th>
-                                      <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
                                         Signed Up
                                       </th>
                                       <th className="py-2.5 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
@@ -850,14 +827,12 @@ export default function AdminUsers() {
                                         className="border-b border-slate-100 last:border-0 hover:bg-blue-50/50 transition-colors cursor-pointer"
                                         onClick={() => setSelectedUser(user)}
                                       >
-                                        <td className="py-3 px-4 text-sm font-medium text-slate-800 whitespace-nowrap">
-                                          {fullName(user)}
+                                        <td className="py-3 px-4 whitespace-nowrap">
+                                          <p className="text-sm font-medium text-slate-800">{fullName(user)}</p>
+                                          <div className="mt-0.5">{planBadge(user.plan)}</div>
                                         </td>
                                         <td className="py-3 px-4 text-sm text-slate-600 max-w-[200px] truncate">
                                           {user.email ?? "—"}
-                                        </td>
-                                        <td className="py-3 px-4 whitespace-nowrap">
-                                          {planBadge(user.plan)}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
                                           {formatDateShort(user.createdAt)}
