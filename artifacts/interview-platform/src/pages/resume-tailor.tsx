@@ -388,6 +388,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
   const [loadingElapsed, setLoadingElapsed] = useState(0);
   const [error, setError] = useState("");
   const [noCreditsError, setNoCreditsError] = useState(false);
+  const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
   const [result, setResult] = useState<TailoringResult | null>(null);
 
   const [copied, setCopied] = useState(false);
@@ -399,6 +400,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
   const [regenAggressiveness, setRegenAggressiveness] = useState<Aggressiveness>("balanced");
   const [regenLoading, setRegenLoading] = useState(false);
   const [regenError, setRegenError] = useState("");
+  const [regenRateLimitCountdown, setRegenRateLimitCountdown] = useState(0);
 
   const { data: meData, refetch: refetchCredits } = useQuery<{
     plan: string;
@@ -501,7 +503,14 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
           setNoCreditsError(true);
           setError(data.error ?? "You have no resume tailoring credits remaining.");
         } else if (data.code === "AI_RATE_LIMIT" || res.status === 429) {
-          setError("The AI service is temporarily busy — please wait 30 seconds and try again. Your credit has not been used.");
+          setError("The AI service is busy — retry in:");
+          setRateLimitCountdown(30);
+          const tick = setInterval(() => {
+            setRateLimitCountdown(prev => {
+              if (prev <= 1) { clearInterval(tick); return 0; }
+              return prev - 1;
+            });
+          }, 1000);
         } else {
           setError(data.error ?? "Something went wrong. Please try again.");
         }
@@ -533,6 +542,15 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
       if (!res.ok) {
         if (data.code === "NO_CREDITS") {
           setRegenError("No credits remaining. Top up or upgrade to regenerate.");
+        } else if (data.code === "AI_RATE_LIMIT" || res.status === 429) {
+          setRegenError("The AI service is busy — retry in:");
+          setRegenRateLimitCountdown(30);
+          const tick = setInterval(() => {
+            setRegenRateLimitCountdown(prev => {
+              if (prev <= 1) { clearInterval(tick); return 0; }
+              return prev - 1;
+            });
+          }, 1000);
         } else {
           setRegenError(data.error ?? "Something went wrong. Please try again.");
         }
@@ -688,8 +706,10 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
     setAggressiveness("balanced");
     setResult(null);
     setError("");
+    setRateLimitCountdown(0);
     setShowRegenPanel(false);
     setRegenError("");
+    setRegenRateLimitCountdown(0);
   }
 
   function openRegenPanel() {
@@ -793,6 +813,12 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                   <span className="shrink-0 mt-0.5 font-black">!</span>
                   <span>
                     {error}
+                    {rateLimitCountdown > 0 && (
+                      <span className="font-semibold tabular-nums ml-1">{rateLimitCountdown}s</span>
+                    )}
+                    {rateLimitCountdown === 0 && error.includes("busy") && (
+                      <span className="ml-1 font-medium">Ready to retry.</span>
+                    )}
                     {noCreditsError && (
                       <> <a href="/pricing" className="underline underline-offset-2 font-medium hover:text-red-900">View plans &amp; upgrade →</a></>
                     )}
@@ -940,14 +966,19 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                         <ArrowLeft className="w-4 h-4" /> Back
                       </Button>
                       <Button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 border-0 gap-2"
+                        onClick={() => { setError(""); setRateLimitCountdown(0); handleSubmit(); }}
+                        disabled={loading || rateLimitCountdown > 0}
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 border-0 gap-2 disabled:opacity-60"
                       >
                         {loading ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                             <span className="truncate max-w-[220px]">{LOADING_MESSAGES[loadingMsgIdx]}</span>
+                          </>
+                        ) : rateLimitCountdown > 0 ? (
+                          <>
+                            <Loader2 className="w-4 h-4" />
+                            Retry in {rateLimitCountdown}s
                           </>
                         ) : (
                           <>
@@ -1073,20 +1104,30 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                         {regenError && (
                           <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">
                             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                            {regenError}
+                            <span>
+                              {regenError}
+                              {regenRateLimitCountdown > 0 && (
+                                <span className="font-semibold tabular-nums ml-1">{regenRateLimitCountdown}s</span>
+                              )}
+                              {regenRateLimitCountdown === 0 && regenError.includes("busy") && (
+                                <span className="ml-1 font-medium">Ready to retry.</span>
+                              )}
+                            </span>
                             {regenError.includes("credits") && (
-                              <> <a href="/pricing" className="underline underline-offset-2 font-medium hover:text-red-900">Top up →</a></>
+                              <a href="/pricing" className="underline underline-offset-2 font-medium hover:text-red-900 ml-auto shrink-0">Top up →</a>
                             )}
                           </div>
                         )}
 
                         <Button
-                          onClick={handleRegenerate}
-                          disabled={regenLoading}
-                          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border-0 gap-2"
+                          onClick={() => { setRegenError(""); setRegenRateLimitCountdown(0); handleRegenerate(); }}
+                          disabled={regenLoading || regenRateLimitCountdown > 0}
+                          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border-0 gap-2 disabled:opacity-60"
                         >
                           {regenLoading ? (
                             <><Loader2 className="w-4 h-4 animate-spin" />Generating new version…</>
+                          ) : regenRateLimitCountdown > 0 ? (
+                            <><Loader2 className="w-4 h-4" />Retry in {regenRateLimitCountdown}s</>
                           ) : (
                             <><Sparkles className="w-4 h-4" />Generate New Version</>
                           )}
