@@ -27,6 +27,7 @@ import {
   UserPlus,
   RotateCcw,
   AlertTriangle,
+  Info,
 } from "lucide-react";
 
 interface ParsedLine {
@@ -764,6 +765,12 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                         Upload your current resume or paste the text. Supported: PDF, DOCX, TXT.
                       </p>
                     </div>
+                    <div className="flex items-start gap-3 rounded-lg bg-blue-50 border border-blue-200 px-4 py-3">
+                      <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                      <p className="text-xs text-blue-700 leading-relaxed">
+                        <span className="font-semibold">Privacy tip:</span> We recommend removing your personal contact details — full name, address, phone number, and email — before uploading. The tailored result will include clearly marked placeholders (e.g. <span className="font-mono bg-blue-100 px-1 rounded">[Your Name]</span>, <span className="font-mono bg-blue-100 px-1 rounded">[Phone Number]</span>) so you know exactly where to add them back before sending to employers.
+                      </p>
+                    </div>
                     <FileDropZone
                       text={resumeText}
                       setText={setResumeText}
@@ -771,7 +778,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                       setFile={setResumeFile}
                       onFile={(f) => parseFile(f, "resume")}
                       parsing={resumeParsing}
-                      placeholder="Paste your full resume here — contact info, summary, experience, education, skills…"
+                      placeholder="Paste your resume here — omit your name, address, phone and email (placeholders will be added). Include your summary, experience, education and skills…"
                     />
                     <div className="flex justify-between pt-2">
                       <Button variant="ghost" onClick={() => setStep(0)} className="text-slate-600 gap-1">

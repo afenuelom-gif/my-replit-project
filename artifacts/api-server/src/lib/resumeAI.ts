@@ -56,12 +56,14 @@ Your rules:
 - Maintain a human, professional tone — avoid robotic or overly formal phrasing
 - Preserve the original resume structure unless improving it helps readability
 - Dates, company names, job titles, and factual information must remain unchanged
+- If personal contact information (name, address, phone number, email) is absent from the submitted resume, insert clearly marked placeholders at the very top of the tailored resume so the user knows exactly where to add them. Never omit the header area entirely.
 
 ${scopeInstruction}
 ${aggressivenessInstruction}
 
 FORMAT RULES for tailoredResumeText — follow these exactly:
-- The candidate's full name (first line): wrap in **double asterisks** e.g. **Jane Smith**
+- The candidate's full name (first line): wrap in **double asterisks** e.g. **Jane Smith**. If the name was not provided, use **[Your Name]** as a placeholder — never skip this line.
+- Contact info line (address, phone, email): if not present in the original, include a placeholder line immediately after the name: **[Your Address] | [Phone Number] | [Email Address]** — so the user knows exactly where to insert their details. If contact info is present, keep it unchanged.
 - The headline/tagline line (job titles with pipes): wrap in **double asterisks** e.g. **Security Analyst | Data Specialist | Process Advocate**
 - Every section heading (PROFESSIONAL EXPERIENCE, EDUCATION, CERTIFICATIONS, SKILLS, TRAINING, SUMMARY, etc.): wrap in **double asterisks** e.g. **PROFESSIONAL EXPERIENCE**
 - Under each job: the company name on its own line wrapped in **double asterisks**, then the job title + dates on the next line also wrapped in **double asterisks**
