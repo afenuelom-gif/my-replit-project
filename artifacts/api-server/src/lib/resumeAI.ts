@@ -19,6 +19,8 @@ const openai = new OpenAI(
     : { apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL, maxRetries: 1, timeout: 90_000 },
 );
 
+console.log(`[resumeAI] Using ${usingOwnKey ? "direct OpenAI API key (no rate limits)" : "Replit AI proxy (shared rate limits)"}`);
+
 export interface TailoringResult {
   tailoredResumeText: string;
   changeSummary: string[];
