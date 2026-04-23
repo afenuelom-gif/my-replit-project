@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 const ADMIN_TABS = [
   { label: "Feedback", path: "/admin/feedback" },
   { label: "Users", path: "/admin/users" },
+  { label: "Tailors", path: "/admin/tailors" },
 ];
 
 export function AdminNav() {

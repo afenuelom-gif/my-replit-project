@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, sessionsTable, reportsTable, usersTable, loginEventsTable } from "@workspace/db";
+import { db, sessionsTable, reportsTable, usersTable, loginEventsTable, resumeTailoringTable } from "@workspace/db";
 import { eq, and, desc, inArray, sql, max, count } from "drizzle-orm";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { isAdminUserOrEmail, hasAnyAdminConfigured } from "../../lib/adminAuth.js";
@@ -153,6 +153,95 @@ router.get("/users/admin/users/:userId/sessions", requireAuth, requireAdmin, asy
     .orderBy(desc(sessionsTable.createdAt));
 
   res.json(sessions);
+});
+
+router.get("/users/admin/tailors", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
+  const [statsRow] = await db.execute<{
+    total_all_time: string;
+    total_this_month: string;
+    total_today: string;
+  }>(sql`
+    SELECT
+      COUNT(*)::int AS total_all_time,
+      COUNT(*) FILTER (WHERE created_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC'))::int AS total_this_month,
+      COUNT(*) FILTER (WHERE created_at >= date_trunc('day', NOW() AT TIME ZONE 'UTC'))::int AS total_today
+    FROM resume_tailoring
+  `);
+
+  const [creditsRow] = await db.execute<{
+    total_credits: string;
+    users_with_credits: string;
+  }>(sql`
+    SELECT
+      COALESCE(SUM(resume_tailoring_credits), 0)::int AS total_credits,
+      COUNT(*) FILTER (WHERE resume_tailoring_credits > 0)::int AS users_with_credits
+    FROM users
+  `);
+
+  const recentUsage = await db.execute<{
+    id: number;
+    user_id: string;
+    email: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    job_title: string | null;
+    scope: string;
+    aggressiveness: string;
+    created_at: string;
+  }>(sql`
+    SELECT
+      rt.id,
+      rt.user_id,
+      u.email,
+      u.first_name,
+      u.last_name,
+      rt.job_title,
+      rt.scope,
+      rt.aggressiveness,
+      rt.created_at
+    FROM resume_tailoring rt
+    LEFT JOIN users u ON u.id = rt.user_id
+    ORDER BY rt.created_at DESC
+    LIMIT 100
+  `);
+
+  const creditBalances = await db.execute<{
+    user_id: string;
+    email: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    plan: string;
+    resume_tailoring_credits: number;
+    total_used: string;
+  }>(sql`
+    SELECT
+      u.id AS user_id,
+      u.email,
+      u.first_name,
+      u.last_name,
+      u.plan,
+      u.resume_tailoring_credits,
+      COUNT(rt.id)::int AS total_used
+    FROM users u
+    LEFT JOIN resume_tailoring rt ON rt.user_id = u.id
+    WHERE u.plan != 'free' OR u.resume_tailoring_credits > 0 OR EXISTS (
+      SELECT 1 FROM resume_tailoring WHERE user_id = u.id
+    )
+    GROUP BY u.id
+    ORDER BY total_used DESC, u.resume_tailoring_credits DESC
+  `);
+
+  res.json({
+    stats: {
+      totalAllTime: Number(statsRow?.total_all_time ?? 0),
+      totalThisMonth: Number(statsRow?.total_this_month ?? 0),
+      totalToday: Number(statsRow?.total_today ?? 0),
+      totalCreditsOutstanding: Number(creditsRow?.total_credits ?? 0),
+      usersWithCredits: Number(creditsRow?.users_with_credits ?? 0),
+    },
+    recentUsage,
+    creditBalances,
+  });
 });
 
 export default router;

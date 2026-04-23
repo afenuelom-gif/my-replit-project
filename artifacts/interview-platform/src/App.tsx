@@ -19,6 +19,7 @@ import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import AdminFeedback from "@/pages/admin-feedback";
 import AdminUsers from "@/pages/admin-users";
+import AdminTailors from "@/pages/admin-tailors";
 import ResumeTailor from "@/pages/resume-tailor";
 import ResumeHistory from "@/pages/resume-history";
 import BillingSuccess from "@/pages/billing-success";
@@ -350,6 +351,7 @@ function Auth0ProviderWithRoutes() {
             <Route path="/admin" component={() => <Redirect to="/admin/feedback" />} />
             <Route path="/admin/feedback" component={AdminFeedback} />
             <Route path="/admin/users" component={AdminUsers} />
+            <Route path="/admin/tailors" component={AdminTailors} />
             <Route path="/billing/success" component={() => {
               const { isAuthenticated } = useAuth0();
               return isAuthenticated
@@ -664,6 +666,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin" component={() => <Redirect to="/admin/feedback" />} />
             <Route path="/admin/feedback" component={AdminFeedback} />
             <Route path="/admin/users" component={AdminUsers} />
+            <Route path="/admin/tailors" component={AdminTailors} />
             <Route path="/billing/success" component={() => {
               const { isSignedIn } = useUser();
               return isSignedIn
@@ -720,6 +723,7 @@ function App() {
               <Route path="/admin" component={() => <Redirect to="/admin/feedback" />} />
               <Route path="/admin/feedback" component={AdminFeedback} />
               <Route path="/admin/users" component={AdminUsers} />
+              <Route path="/admin/tailors" component={AdminTailors} />
               <Route path="/billing/success" component={() => <BillingSuccess />} />
               <Route component={NotFound} />
             </Switch>
