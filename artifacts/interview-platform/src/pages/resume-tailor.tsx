@@ -399,6 +399,8 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
   const [regenScope, setRegenScope] = useState<Scope>("full");
   const [regenAggressiveness, setRegenAggressiveness] = useState<Aggressiveness>("balanced");
   const [regenLoading, setRegenLoading] = useState(false);
+  const [regenLoadingMsgIdx, setRegenLoadingMsgIdx] = useState(0);
+  const [regenLoadingElapsed, setRegenLoadingElapsed] = useState(0);
   const [regenError, setRegenError] = useState("");
   const [regenRateLimitCountdown, setRegenRateLimitCountdown] = useState(0);
 
@@ -442,6 +444,24 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
       clearInterval(secInterval);
     };
   }, [loading]);
+
+  useEffect(() => {
+    if (!regenLoading) {
+      setRegenLoadingMsgIdx(0);
+      setRegenLoadingElapsed(0);
+      return;
+    }
+    const msgInterval = setInterval(() => {
+      setRegenLoadingMsgIdx((i) => (i + 1) % LOADING_MESSAGES.length);
+    }, 7000);
+    const secInterval = setInterval(() => {
+      setRegenLoadingElapsed((s) => s + 1);
+    }, 1000);
+    return () => {
+      clearInterval(msgInterval);
+      clearInterval(secInterval);
+    };
+  }, [regenLoading]);
 
   async function parseFile(file: File, kind: "jd" | "resume") {
     const setter = kind === "jd" ? setJdParsing : setResumeParsing;
@@ -1125,13 +1145,21 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                           className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border-0 gap-2 disabled:opacity-60"
                         >
                           {regenLoading ? (
-                            <><Loader2 className="w-4 h-4 animate-spin" />Generating new version…</>
+                            <><Loader2 className="w-4 h-4 animate-spin shrink-0" /><span className="truncate">{LOADING_MESSAGES[regenLoadingMsgIdx]}</span></>
                           ) : regenRateLimitCountdown > 0 ? (
                             <><Loader2 className="w-4 h-4" />Retry in {regenRateLimitCountdown}s</>
                           ) : (
                             <><Sparkles className="w-4 h-4" />Generate New Version</>
                           )}
                         </Button>
+                        {regenLoading && (
+                          <p className="text-center text-xs text-slate-400 pt-1">
+                            AI tailoring typically takes 20–40 seconds. Please keep this page open.
+                            {regenLoadingElapsed >= 10 && (
+                              <span className="ml-1 tabular-nums">({regenLoadingElapsed}s)</span>
+                            )}
+                          </p>
+                        )}
                       </CardContent>
                     </Card>
                   )}
