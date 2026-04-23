@@ -81,3 +81,6 @@ channel = "stable-25_05"
 BYPASS_AUTH = "false"
 
 [userenv.production]
+
+[userenv.shared]
+ADMIN_EMAILS = "afenuelom@gmail.com"
