@@ -291,7 +291,7 @@ function Auth0ProviderWithRoutes() {
       cacheLocation="localstorage"
       onRedirectCallback={(appState) => {
         const returnTo = appState?.returnTo as string | undefined;
-        setLocation(returnTo ? stripBase(returnTo) : "/");
+        setLocation(returnTo ? stripBase(returnTo) : "/start");
       }}
     >
       <Auth0AuthActionsProvider>
@@ -303,12 +303,16 @@ function Auth0ProviderWithRoutes() {
           <Switch>
             <Route
               path="/"
-              component={() => (
-                <Home
-                  authMenu={<><Auth0UserMenu /><Auth0DesktopActions /></>}
-                  authMobileMenu={<Auth0MobileActions />}
-                />
-              )}
+              component={() => {
+                const { isAuthenticated } = useAuth0();
+                if (isAuthenticated) return <Redirect to="/start" />;
+                return (
+                  <Home
+                    authMenu={<><Auth0UserMenu /><Auth0DesktopActions /></>}
+                    authMobileMenu={<Auth0MobileActions />}
+                  />
+                );
+              }}
             />
             <Route
               path="/pricing"
@@ -601,7 +605,11 @@ function ClerkProviderWithRoutes() {
           <ClerkGate>
           <DevModeBanner />
           <Switch>
-            <Route path="/" component={() => <Home authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />} />
+            <Route path="/" component={() => {
+              const { isSignedIn } = useUser();
+              if (isSignedIn) return <Redirect to="/start" />;
+              return <Home authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} />;
+            }} />
             <Route path="/pricing" component={() => {
               const { isSignedIn } = useUser();
               return <Pricing authMenu={<><ClerkUserMenu /><ClerkDesktopActions /></>} authMobileMenu={<ClerkMobileActions />} isSignedIn={isSignedIn ?? false} />;
