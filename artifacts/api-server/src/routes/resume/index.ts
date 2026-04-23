@@ -121,12 +121,20 @@ router.post(
     }
 
     const [user] = await db
-      .select({ resumeTailoringCredits: usersTable.resumeTailoringCredits })
+      .select({ plan: usersTable.plan, resumeTailoringCredits: usersTable.resumeTailoringCredits })
       .from(usersTable)
       .where(eq(usersTable.id, userId))
       .limit(1);
 
-    if (!user || user.resumeTailoringCredits <= 0) {
+    if (!user || user.plan === "free") {
+      res.status(403).json({
+        code: "PLAN_REQUIRED",
+        error: "Resume tailoring is available on Starter and Pro plans. Upgrade to access this feature.",
+      });
+      return;
+    }
+
+    if (user.resumeTailoringCredits <= 0) {
       res.status(403).json({
         code: "NO_CREDITS",
         error: "You have no resume tailoring credits remaining. Upgrade your plan or purchase a top-up to continue.",

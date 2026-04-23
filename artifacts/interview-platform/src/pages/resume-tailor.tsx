@@ -379,17 +379,25 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
   const [expandedSections, setExpandedSections] = useState({ changes: true, keywords: true, suggestions: false });
 
   const { data: meData, refetch: refetchCredits } = useQuery<{
+    plan: string;
     resumeTailoringCredits: number;
   }>({
     queryKey: ["resume-me"],
     queryFn: async () => {
       const headers = await getAuthHeaders();
-      const res = await fetch("/api/resume/history", { credentials: "include", headers });
-      if (!res.ok) throw new Error("Failed");
-      const d = await res.json() as { creditsRemaining: number };
-      return { resumeTailoringCredits: d.creditsRemaining };
+      const [histRes, meRes] = await Promise.all([
+        fetch("/api/resume/history", { credentials: "include", headers }),
+        fetch("/api/users/me", { credentials: "include", headers, cache: "no-store" }),
+      ]);
+      if (!histRes.ok || !meRes.ok) throw new Error("Failed");
+      const [hist, me] = await Promise.all([
+        histRes.json() as Promise<{ creditsRemaining: number }>,
+        meRes.json() as Promise<{ plan: string }>,
+      ]);
+      return { plan: me.plan, resumeTailoringCredits: hist.creditsRemaining };
     },
     enabled: !showAuthPrompt,
+    staleTime: 0,
     retry: false,
   });
 
@@ -657,6 +665,26 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
 
           {showAuthPrompt ? (
             <AuthPromptCard />
+          ) : meData?.plan === "free" ? (
+            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-8 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center mx-auto shadow-lg">
+                <Sparkles className="w-7 h-7 text-white" />
+              </div>
+              <div className="space-y-1.5">
+                <h2 className="text-xl font-bold text-slate-900">Resume Tailoring is a paid feature</h2>
+                <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                  Upgrade to Starter or Pro to tailor your resume to any job description — ATS-optimised, human tone.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center pt-1">
+                <a
+                  href="/pricing"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold text-sm shadow-md transition-all hover:scale-[1.02]"
+                >
+                  View plans &amp; upgrade
+                </a>
+              </div>
+            </div>
           ) : (
             <>
               {step < 3 && <StepIndicator current={step} />}
