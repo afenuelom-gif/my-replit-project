@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   CheckCircle2, ChevronLeft, Trophy, ThumbsUp, TrendingUp, Dumbbell, MessageSquare, Code, Lightbulb,
-  User, Camera, Volume2, Share2, Mail, Printer, Copy, Check, ExternalLink, Download,
+  User, Camera, Volume2, Share2, Mail, Printer, Copy, Check, ExternalLink, Download, Zap, Star, Lock,
 } from "lucide-react";
 
 type AnswerFeedbackItem = {
@@ -304,7 +304,7 @@ export default function Report() {
       const headers = await getAuthHeaders();
       const res = await fetch("/api/users/me", { headers });
       if (!res.ok) return null;
-      return res.json() as Promise<{ plan: string; sessionCredits: number; resumeTailoringCredits: number }>;
+      return res.json() as Promise<{ plan: string; sessionCredits: number; resumeTailoringCredits: number; trialUsed: boolean }>;
     },
     retry: false,
     staleTime: 0,
@@ -490,54 +490,88 @@ export default function Report() {
         />
       </div>
 
-      {/* Sessions remaining banner — shown directly below the header */}
-      {userMe && userMe.plan !== "pro" && (
+      {/* Free trial ended — upgrade nudge */}
+      {userMe && userMe.plan === "free" && userMe.trialUsed && (
+        <div className="print:hidden w-full px-6 lg:px-12 pt-6 relative z-10">
+          <div className="max-w-6xl mx-auto rounded-2xl overflow-hidden border border-purple-200 shadow-lg">
+            {/* Top strip */}
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-5 py-3 flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <Zap className="w-3.5 h-3.5 text-white" />
+              </div>
+              <p className="text-white text-sm font-semibold">Your free trial is complete — keep the momentum going</p>
+              <span className="ml-auto text-white/70 text-xs font-medium shrink-0">1 of 1 trial sessions used</span>
+            </div>
+
+            {/* Body */}
+            <div className="bg-gradient-to-br from-slate-50 to-indigo-50/60 px-5 py-5">
+              <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
+
+                {/* Left: message */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-slate-700 text-sm leading-relaxed">
+                    You scored <span className="font-bold text-indigo-700">{report.overallScore}/100</span> on your first session.
+                    Consistent practice is what separates candidates who get offers — unlock more sessions to keep improving.
+                  </p>
+                  <div className="flex flex-wrap gap-3 mt-3">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-white rounded-lg px-3 py-1.5 border border-slate-200 shadow-sm">
+                      <Star className="w-3 h-3 text-amber-500 fill-amber-400" />
+                      <span><strong>Starter</strong> — 4 sessions/mo · $12</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-white rounded-lg px-3 py-1.5 border border-slate-200 shadow-sm">
+                      <Zap className="w-3 h-3 text-indigo-500" />
+                      <span><strong>Pro</strong> — unlimited · $24</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-white/70 rounded-lg px-3 py-1.5 border border-slate-200">
+                      <Lock className="w-3 h-3 text-slate-400" />
+                      <span>Resume tailoring included</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: CTA */}
+                <div className="flex gap-2 shrink-0">
+                  <a
+                    href="/pricing"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all"
+                  >
+                    <Zap className="w-3.5 h-3.5" /> Unlock more sessions
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sessions remaining banner — shown for paid (non-pro) users when credits are low */}
+      {userMe && userMe.plan !== "free" && userMe.plan !== "pro" && userMe.sessionCredits <= 1 && (
         <div className="print:hidden w-full px-6 lg:px-12 pt-4 relative z-10">
           <div className={`max-w-6xl mx-auto flex items-center justify-between gap-3 rounded-xl px-4 py-3 border ${
-            userMe.sessionCredits === 0
-              ? "bg-red-50 border-red-200"
-              : userMe.sessionCredits === 1
-              ? "bg-amber-50 border-amber-200"
-              : "bg-blue-50 border-blue-200"
+            userMe.sessionCredits === 0 ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"
           }`}>
             <div className="flex items-center gap-2.5">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-black text-sm ${
-                userMe.sessionCredits === 0
-                  ? "bg-red-100 text-red-600"
-                  : userMe.sessionCredits === 1
-                  ? "bg-amber-100 text-amber-600"
-                  : "bg-blue-100 text-blue-600"
+                userMe.sessionCredits === 0 ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600"
               }`}>
                 {userMe.sessionCredits}
               </div>
               <div>
-                <p className={`text-sm font-semibold ${
-                  userMe.sessionCredits === 0 ? "text-red-800" : userMe.sessionCredits === 1 ? "text-amber-800" : "text-blue-800"
-                }`}>
-                  {userMe.sessionCredits === 0
-                    ? "No sessions remaining this month"
-                    : `${userMe.sessionCredits} session${userMe.sessionCredits !== 1 ? "s" : ""} remaining`}
+                <p className={`text-sm font-semibold ${userMe.sessionCredits === 0 ? "text-red-800" : "text-amber-800"}`}>
+                  {userMe.sessionCredits === 0 ? "No sessions remaining this month" : "1 session remaining this month"}
                 </p>
-                <p className={`text-xs ${
-                  userMe.sessionCredits === 0 ? "text-red-600" : userMe.sessionCredits === 1 ? "text-amber-600" : "text-blue-500"
-                }`}>
+                <p className={`text-xs ${userMe.sessionCredits === 0 ? "text-red-600" : "text-amber-600"}`}>
                   {userMe.sessionCredits === 0
-                    ? "Upgrade your plan or wait for your next billing cycle"
-                    : userMe.plan === "starter"
-                    ? "Starter plan · resets monthly"
-                    : "Resets at the start of your next billing cycle"}
+                    ? "Upgrade to Pro for unlimited sessions or wait for your next billing cycle"
+                    : "Starter plan · resets monthly"}
                 </p>
               </div>
             </div>
-            {userMe.sessionCredits <= 1 && (
-              <a href="/pricing" className={`text-xs font-semibold px-3 py-1.5 rounded-lg shrink-0 ${
-                userMe.sessionCredits === 0
-                  ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-amber-500 text-white hover:bg-amber-600"
-              }`}>
-                Upgrade
-              </a>
-            )}
+            <a href="/pricing" className={`text-xs font-semibold px-3 py-1.5 rounded-lg shrink-0 ${
+              userMe.sessionCredits === 0 ? "bg-red-600 text-white hover:bg-red-700" : "bg-amber-500 text-white hover:bg-amber-600"
+            }`}>
+              Upgrade
+            </a>
           </div>
         </div>
       )}
