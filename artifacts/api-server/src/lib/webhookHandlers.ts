@@ -135,10 +135,6 @@ export class WebhookHandlers {
     logger.info({ userId, plan }, "Subscription upserted via webhook");
 
     const user = await WebhookHandlers.getUser(userId);
-    logger.info(
-      { userId, hasEmail: !!user?.email, isNew, cancelAtPeriodEnd: sub.cancel_at_period_end, subStatus: sub.status, currentPeriodEnd: sub.current_period_end },
-      "Email condition check"
-    );
     if (user?.email) {
       if (isNew && sub.status === "active") {
         emailService.sendSubscriptionConfirmed(user.email, user.firstName, plan);
