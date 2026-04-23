@@ -680,7 +680,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
 
           {showAuthPrompt ? (
             <AuthPromptCard />
-          ) : meData?.plan === "free" ? (
+          ) : meData?.plan === "free" && !meData?.resumeTailoringCredits ? (
             <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-8 text-center space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center mx-auto shadow-lg">
                 <Sparkles className="w-7 h-7 text-white" />

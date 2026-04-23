@@ -132,18 +132,13 @@ router.post(
       .where(eq(usersTable.id, userId))
       .limit(1);
 
-    if (!user || user.plan === "free") {
+    if (!user || user.resumeTailoringCredits <= 0) {
+      const onFreePlan = !user || user.plan === "free";
       res.status(403).json({
-        code: "PLAN_REQUIRED",
-        error: "Resume tailoring is available on Starter and Pro plans. Upgrade to access this feature.",
-      });
-      return;
-    }
-
-    if (user.resumeTailoringCredits <= 0) {
-      res.status(403).json({
-        code: "NO_CREDITS",
-        error: "You have no resume tailoring credits remaining. Upgrade your plan or purchase a top-up to continue.",
+        code: onFreePlan ? "PLAN_REQUIRED" : "NO_CREDITS",
+        error: onFreePlan
+          ? "You have no resume tailoring credits. Purchase a top-up or upgrade to a paid plan to access this feature."
+          : "You have no resume tailoring credits remaining. Purchase a top-up or wait for your monthly credits to renew.",
       });
       return;
     }
