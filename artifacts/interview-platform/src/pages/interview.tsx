@@ -8,6 +8,8 @@ import {
   useTranscribeAnswer,
   useAnalyzePosture
 } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuthActions } from "@/contexts/auth-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -20,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, MessagesSquare, XCircle, Play } from "lucide-react";
+import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, MessagesSquare, XCircle, Play, Zap, CheckCircle2, Trophy } from "lucide-react";
 import InterviewerCard, { type InterviewerCardHandle } from "@/components/InterviewerCard";
 import { AuthPrompt } from "@/components/AuthPrompt";
 
@@ -28,8 +30,20 @@ export default function Interview() {
   const params = useParams();
   const sessionId = parseInt(params.sessionId || "0");
   const [, setLocation] = useLocation();
+  const { getAuthHeaders } = useAuthActions();
   const { data: sessionData, isLoading, error, refetch } = useGetSession(sessionId, {
     query: { enabled: !!sessionId, queryKey: getGetSessionQueryKey(sessionId) }
+  });
+
+  const { data: userMe } = useQuery({
+    queryKey: ["users-me"],
+    queryFn: async () => {
+      const headers = await getAuthHeaders();
+      const res = await fetch("/api/users/me", { headers });
+      if (!res.ok) return null;
+      return res.json() as Promise<{ plan: string; sessionCredits: number }>;
+    },
+    staleTime: 60_000,
   });
 
   const completeSession = useCompleteSession();
@@ -41,6 +55,7 @@ export default function Interview() {
   const [isRecording, setIsRecording] = useState(false);
   const [webcamEnabled, setWebcamEnabled] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [lastPlayedQuestionId, setLastPlayedQuestionId] = useState<number | null>(() => {
     const stored = sessionStorage.getItem(`interview_lastQ_${sessionId}`);
     return stored ? parseInt(stored, 10) : null;
@@ -299,7 +314,12 @@ export default function Interview() {
     sessionStorage.removeItem(`interview_welcome_${sessionId}`);
     try {
       await completeSession.mutateAsync({ id: sessionId });
-      setLocation(`/report/${sessionId}`);
+      // Show upgrade nudge for Starter users who just used their last session
+      if (userMe?.plan === "starter" && userMe.sessionCredits <= 1) {
+        setShowUpsellModal(true);
+      } else {
+        setLocation(`/report/${sessionId}`);
+      }
     } catch (e) {
       console.error(e);
       setLocation(`/report/${sessionId}`);
@@ -845,6 +865,62 @@ export default function Interview() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Post-session upgrade modal — Starter users who just used their last session */}
+      {showUpsellModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl">
+
+            {/* Top gradient strip */}
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 pt-7 pb-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4">
+                <Trophy className="w-7 h-7 text-white" />
+              </div>
+              <h2 className="text-white text-xl font-bold">Session complete!</h2>
+              <p className="text-white/80 text-sm mt-1">You've used your last session this month.</p>
+            </div>
+
+            {/* Body */}
+            <div className="bg-white px-6 py-6 space-y-5">
+              <p className="text-slate-600 text-sm text-center leading-relaxed">
+                Consistent practice is what gets offers. Upgrade to <span className="font-semibold text-indigo-700">Pro</span> for unlimited sessions every month — no more running out right before your next interview.
+              </p>
+
+              {/* Pro perks */}
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 space-y-2.5">
+                <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">Pro — $24 / month</p>
+                {[
+                  "Unlimited interview sessions",
+                  "3 AI resume tailors per month",
+                  "All AI interviewers & question types",
+                  "Detailed performance reports",
+                ].map((perk) => (
+                  <div key={perk} className="flex items-center gap-2 text-sm text-slate-700">
+                    <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0" />
+                    {perk}
+                  </div>
+                ))}
+              </div>
+
+              {/* CTAs */}
+              <div className="flex flex-col gap-2.5">
+                <a
+                  href="/pricing"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all"
+                >
+                  <Zap className="w-4 h-4" /> Upgrade to Pro
+                </a>
+                <button
+                  onClick={() => setLocation(`/report/${sessionId}`)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
+                >
+                  View my report first
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
