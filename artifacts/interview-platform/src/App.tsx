@@ -23,7 +23,8 @@ import ResumeTailor from "@/pages/resume-tailor";
 import ResumeHistory from "@/pages/resume-history";
 import BillingSuccess from "@/pages/billing-success";
 import AccountPage from "@/pages/account";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ShieldCheck } from "lucide-react";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const queryClient = new QueryClient();
 
@@ -398,6 +399,7 @@ function ClerkUserMenu() {
   const [, setLocation] = useLocation();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const isAdmin = useIsAdmin();
 
   useEffect(() => {
     if (!open) return;
@@ -445,6 +447,20 @@ function ClerkUserMenu() {
           <button className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left" onClick={() => navigate("/account")}>
             Billing &amp; Plan
           </button>
+          {isAdmin && (
+            <>
+              <div className="my-1 border-t border-slate-100" />
+              <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Admin</div>
+              <button className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 transition-colors text-left" onClick={() => navigate("/admin/feedback")}>
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                Feedback
+              </button>
+              <button className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 transition-colors text-left" onClick={() => navigate("/admin/users")}>
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                Users
+              </button>
+            </>
+          )}
           <div className="my-1 border-t border-slate-100" />
           <button
             className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 hover:text-red-600 hover:bg-red-50 transition-colors text-left"
@@ -461,6 +477,7 @@ function ClerkUserMenu() {
 function ClerkMobileActions() {
   const { signOut } = useClerk();
   const [, setLocation] = useLocation();
+  const isAdmin = useIsAdmin();
 
   return (
     <Show when="signed-in">
@@ -484,6 +501,25 @@ function ClerkMobileActions() {
       >
         Billing & Plan
       </button>
+      {isAdmin && (
+        <>
+          <div className="px-4 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Admin</div>
+          <button
+            className="cursor-pointer flex items-center gap-2 w-full px-6 py-2 text-sm font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 transition-colors text-left"
+            onClick={() => setLocation("/admin/feedback")}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+            Feedback
+          </button>
+          <button
+            className="cursor-pointer flex items-center gap-2 w-full px-6 py-2 text-sm font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 transition-colors text-left"
+            onClick={() => setLocation("/admin/users")}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+            Users
+          </button>
+        </>
+      )}
       <button
         className="cursor-pointer flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors text-left"
         onClick={() => signOut({ redirectUrl: window.location.origin + (basePath || "") })}
