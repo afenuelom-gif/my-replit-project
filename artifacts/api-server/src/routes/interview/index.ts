@@ -201,8 +201,8 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
   let selectedInterviewers: Array<typeof interviewersTable.$inferSelect>;
 
   if (dynamicPersonas && dynamicPersonas.length >= 2) {
-    let femaleAvatarIdx = 0;
-    let maleAvatarIdx = 0;
+    let femaleAvatarIdx = Math.floor(Math.random() * FEMALE_AVATAR_POOL.length);
+    let maleAvatarIdx = Math.floor(Math.random() * MALE_AVATAR_POOL.length);
 
     const inserted = await db
       .insert(interviewersTable)
