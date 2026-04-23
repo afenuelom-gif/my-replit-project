@@ -115,6 +115,16 @@ type Aggressiveness = "conservative" | "balanced" | "strong";
 
 const STEPS = ["Job Description", "Your Resume", "Options", "Results"];
 
+const LOADING_MESSAGES = [
+  "Reading your resume…",
+  "Analyzing the job description…",
+  "Matching your experience to requirements…",
+  "Rewriting bullet points for ATS…",
+  "Incorporating keywords naturally…",
+  "Polishing your tailored resume…",
+  "Almost there — finalizing the output…",
+];
+
 function StepIndicator({ current }: { current: number }) {
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
@@ -374,6 +384,8 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
   const [aggressiveness, setAggressiveness] = useState<Aggressiveness>("balanced");
 
   const [loading, setLoading] = useState(false);
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
+  const [loadingElapsed, setLoadingElapsed] = useState(0);
   const [error, setError] = useState("");
   const [noCreditsError, setNoCreditsError] = useState(false);
   const [result, setResult] = useState<TailoringResult | null>(null);
@@ -410,6 +422,24 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
     staleTime: 0,
     retry: false,
   });
+
+  useEffect(() => {
+    if (!loading) {
+      setLoadingMsgIdx(0);
+      setLoadingElapsed(0);
+      return;
+    }
+    const msgInterval = setInterval(() => {
+      setLoadingMsgIdx((i) => (i + 1) % LOADING_MESSAGES.length);
+    }, 7000);
+    const secInterval = setInterval(() => {
+      setLoadingElapsed((s) => s + 1);
+    }, 1000);
+    return () => {
+      clearInterval(msgInterval);
+      clearInterval(secInterval);
+    };
+  }, [loading]);
 
   async function parseFile(file: File, kind: "jd" | "resume") {
     const setter = kind === "jd" ? setJdParsing : setResumeParsing;
@@ -904,7 +934,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                     </div>
 
                     <div className="flex justify-between pt-2">
-                      <Button variant="ghost" onClick={() => setStep(1)} className="text-slate-600 gap-1">
+                      <Button variant="ghost" onClick={() => setStep(1)} disabled={loading} className="text-slate-600 gap-1">
                         <ArrowLeft className="w-4 h-4" /> Back
                       </Button>
                       <Button
@@ -914,8 +944,8 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                       >
                         {loading ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Tailoring your resume…
+                            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                            <span className="truncate max-w-[220px]">{LOADING_MESSAGES[loadingMsgIdx]}</span>
                           </>
                         ) : (
                           <>
@@ -925,6 +955,14 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                         )}
                       </Button>
                     </div>
+                    {loading && (
+                      <p className="text-center text-xs text-slate-400 pt-1">
+                        AI tailoring typically takes 1–3 minutes. Please keep this page open.
+                        {loadingElapsed >= 10 && (
+                          <span className="ml-1 tabular-nums">({loadingElapsed}s)</span>
+                        )}
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               )}
