@@ -190,4 +190,37 @@ export const emailService = {
       ${btn("Get More Credits", `${APP_URL}/pricing`)}
     `)).catch(() => {});
   },
+
+  sendWebhookFailureAlert(eventType: string, eventId: string, err: unknown): void {
+    const adminEmail = process.env.ADMIN_EMAIL ?? "hello@prepinterv.com";
+    const message = err instanceof Error ? err.message : String(err);
+    const timestamp = new Date().toUTCString();
+    deliver(adminEmail, `[ALERT] Stripe webhook failed — ${eventType}`, wrap(`
+      <p style="margin:0 0 16px;font-size:17px;font-weight:700;color:#dc2626;">⚠️ Stripe Webhook Failure</p>
+      <p style="margin:0 0 20px;font-size:14px;color:#334155;line-height:1.65;">
+        A Stripe webhook event failed to process. Stripe will retry automatically, but credits or plan changes may not have been applied yet. Investigate immediately if this alert repeats.
+      </p>
+      <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;">
+        <tr style="background:#fef2f2;">
+          <td style="padding:10px 14px;border:1px solid #fecaca;font-weight:700;color:#991b1b;width:140px;">Event type</td>
+          <td style="padding:10px 14px;border:1px solid #fecaca;color:#1e293b;font-family:monospace;">${eventType}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;border:1px solid #fecaca;font-weight:700;color:#991b1b;">Event ID</td>
+          <td style="padding:10px 14px;border:1px solid #fecaca;color:#1e293b;font-family:monospace;">${eventId}</td>
+        </tr>
+        <tr style="background:#fef2f2;">
+          <td style="padding:10px 14px;border:1px solid #fecaca;font-weight:700;color:#991b1b;">Error</td>
+          <td style="padding:10px 14px;border:1px solid #fecaca;color:#1e293b;font-family:monospace;">${message}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;border:1px solid #fecaca;font-weight:700;color:#991b1b;">Time (UTC)</td>
+          <td style="padding:10px 14px;border:1px solid #fecaca;color:#1e293b;">${timestamp}</td>
+        </tr>
+      </table>
+      <p style="margin:0;font-size:13px;color:#64748b;line-height:1.65;">
+        Check the API server logs for a full stack trace. If the database was unavailable, verify that credits were applied once it recovered — Stripe retries failed webhooks for up to 72 hours.
+      </p>
+    `)).catch(() => {});
+  },
 };

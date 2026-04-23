@@ -8,6 +8,7 @@ import { logger } from "./lib/logger";
 import { seedInterviewersIfNeeded, patchFemaleInterviewerVoices } from "./lib/seedInterviewers";
 import { WebhookHandlers } from "./lib/webhookHandlers";
 import { isStripeConfigured } from "./lib/stripeClient";
+import { emailService } from "./lib/emailService";
 
 const IS_REPLIT_DEV = (Boolean(process.env.REPL_ID) || process.env.NODE_ENV === "development") && process.env.NODE_ENV !== "production";
 const USE_AUTH0 = !IS_REPLIT_DEV && Boolean(process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID);
@@ -69,6 +70,18 @@ app.post(
       res.status(200).json({ received: true });
     } catch (err: unknown) {
       logger.error({ err }, "Stripe webhook error");
+
+      // Best-effort extract event type and ID from the raw buffer for the alert email.
+      let eventType = "unknown";
+      let eventId = "unknown";
+      try {
+        const parsed = JSON.parse((req.body as Buffer).toString("utf-8")) as { type?: string; id?: string };
+        eventType = parsed.type ?? "unknown";
+        eventId = parsed.id ?? "unknown";
+      } catch { /* ignore parse errors */ }
+
+      emailService.sendWebhookFailureAlert(eventType, eventId, err);
+
       res.status(400).json({ error: "Webhook processing error" });
     }
   },
