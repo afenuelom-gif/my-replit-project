@@ -136,16 +136,18 @@ export class WebhookHandlers {
 
     const user = await WebhookHandlers.getUser(userId);
     logger.info(
-      { userId, hasEmail: !!user?.email, isNew, cancelAtPeriodEnd: sub.cancel_at_period_end, subStatus: sub.status },
+      { userId, hasEmail: !!user?.email, isNew, cancelAtPeriodEnd: sub.cancel_at_period_end, subStatus: sub.status, currentPeriodEnd: sub.current_period_end },
       "Email condition check"
     );
     if (user?.email) {
       if (isNew && sub.status === "active") {
         emailService.sendSubscriptionConfirmed(user.email, user.firstName, plan);
-      } else if (!isNew && sub.cancel_at_period_end && sub.current_period_end) {
-        const accessUntil = new Date(sub.current_period_end * 1000).toLocaleDateString("en-US", {
-          month: "long", day: "numeric", year: "numeric",
-        });
+      } else if (!isNew && sub.cancel_at_period_end) {
+        const periodEnd = sub.current_period_end
+          ?? (sub as unknown as { items?: { data?: Array<{ current_period?: { end?: number } }> } }).items?.data?.[0]?.current_period?.end;
+        const accessUntil = periodEnd
+          ? new Date(periodEnd * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+          : undefined;
         emailService.sendSubscriptionCancelled(user.email, user.firstName, plan, accessUntil);
       }
     }
