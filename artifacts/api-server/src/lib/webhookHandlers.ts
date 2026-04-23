@@ -79,8 +79,9 @@ export class WebhookHandlers {
 
   private static async resolveUserId(customerId: string): Promise<string | null> {
     const stripe = getStripeClient();
-    const customers = await stripe.customers.search({ query: `id:'${customerId}'`, limit: 1 });
-    return customers.data[0]?.metadata?.userId ?? null;
+    const customer = await stripe.customers.retrieve(customerId);
+    if (customer.deleted) return null;
+    return customer.metadata?.userId ?? null;
   }
 
   private static async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
@@ -133,10 +134,15 @@ export class WebhookHandlers {
 
     logger.info({ userId, plan }, "Subscription upserted via webhook");
 
-    if (isNew && sub.status === "active") {
-      const user = await WebhookHandlers.getUser(userId);
-      if (user?.email) {
+    const user = await WebhookHandlers.getUser(userId);
+    if (user?.email) {
+      if (isNew && sub.status === "active") {
         emailService.sendSubscriptionConfirmed(user.email, user.firstName, plan);
+      } else if (!isNew && sub.cancel_at_period_end && sub.current_period_end) {
+        const accessUntil = new Date(sub.current_period_end * 1000).toLocaleDateString("en-US", {
+          month: "long", day: "numeric", year: "numeric",
+        });
+        emailService.sendSubscriptionCancelled(user.email, user.firstName, plan, accessUntil);
       }
     }
   }
