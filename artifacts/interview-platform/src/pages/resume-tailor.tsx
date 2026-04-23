@@ -959,7 +959,7 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                     </div>
                     {loading && (
                       <p className="text-center text-xs text-slate-400 pt-1">
-                        AI tailoring typically takes 1–3 minutes. Please keep this page open.
+                        AI tailoring typically takes 20–40 seconds. Please keep this page open.
                         {loadingElapsed >= 10 && (
                           <span className="ml-1 tabular-nums">({loadingElapsed}s)</span>
                         )}
