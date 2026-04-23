@@ -398,7 +398,7 @@ export default function Interview() {
       mediaRecorderRef.current?.stop();
       setIsRecording(false);
       setIsProcessing(true);
-      setStatusMessage("Processing your answer...");
+      setStatusMessage("Transcribing your answer…");
     } else {
       const sourceStream = audioStreamRef.current ?? mediaStreamRef.current;
       if (!sourceStream) {
@@ -460,7 +460,7 @@ export default function Interview() {
               return;
             }
             const transcript = transcribeRes.text.trim();
-            setStatusMessage("Evaluating your answer...");
+            setStatusMessage("Evaluating your answer… this may take a moment.");
 
             if (currentQuestion) {
               const nextQ = await getNextQuestion.mutateAsync({
