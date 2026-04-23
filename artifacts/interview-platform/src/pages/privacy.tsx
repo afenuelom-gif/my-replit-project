@@ -19,7 +19,10 @@ export default function Privacy() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">1. What we collect</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            When you use PrepInterv AI we collect the information you provide directly — including your name, email address (via Clerk authentication), job role, resume text, and job description text. These are used to personalise your interview questions and are automatically deleted from our database as soon as your performance report is generated. During interview sessions your spoken answers are recorded locally, sent for transcription, and the resulting text transcript is stored against your session. The raw audio is processed in real time and is not retained. Your camera is used during sessions to assess posture — individual frames are analysed on the fly and only a posture score and brief text note are stored; no images or video footage are ever saved. We also collect session metadata such as duration, question history, and AI-generated performance scores.
+            When you use PrepInterv AI we collect the information you provide directly — including your name, email address (via Clerk or Auth0 authentication), job role, resume text, and job description text. During interview sessions, this information is used to personalise your interview questions and is automatically deleted from our database as soon as your performance report is generated. During interview sessions your spoken answers are recorded locally, sent for transcription, and the resulting text transcript is stored against your session. The raw audio is processed in real time and is not retained. Your camera is used during sessions to assess posture — individual frames are analysed on the fly and only a posture score and brief text note are stored; no images or video footage are ever saved. We also collect session metadata such as duration, question history, and AI-generated performance scores.
+          </p>
+          <p className="text-zinc-400 text-sm leading-relaxed">
+            When you use the Resume Tailor feature, the resume text and job description you submit are sent to OpenAI for processing and the results — including the tailored resume, a summary of changes, extracted ATS keywords, and improvement suggestions — are stored persistently in our database linked to your account so you can access them later. We recommend not including personal contact information (such as your full name, address, or phone number) in the resume you submit; where such details are omitted, the tailored output will include clearly marked placeholders so you know where to add them. Resume Tailor records are retained for as long as your account is active and can be deleted on request.
           </p>
         </section>
 
@@ -38,7 +41,7 @@ export default function Privacy() {
           <ul className="list-disc list-inside text-zinc-400 text-sm space-y-1 ml-2">
             <li><span className="text-zinc-300">Clerk</span> — authentication and account management (development environment)</li>
             <li><span className="text-zinc-300">Auth0</span> — authentication and account management (production environment)</li>
-            <li><span className="text-zinc-300">OpenAI</span> — AI question generation and answer analysis</li>
+            <li><span className="text-zinc-300">OpenAI</span> — AI question generation, answer analysis, and resume tailoring</li>
             <li><span className="text-zinc-300">ElevenLabs</span> — text-to-speech voice synthesis</li>
           </ul>
           <p className="text-zinc-400 text-sm leading-relaxed">
