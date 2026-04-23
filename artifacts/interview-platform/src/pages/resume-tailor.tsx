@@ -836,9 +836,16 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                       <h2 className="text-xl font-bold text-slate-900">
                         Tailored for: <span className="text-blue-700">{result.jobTitle}</span>
                       </h2>
-                      {result.creditsRemaining > 0 && (
+                      {result.creditsRemaining > 0 ? (
                         <p className="text-sm text-slate-500 mt-0.5">
-                          {result.creditsRemaining} credit{result.creditsRemaining !== 1 ? "s" : ""} remaining
+                          {result.creditsRemaining} tailoring credit{result.creditsRemaining !== 1 ? "s" : ""} remaining
+                        </p>
+                      ) : (
+                        <p className="text-sm text-amber-600 mt-0.5 font-medium">
+                          0 credits remaining —{" "}
+                          <a href="/pricing" className="underline underline-offset-2 hover:text-amber-700">
+                            top up or upgrade
+                          </a>
                         </p>
                       )}
                     </div>

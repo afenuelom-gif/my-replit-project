@@ -174,7 +174,7 @@ router.post(
       changeSummary: result.changeSummary,
       atsKeywords: result.atsKeywords,
       improvementSuggestions: result.improvementSuggestions,
-      creditsRemaining: user?.resumeTailoringCredits ?? 0,
+      creditsRemaining: Math.max(0, (user?.resumeTailoringCredits ?? 0) - 1),
     });
   },
 );
