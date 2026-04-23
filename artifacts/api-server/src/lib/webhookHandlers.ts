@@ -3,6 +3,7 @@ import { eq, sql as drizzleSql } from "drizzle-orm";
 import { getStripeClient, getWebhookSecret } from "./stripeClient.js";
 import { stripeService } from "./stripeService.js";
 import { logger } from "./logger.js";
+import { emailService } from "./emailService.js";
 import type Stripe from "stripe";
 
 export class WebhookHandlers {
@@ -32,7 +33,10 @@ export class WebhookHandlers {
       }
       case "customer.subscription.created":
       case "customer.subscription.updated": {
-        await WebhookHandlers.handleSubscriptionUpsert(event.data.object as Stripe.Subscription);
+        await WebhookHandlers.handleSubscriptionUpsert(
+          event.data.object as Stripe.Subscription,
+          event.type === "customer.subscription.created",
+        );
         break;
       }
       case "customer.subscription.deleted": {
@@ -64,6 +68,21 @@ export class WebhookHandlers {
     }
   }
 
+  private static async getUser(userId: string) {
+    const [user] = await db
+      .select({ email: usersTable.email, firstName: usersTable.firstName, plan: usersTable.plan })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .limit(1);
+    return user ?? null;
+  }
+
+  private static async resolveUserId(customerId: string): Promise<string | null> {
+    const stripe = getStripeClient();
+    const customers = await stripe.customers.search({ query: `id:'${customerId}'`, limit: 1 });
+    return customers.data[0]?.metadata?.userId ?? null;
+  }
+
   private static async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
     const userId = session.metadata?.userId;
     if (!userId) return;
@@ -75,15 +94,17 @@ export class WebhookHandlers {
         drizzleSql`UPDATE users SET resume_tailoring_credits = resume_tailoring_credits + ${tailorCredits} WHERE id = ${userId}`,
       );
       logger.info({ userId, tailorCredits }, "Top-up credits added via webhook");
+
+      const user = await WebhookHandlers.getUser(userId);
+      if (user?.email) {
+        emailService.sendTopUpConfirmed(user.email, user.firstName, tailorCredits);
+      }
     }
   }
 
-  private static async handleSubscriptionUpsert(sub: Stripe.Subscription): Promise<void> {
+  private static async handleSubscriptionUpsert(sub: Stripe.Subscription, isNew: boolean): Promise<void> {
     const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-
-    const stripe = getStripeClient();
-    const customers = await stripe.customers.search({ query: `id:'${customerId}'`, limit: 1 });
-    const userId = customers.data[0]?.metadata?.userId;
+    const userId = await WebhookHandlers.resolveUserId(customerId);
     if (!userId) return;
 
     const { plan } = await stripeService.getPlanFromSubscription(sub);
@@ -111,28 +132,32 @@ export class WebhookHandlers {
     }).where(eq(usersTable.id, userId));
 
     logger.info({ userId, plan }, "Subscription upserted via webhook");
+
+    if (isNew && sub.status === "active") {
+      const user = await WebhookHandlers.getUser(userId);
+      if (user?.email) {
+        emailService.sendSubscriptionConfirmed(user.email, user.firstName, plan);
+      }
+    }
   }
 
   private static async handlePaymentFailed(sub: Stripe.Subscription): Promise<void> {
     const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-
-    const stripe = getStripeClient();
-    const customers = await stripe.customers.search({ query: `id:'${customerId}'`, limit: 1 });
-    const userId = customers.data[0]?.metadata?.userId;
+    const userId = await WebhookHandlers.resolveUserId(customerId);
     if (!userId) return;
 
     // Do NOT revoke or alter credits — Stripe will retry automatically.
-    // The subscription status on the Stripe object will be "past_due", which
-    // the frontend reads and shows a warning banner to the user.
-    logger.warn({ userId, subId: sub.id, status: sub.status }, "Payment failed — user notified via account page banner");
+    logger.warn({ userId, subId: sub.id, status: sub.status }, "Payment failed — user notified via email and account banner");
+
+    const user = await WebhookHandlers.getUser(userId);
+    if (user?.email) {
+      emailService.sendPaymentFailed(user.email, user.firstName);
+    }
   }
 
   private static async handleSubscriptionRenewal(sub: Stripe.Subscription): Promise<void> {
     const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-
-    const stripe = getStripeClient();
-    const customers = await stripe.customers.search({ query: `id:'${customerId}'`, limit: 1 });
-    const userId = customers.data[0]?.metadata?.userId;
+    const userId = await WebhookHandlers.resolveUserId(customerId);
     if (!userId) return;
 
     const { plan, sessionCredits, resumeCredits } = await stripeService.getPlanFromSubscription(sub);
@@ -149,11 +174,10 @@ export class WebhookHandlers {
 
   private static async handleSubscriptionDeleted(sub: Stripe.Subscription): Promise<void> {
     const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-
-    const stripe = getStripeClient();
-    const customers = await stripe.customers.search({ query: `id:'${customerId}'`, limit: 1 });
-    const userId = customers.data[0]?.metadata?.userId;
+    const userId = await WebhookHandlers.resolveUserId(customerId);
     if (!userId) return;
+
+    const user = await WebhookHandlers.getUser(userId);
 
     await db.update(usersTable).set({
       plan: "free",
@@ -161,5 +185,14 @@ export class WebhookHandlers {
     }).where(eq(usersTable.id, userId));
 
     logger.info({ userId }, "Subscription cancelled via webhook");
+
+    if (user?.email) {
+      const accessUntil = sub.current_period_end
+        ? new Date(sub.current_period_end * 1000).toLocaleDateString("en-US", {
+            month: "long", day: "numeric", year: "numeric",
+          })
+        : undefined;
+      emailService.sendSubscriptionCancelled(user.email, user.firstName, user.plan, accessUntil);
+    }
   }
 }

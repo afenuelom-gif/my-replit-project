@@ -3,6 +3,7 @@ import { eq, and, asc, desc, isNull, gte, lte } from "drizzle-orm";
 import type { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import { optionalAuth, requireAuth } from "../../middlewares/requireAuth.js";
+import { emailService } from "../../lib/emailService.js";
 
 function isForbidden(session: { userId: string | null }, req: Request): boolean {
   return !!(session.userId && session.userId !== req.userId);
@@ -605,6 +606,9 @@ router.post("/interview/sessions/:id/complete", optionalAuth, async (req, res): 
         const newCredits = user.sessionCredits - 1;
         await db.update(usersTable).set({ sessionCredits: newCredits }).where(eq(usersTable.id, session.userId));
         sessionCreditsRemaining = newCredits;
+        if (newCredits === 1 && user.email) {
+          emailService.sendLowSessionCredits(user.email, user.firstName, newCredits);
+        }
       } else if (user.plan === "pro") {
         sessionCreditsRemaining = null; // unlimited
       } else {

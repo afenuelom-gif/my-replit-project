@@ -1,7 +1,9 @@
 import { getAuth, clerkClient } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
 import { db, usersTable, loginEventsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import geoip from "geoip-lite";
+import { emailService } from "../lib/emailService.js";
 
 declare global {
   namespace Express {
@@ -147,6 +149,13 @@ async function ensureUserExists(
   userId: string,
   profile: { email?: string; firstName?: string; lastName?: string },
 ): Promise<void> {
+  const [existing] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  const isNew = !existing;
+
   const updateSet: Partial<typeof usersTable.$inferInsert> = { updatedAt: new Date() };
   if (profile.email !== undefined) updateSet.email = profile.email;
   if (profile.firstName !== undefined) updateSet.firstName = profile.firstName;
@@ -164,6 +173,10 @@ async function ensureUserExists(
       target: usersTable.id,
       set: updateSet,
     });
+
+  if (isNew && profile.email) {
+    emailService.sendWelcome(profile.email, profile.firstName);
+  }
 }
 
 async function logLoginEvent(

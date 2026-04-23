@@ -4,6 +4,7 @@ import { db, resumeTailoringTable, usersTable } from "@workspace/db";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { tailorResume } from "../../lib/resumeAI.js";
+import { emailService } from "../../lib/emailService.js";
 
 const router: IRouter = Router();
 
@@ -121,7 +122,12 @@ router.post(
     }
 
     const [user] = await db
-      .select({ plan: usersTable.plan, resumeTailoringCredits: usersTable.resumeTailoringCredits })
+      .select({
+        plan: usersTable.plan,
+        resumeTailoringCredits: usersTable.resumeTailoringCredits,
+        email: usersTable.email,
+        firstName: usersTable.firstName,
+      })
       .from(usersTable)
       .where(eq(usersTable.id, userId))
       .limit(1);
@@ -159,6 +165,11 @@ router.post(
       .update(usersTable)
       .set({ resumeTailoringCredits: sql`${usersTable.resumeTailoringCredits} - 1` })
       .where(eq(usersTable.id, userId));
+
+    const creditsAfter = Math.max(0, (user?.resumeTailoringCredits ?? 0) - 1);
+    if (creditsAfter === 1 && user?.email) {
+      emailService.sendLowTailorCredits(user.email, user.firstName, creditsAfter);
+    }
 
     const [saved] = await db
       .insert(resumeTailoringTable)
