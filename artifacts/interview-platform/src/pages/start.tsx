@@ -57,6 +57,7 @@ export default function Start({ authMenu, authMobileMenu, showAuthPrompt }: Star
 
   const [jobRole, setJobRole] = useState("");
   const [jobDescription, setJobDescription] = useState("");
+  const [noCreditsError, setNoCreditsError] = useState<string | null>(null);
   const [resumeText, setResumeText] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
@@ -130,6 +131,7 @@ export default function Start({ authMenu, authMobileMenu, showAuthPrompt }: Star
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!jobRole) return;
+    setNoCreditsError(null);
     try {
       const session = await createSession.mutateAsync({
         data: {
@@ -140,8 +142,13 @@ export default function Start({ authMenu, authMobileMenu, showAuthPrompt }: Star
         },
       });
       setLocation(`/interview/${session.id}`);
-    } catch (error) {
-      console.error("Failed to start session:", error);
+    } catch (error: unknown) {
+      const apiError = error as { status?: number; data?: { code?: string; error?: string } };
+      if (apiError.status === 403 && apiError.data?.code === "NO_CREDITS") {
+        setNoCreditsError(apiError.data.error ?? "You have no sessions remaining.");
+      } else {
+        console.error("Failed to start session:", error);
+      }
     }
   };
 
@@ -291,6 +298,20 @@ export default function Start({ authMenu, authMobileMenu, showAuthPrompt }: Star
                     )}
                   </div>
                 </div>
+
+                {noCreditsError && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-3">
+                    <div className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+                      <span className="text-red-600 text-xs font-black">!</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-red-800">{noCreditsError}</p>
+                      <a href="/pricing" className="text-xs text-red-600 underline underline-offset-2 hover:text-red-700 font-medium">
+                        View plans &amp; upgrade →
+                      </a>
+                    </div>
+                  </div>
+                )}
 
                 <Button
                   type="submit"

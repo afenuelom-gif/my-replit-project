@@ -130,6 +130,21 @@ router.post("/interview/sessions", optionalAuth, async (req, res): Promise<void>
     return;
   }
 
+  // Credit gate — enforce session limits before doing any expensive work
+  if (req.userId) {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId)).limit(1);
+    if (user) {
+      if (user.plan === "free" && user.trialUsed) {
+        res.status(403).json({ error: "You have used your free trial session. Upgrade to continue.", code: "NO_CREDITS" });
+        return;
+      }
+      if (user.plan !== "free" && user.plan !== "pro" && user.sessionCredits <= 0) {
+        res.status(403).json({ error: "You have no sessions remaining this month. Upgrade or wait for your next billing cycle.", code: "NO_CREDITS" });
+        return;
+      }
+    }
+  }
+
   const { jobRole, jobDescription, resumeText, durationMinutes: rawDuration } = parsed.data;
   const VALID_DURATIONS = [2, 30, 35, 40, 45];
   const durationMinutes = VALID_DURATIONS.includes(rawDuration) ? rawDuration : 35;
