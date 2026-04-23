@@ -1,5 +1,6 @@
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { logger } from "./logger.js";
 
 export function getAdminIds(): string[] {
   return (process.env.ADMIN_USER_IDS ?? "")
@@ -27,7 +28,12 @@ export async function isAdminUserOrEmail(userId: string | null | undefined): Pro
   const adminIds = getAdminIds();
   const adminEmails = getAdminEmails();
 
-  if (adminIds.length === 0 && adminEmails.length === 0) return false;
+  logger.info({ adminIds, adminEmails, userId }, "[adminAuth] checking admin access");
+
+  if (adminIds.length === 0 && adminEmails.length === 0) {
+    logger.warn("[adminAuth] no ADMIN_USER_IDS or ADMIN_EMAILS configured — denying admin");
+    return false;
+  }
 
   if (adminIds.includes(userId)) return true;
 
@@ -38,8 +44,10 @@ export async function isAdminUserOrEmail(userId: string | null | undefined): Pro
         .from(usersTable)
         .where(eq(usersTable.id, userId))
         .limit(1);
+      logger.info({ dbEmail: user?.email, adminEmails }, "[adminAuth] email check");
       if (user?.email && adminEmails.includes(user.email.toLowerCase())) return true;
-    } catch {
+    } catch (err) {
+      logger.error({ err }, "[adminAuth] DB lookup failed");
     }
   }
 
