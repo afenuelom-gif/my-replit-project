@@ -59,7 +59,7 @@ export class StripeService {
       allow_promotion_codes: true,
       success_url: opts.successUrl,
       cancel_url: opts.cancelUrl,
-      metadata: { userId: opts.userId },
+      metadata: { userId: opts.userId, priceId: opts.priceId },
     });
   }
 
@@ -98,7 +98,7 @@ export class StripeService {
   }
 
   getTopUpCreditsForPrice(priceId: string): number {
-    return TOPUP_CREDITS[priceId] ?? 1;
+    return TOPUP_CREDITS[priceId] ?? 0;
   }
 }
 

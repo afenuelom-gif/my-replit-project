@@ -89,12 +89,18 @@ export class WebhookHandlers {
     if (!userId) return;
 
     if (session.mode === "payment") {
-      const priceId = session.line_items?.data[0]?.price?.id ?? "";
+      // Stripe webhook payloads do not expand line_items — read priceId from
+      // the metadata we stamped onto the session at checkout creation instead.
+      const priceId = session.metadata?.priceId ?? "";
       const tailorCredits = stripeService.getTopUpCreditsForPrice(priceId);
+      if (tailorCredits === 0) {
+        logger.warn({ userId, priceId }, "Top-up: unrecognised priceId — no credits added");
+        return;
+      }
       await db.execute(
         drizzleSql`UPDATE users SET resume_tailoring_credits = resume_tailoring_credits + ${tailorCredits} WHERE id = ${userId}`,
       );
-      logger.info({ userId, tailorCredits }, "Top-up credits added via webhook");
+      logger.info({ userId, priceId, tailorCredits }, "Top-up credits added via webhook");
 
       const user = await WebhookHandlers.getUser(userId);
       if (user?.email) {
