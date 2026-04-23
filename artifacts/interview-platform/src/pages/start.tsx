@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useCreateSession } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,21 @@ function AuthPromptCard() {
 export default function Start({ authMenu, authMobileMenu, showAuthPrompt }: StartProps) {
   const [, setLocation] = useLocation();
   const createSession = useCreateSession();
+  const { getAuthHeaders } = useAuthActions();
+
+  const { data: meData } = useQuery<{ plan: string }>({
+    queryKey: ["start-me"],
+    queryFn: async () => {
+      const headers = await getAuthHeaders();
+      const res = await fetch("/api/users/me", { credentials: "include", headers, cache: "no-store" });
+      if (!res.ok) throw new Error("Not signed in");
+      return res.json() as Promise<{ plan: string }>;
+    },
+    enabled: !showAuthPrompt,
+    staleTime: 0,
+  });
+
+  const isFreeTrial = !meData || meData.plan === "free";
 
   const [jobRole, setJobRole] = useState("");
   const [jobDescription, setJobDescription] = useState("");
@@ -138,7 +154,7 @@ export default function Start({ authMenu, authMobileMenu, showAuthPrompt }: Star
           jobRole,
           jobDescription: jobDescription || undefined,
           resumeText: resumeText || undefined,
-          durationMinutes,
+          durationMinutes: isFreeTrial ? 15 : durationMinutes,
         },
       });
       setLocation(`/interview/${session.id}`);
@@ -194,28 +210,38 @@ export default function Start({ authMenu, authMobileMenu, showAuthPrompt }: Star
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    Interview Duration
-                  </Label>
-                  <div className="flex gap-2">
-                    {[2, 30, 35, 40, 45].map((mins) => (
-                      <button
-                        key={mins}
-                        type="button"
-                        onClick={() => setDurationMinutes(mins)}
-                        className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
-                          durationMinutes === mins
-                            ? "border-primary bg-primary/20 text-primary"
-                            : "border-slate-200 text-slate-500 hover:border-slate-400 hover:text-slate-900"
-                        }`}
-                        data-testid={`button-duration-${mins}`}
-                      >
-                        {mins} min
-                      </button>
-                    ))}
+                {isFreeTrial ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-500">Interview Duration:</span>
+                    <span className="px-3 py-1 rounded-md text-sm border border-primary bg-primary/10 text-primary font-medium">
+                      15 min
+                    </span>
+                    <span className="text-xs text-slate-400">(free trial)</span>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                      Interview Duration
+                    </Label>
+                    <div className="flex gap-2 flex-wrap">
+                      {[15, 30, 35, 40, 45].map((mins) => (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => setDurationMinutes(mins)}
+                          className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                            durationMinutes === mins
+                              ? "border-primary bg-primary/20 text-primary"
+                              : "border-slate-200 text-slate-500 hover:border-slate-400 hover:text-slate-900"
+                          }`}
+                          data-testid={`button-duration-${mins}`}
+                        >
+                          {mins} min
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
