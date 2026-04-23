@@ -224,7 +224,7 @@ export default function Start({ authMenu, authMobileMenu, showAuthPrompt }: Star
                       Interview Duration
                     </Label>
                     <div className="flex gap-2 flex-wrap">
-                      {[15, 30, 35, 40, 45].map((mins) => (
+                      {[30, 35, 40, 45].map((mins) => (
                         <button
                           key={mins}
                           type="button"
