@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Briefcase, FileText, Upload, X, LogIn, UserPlus } from "lucide-react";
+import { Loader2, Briefcase, FileText, Upload, X, LogIn, UserPlus, AlertTriangle } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
 import { useAuthActions } from "@/contexts/auth-actions";
@@ -57,19 +57,23 @@ export default function Start({ authMenu, authMobileMenu, showAuthPrompt }: Star
   const createSession = useCreateSession();
   const { getAuthHeaders } = useAuthActions();
 
-  const { data: meData } = useQuery<{ plan: string }>({
+  const { data: meData } = useQuery<{ plan: string; sessionCredits: number }>({
     queryKey: ["start-me"],
     queryFn: async () => {
       const headers = await getAuthHeaders();
       const res = await fetch("/api/users/me", { credentials: "include", headers, cache: "no-store" });
       if (!res.ok) throw new Error("Not signed in");
-      return res.json() as Promise<{ plan: string }>;
+      return res.json() as Promise<{ plan: string; sessionCredits: number }>;
     },
     enabled: !showAuthPrompt,
     staleTime: 0,
   });
 
   const isFreeTrial = !meData || meData.plan === "free";
+  const sessionCredits = meData?.sessionCredits ?? null;
+  const isStarter = meData?.plan === "starter";
+  const showLowCreditsWarning = isStarter && sessionCredits !== null && sessionCredits <= 1 && sessionCredits > 0;
+  const showNoCreditsWarning = isStarter && sessionCredits !== null && sessionCredits === 0;
 
   const [jobRole, setJobRole] = useState("");
   const [jobDescription, setJobDescription] = useState("");
@@ -324,6 +328,36 @@ export default function Start({ authMenu, authMobileMenu, showAuthPrompt }: Star
                     )}
                   </div>
                 </div>
+
+                {showLowCreditsWarning && !noCreditsError && (
+                  <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-3">
+                    <AlertTriangle className="shrink-0 mt-0.5 w-4 h-4 text-amber-500" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-amber-800">You have 1 session credit left this month</p>
+                      <p className="text-xs text-amber-700 mt-0.5">
+                        Use it wisely, or{" "}
+                        <a href="/pricing" className="underline underline-offset-2 hover:text-amber-900 font-medium">
+                          upgrade to Pro for unlimited sessions
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {showNoCreditsWarning && !noCreditsError && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-3">
+                    <AlertTriangle className="shrink-0 mt-0.5 w-4 h-4 text-red-500" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-red-800">No session credits remaining</p>
+                      <p className="text-xs text-red-700 mt-0.5">
+                        Your credits reset at the start of the next billing period, or{" "}
+                        <a href="/pricing" className="underline underline-offset-2 hover:text-red-900 font-medium">
+                          upgrade to Pro for unlimited sessions →
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {noCreditsError && (
                   <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-3">

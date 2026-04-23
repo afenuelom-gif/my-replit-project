@@ -26,6 +26,7 @@ import {
   LogIn,
   UserPlus,
   RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
 
 interface ParsedLine {
@@ -656,10 +657,24 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
             <p className="text-slate-500 text-sm max-w-md mx-auto">
               Tailor your resume to any job description in seconds. ATS-optimized, human tone — never robotic.
             </p>
-            {creditsRemaining !== null && creditsRemaining > 0 && step < 3 && (
-              <p className="text-xs font-medium text-slate-500">
-                {`${creditsRemaining} tailoring credit${creditsRemaining !== 1 ? "s" : ""} remaining`}
-              </p>
+            {creditsRemaining !== null && step < 3 && (
+              creditsRemaining === 0 ? (
+                <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-full px-4 py-1.5 text-sm text-red-700 font-medium">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  No tailor credits left —{" "}
+                  <a href="/pricing" className="underline underline-offset-2 hover:text-red-900">upgrade or top up</a>
+                </div>
+              ) : creditsRemaining === 1 ? (
+                <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-4 py-1.5 text-sm text-amber-700 font-medium">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  1 tailor credit left —{" "}
+                  <a href="/pricing" className="underline underline-offset-2 hover:text-amber-900">top up</a>
+                </div>
+              ) : (
+                <p className="text-xs font-medium text-slate-500">
+                  {`${creditsRemaining} tailoring credit${creditsRemaining !== 1 ? "s" : ""} remaining`}
+                </p>
+              )
             )}
           </div>
 
