@@ -96,7 +96,7 @@ ${resumeText}`;
     ],
     response_format: { type: "json_object" },
     temperature: aggressiveness === "strong" ? 0.7 : aggressiveness === "balanced" ? 0.5 : 0.3,
-    max_tokens: 6000,
+    max_tokens: 4000,
   });
 
   const raw = response.choices[0]?.message?.content ?? "{}";
