@@ -461,6 +461,10 @@ function ClerkUserMenu() {
                 <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                 Users
               </button>
+              <button className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 transition-colors text-left" onClick={() => navigate("/admin/tailors")}>
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                Tailors
+              </button>
             </>
           )}
           <div className="my-1 border-t border-slate-100" />
@@ -519,6 +523,13 @@ function ClerkMobileActions() {
           >
             <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
             Users
+          </button>
+          <button
+            className="cursor-pointer flex items-center gap-2 w-full px-6 py-2 text-sm font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 transition-colors text-left"
+            onClick={() => setLocation("/admin/tailors")}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+            Tailors
           </button>
         </>
       )}
