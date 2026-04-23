@@ -156,7 +156,7 @@ router.get("/users/admin/users/:userId/sessions", requireAuth, requireAdmin, asy
 });
 
 router.get("/users/admin/tailors", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
-  const [statsRow] = await db.execute<{
+  const statsResult = await db.execute<{
     total_all_time: string;
     total_this_month: string;
     total_today: string;
@@ -167,8 +167,9 @@ router.get("/users/admin/tailors", requireAuth, requireAdmin, async (_req, res):
       COUNT(*) FILTER (WHERE created_at >= date_trunc('day', NOW() AT TIME ZONE 'UTC'))::int AS total_today
     FROM resume_tailoring
   `);
+  const statsRow = statsResult.rows[0];
 
-  const [creditsRow] = await db.execute<{
+  const creditsResult = await db.execute<{
     total_credits: string;
     users_with_credits: string;
   }>(sql`
@@ -177,8 +178,9 @@ router.get("/users/admin/tailors", requireAuth, requireAdmin, async (_req, res):
       COUNT(*) FILTER (WHERE resume_tailoring_credits > 0)::int AS users_with_credits
     FROM users
   `);
+  const creditsRow = creditsResult.rows[0];
 
-  const recentUsage = await db.execute<{
+  const recentUsageResult = await db.execute<{
     id: number;
     user_id: string;
     email: string | null;
@@ -205,7 +207,7 @@ router.get("/users/admin/tailors", requireAuth, requireAdmin, async (_req, res):
     LIMIT 100
   `);
 
-  const creditBalances = await db.execute<{
+  const creditBalancesResult = await db.execute<{
     user_id: string;
     email: string | null;
     first_name: string | null;
@@ -239,8 +241,8 @@ router.get("/users/admin/tailors", requireAuth, requireAdmin, async (_req, res):
       totalCreditsOutstanding: Number(creditsRow?.total_credits ?? 0),
       usersWithCredits: Number(creditsRow?.users_with_credits ?? 0),
     },
-    recentUsage,
-    creditBalances,
+    recentUsage: recentUsageResult.rows,
+    creditBalances: creditBalancesResult.rows,
   });
 });
 
