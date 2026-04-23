@@ -82,6 +82,9 @@ Ask a follow-up question:`
 
 export interface AnswerEvaluation {
   score: number;
+  technicalScore: number;
+  communicationScore: number;
+  confidenceScore: number;
   feedback: string;
   strengths: string[];
   improvements: string[];
@@ -102,22 +105,40 @@ export async function evaluateAnswer(
         content: `You are an expert interview evaluator for the role: ${jobRole}${jobDescription ? `\nJob description: ${jobDescription}` : ""}
 
 Evaluate the candidate's answer and return a JSON object with:
-- score (integer 0-100)
+- score (integer 0-100, holistic answer quality)
+- technicalScore (integer 0-100, domain knowledge and role-relevant terminology)
+- communicationScore (integer 0-100, clarity, structure, and coherence)
+- confidenceScore (integer 0-100, assertive phrasing, directness, absence of hedging)
 - feedback (string, 2-3 sentences of overall feedback)
 - strengths (array of 1-3 short strength bullet points)
 - improvements (array of 1-3 short improvement suggestions)
 
-SCORING RUBRIC — apply strictly:
-- 0–10: Nonsense, gibberish, filler words, completely off-topic, or blank/empty answer. No relevant content whatsoever.
+OVERALL SCORE RUBRIC — apply strictly:
+- 0–10: Nonsense, gibberish, filler words, completely off-topic, or blank/empty answer.
 - 11–30: Extremely vague or only tangentially related; no domain knowledge demonstrated.
 - 31–50: Partial relevance but missing key concepts; weak or generic response.
 - 51–70: On-topic and mostly correct; shows basic understanding but lacks depth or examples.
 - 71–89: Solid answer with role-relevant terminology, clear structure, and at least one concrete example.
 - 90–100: Exceptional — specific, detailed, well-structured; directly addresses the question with strong domain knowledge.
+A score above 50 REQUIRES role-relevant vocabulary. A score above 80 REQUIRES at least one concrete example.
 
-A score above 50 REQUIRES that the answer uses role-relevant vocabulary and demonstrates understanding of the concepts asked about.
-A score above 80 REQUIRES at least one specific, concrete example or demonstration of depth.
-Repeated filler words, random syllables, or completely irrelevant content MUST score 0–5.
+TECHNICAL SCORE — domain knowledge and role-specific terminology:
+- 0–30: No domain knowledge; generic or irrelevant content.
+- 31–50: Some relevant terms but missing key concepts for the role.
+- 51–70: Correct use of role-relevant terminology; basic understanding shown.
+- 71–100: Strong domain knowledge; correct use of technical concepts specific to ${jobRole}.
+
+COMMUNICATION SCORE — clarity, structure, and coherence:
+- 0–30: Incoherent, rambling, or single-word answers.
+- 31–50: Partially addresses the question but lacks structure.
+- 51–70: Logically structured and mostly on-topic.
+- 71–100: Clear, well-organised, articulate; directly addresses the question.
+
+CONFIDENCE SCORE — assertive phrasing and decisiveness (not posture):
+- 0–30: Entirely passive or evasive language.
+- 31–50: Heavy hedging ("I think maybe", "I'm not sure but").
+- 51–70: Generally direct with minor hedging.
+- 71–100: Consistently assertive and decisive phrasing.
 
 Return ONLY valid JSON, no markdown.`,
       },
@@ -131,14 +152,18 @@ Return ONLY valid JSON, no markdown.`,
   const raw = response.choices[0]?.message?.content?.trim() ?? "{}";
   try {
     const parsed = JSON.parse(raw) as AnswerEvaluation;
+    const clamp = (n: number) => Math.min(100, Math.max(0, Number(n) || 0));
     return {
-      score: Math.min(100, Math.max(0, Number(parsed.score) || 0)),
+      score: clamp(parsed.score),
+      technicalScore: clamp(parsed.technicalScore),
+      communicationScore: clamp(parsed.communicationScore),
+      confidenceScore: clamp(parsed.confidenceScore),
       feedback: parsed.feedback ?? "Good attempt.",
       strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
       improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
     };
   } catch {
-    return { score: 0, feedback: "Unable to evaluate at this time.", strengths: [], improvements: [] };
+    return { score: 0, technicalScore: 0, communicationScore: 0, confidenceScore: 0, feedback: "Unable to evaluate at this time.", strengths: [], improvements: [] };
   }
 }
 
@@ -148,9 +173,6 @@ export async function generateReport(
   qaItems: Array<{ question: string; answer: string | null }>,
   postureScores: number[]
 ): Promise<{
-  communicationScore: number;
-  technicalScore: number;
-  confidenceScore: number;
   summary: string;
   suggestions: string[];
 }> {
@@ -169,42 +191,15 @@ export async function generateReport(
 
   const response = await openai.chat.completions.create({
     model: "gpt-5.2",
-    max_completion_tokens: 1024,
+    max_completion_tokens: 768,
     messages: [
       {
         role: "system",
         content: `You are an expert interview coach evaluating a candidate's performance for the role: ${jobRole}${jobDescription ? `\nJob description: ${jobDescription}` : ""}${postureContext}
 
 Based on the Q&A below, return a JSON object with:
-- communicationScore (integer 0-100)
-- technicalScore (integer 0-100)
-- confidenceScore (integer 0-100)
 - summary (string, 3-4 sentence overall assessment — if posture score was low, mention it briefly)
-- suggestions (array of exactly 3 actionable improvement suggestions — include posture/body language if score was below 70)
-
-SCORING RUBRIC — apply all three categories strictly:
-
-communicationScore — measures clarity, sentence structure, coherence, and whether the answer actually addresses the question asked:
-- 0: Incoherent, empty, gibberish, or single-word answers with zero substance.
-- 1–30: Severely unclear or rambling; fails to address the question.
-- 31–50: Partially addresses the question but lacks structure or clarity.
-- 51–70: Logically structured and mostly on-topic; communicates ideas adequately.
-- 71–100: Clear, well-organised, articulate answers that directly address every question asked.
-
-technicalScore — measures domain knowledge, use of role-relevant terminology, and alignment with the job role/description provided:
-- 0: No domain knowledge demonstrated; answers are generic, nonsensical, or completely unrelated to the role.
-- 1–30: Extremely superficial; barely any role-relevant vocabulary or concepts.
-- 31–50: Some relevant terms used but incorrectly or without depth; missing key concepts for the role.
-- 51–70: Correct use of role-relevant terminology; shows basic understanding of the domain.
-- 71–100: Strong domain knowledge; correctly uses technical concepts and vocabulary specific to ${jobRole}; answers are grounded in the job description.
-A score above 50 REQUIRES correct use of terminology and concepts specific to the ${jobRole} role. Irrelevant, nonsensical, or off-topic content scores 0.
-
-confidenceScore — measures assertive phrasing, directness, absence of excessive hedging, and decisive language in the answers (NOT posture or body language — those are captured separately):
-- 0: Entirely passive, evasive, or non-committal language throughout.
-- 1–30: Heavy hedging ("I think maybe", "I'm not sure but"), very indirect answers.
-- 31–50: Some hedging but occasionally direct; inconsistent decisiveness.
-- 51–70: Generally direct and assertive; minor hedging present.
-- 71–100: Consistently assertive, decisive phrasing; answers stated with conviction and no unnecessary qualifiers.
+- suggestions (array of exactly 3 actionable improvement suggestions — include posture/body language if posture score was below 70)
 
 Return ONLY valid JSON, no markdown.`,
       },
@@ -217,17 +212,8 @@ Return ONLY valid JSON, no markdown.`,
 
   const raw = response.choices[0]?.message?.content?.trim() ?? "{}";
   try {
-    const parsed = JSON.parse(raw) as {
-      communicationScore: number;
-      technicalScore: number;
-      confidenceScore: number;
-      summary: string;
-      suggestions: string[];
-    };
+    const parsed = JSON.parse(raw) as { summary: string; suggestions: string[] };
     return {
-      communicationScore: Math.min(100, Math.max(0, Number(parsed.communicationScore) || 0)),
-      technicalScore: Math.min(100, Math.max(0, Number(parsed.technicalScore) || 0)),
-      confidenceScore: Math.min(100, Math.max(0, Number(parsed.confidenceScore) || 0)),
       summary: parsed.summary ?? "Overall performance was satisfactory.",
       suggestions: ensureThreeSuggestions(
         Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 3) : []
@@ -235,9 +221,6 @@ Return ONLY valid JSON, no markdown.`,
     };
   } catch {
     return {
-      communicationScore: 0,
-      technicalScore: 0,
-      confidenceScore: 0,
       summary: "Overall performance was satisfactory.",
       suggestions: ensureThreeSuggestions([]),
     };

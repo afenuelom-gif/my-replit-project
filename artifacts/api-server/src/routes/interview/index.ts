@@ -758,18 +758,12 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
   );
 
   let reportData: {
-    communicationScore: number;
-    technicalScore: number;
-    confidenceScore: number;
     summary: string;
     suggestions: string[];
   };
 
   if (answeredQA.length === 0) {
     reportData = {
-      communicationScore: 0,
-      technicalScore: 0,
-      confidenceScore: 0,
       summary:
         "No answers were provided during this session. Please complete the interview to receive a meaningful evaluation.",
       suggestions: [
@@ -791,24 +785,29 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
     );
   }
 
+  // Category scores = averages of per-question sub-scores (fully consistent with question scores)
+  const avg = (key: keyof typeof answerFeedbacks[0]) =>
+    answerFeedbacks.length > 0
+      ? Math.round(answerFeedbacks.reduce((sum, f) => sum + (f[key] as number), 0) / answerFeedbacks.length)
+      : 0;
+  const avgQuestionScore = avg("score");
+  const communicationScore = avg("communicationScore");
+  const technicalScore = avg("technicalScore");
+  const confidenceScore = avg("confidenceScore");
+
   // Overall Score = 40% question average + 60% soft-skills average
   // Soft Skills = (communication + technical + confidence + posture) / 4
-  const avgQuestionScore =
-    answerFeedbacks.length > 0
-      ? Math.round(answerFeedbacks.reduce((sum, f) => sum + f.score, 0) / answerFeedbacks.length)
-      : 0;
   const postureForOverall = answeredQA.length === 0 ? 0 : avgPosture;
-  const softSkillsAvg =
-    (reportData.communicationScore + reportData.technicalScore + reportData.confidenceScore + postureForOverall) / 4;
+  const softSkillsAvg = (communicationScore + technicalScore + confidenceScore + postureForOverall) / 4;
   const overallScore = Math.round(0.4 * avgQuestionScore + 0.6 * softSkillsAvg);
 
   await db.insert(reportsTable).values({
     userId: session.userId ?? null,
     sessionId: session.id,
     overallScore,
-    communicationScore: reportData.communicationScore,
-    technicalScore: reportData.technicalScore,
-    confidenceScore: reportData.confidenceScore,
+    communicationScore,
+    technicalScore,
+    confidenceScore,
     postureScore: answeredQA.length === 0 ? 0 : avgPosture,
     summary: reportData.summary,
     suggestions: JSON.stringify(reportData.suggestions),
@@ -826,9 +825,9 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
   res.json({
     sessionId: session.id,
     overallScore,
-    communicationScore: reportData.communicationScore,
-    technicalScore: reportData.technicalScore,
-    confidenceScore: reportData.confidenceScore,
+    communicationScore,
+    technicalScore,
+    confidenceScore,
     postureScore: answeredQA.length === 0 ? 0 : avgPosture,
     answerFeedback: answerFeedbacks,
     postureNotes,
