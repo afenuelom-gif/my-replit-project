@@ -101,6 +101,8 @@ interface ResumeTailorProps {
 interface TailoringResult {
   id: number;
   jobTitle: string;
+  scope: Scope;
+  aggressiveness: Aggressiveness;
   tailoredResumeText: string;
   changeSummary: string[];
   atsKeywords: string[];
@@ -380,6 +382,12 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
   const [showOriginal, setShowOriginal] = useState(false);
   const [expandedSections, setExpandedSections] = useState({ changes: true, keywords: true, suggestions: false });
 
+  const [showRegenPanel, setShowRegenPanel] = useState(false);
+  const [regenScope, setRegenScope] = useState<Scope>("full");
+  const [regenAggressiveness, setRegenAggressiveness] = useState<Aggressiveness>("balanced");
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [regenError, setRegenError] = useState("");
+
   const { data: meData, refetch: refetchCredits } = useQuery<{
     plan: string;
     resumeTailoringCredits: number;
@@ -474,6 +482,39 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleRegenerate() {
+    if (!result) return;
+    setRegenError("");
+    setRegenLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch("/api/resume/regenerate", {
+        method: "POST",
+        credentials: "include",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ tailoringId: result.id, scope: regenScope, aggressiveness: regenAggressiveness }),
+      });
+      const data = await res.json() as TailoringResult & { code?: string; error?: string };
+      if (!res.ok) {
+        if (data.code === "NO_CREDITS") {
+          setRegenError("No credits remaining. Top up or upgrade to regenerate.");
+        } else {
+          setRegenError(data.error ?? "Something went wrong. Please try again.");
+        }
+        return;
+      }
+      setResult(data);
+      setShowRegenPanel(false);
+      setExpandedSections({ changes: true, keywords: true, suggestions: false });
+      setShowOriginal(false);
+      refetchCredits();
+    } catch {
+      setRegenError("Network error. Please try again.");
+    } finally {
+      setRegenLoading(false);
     }
   }
 
@@ -615,6 +656,16 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
     setAggressiveness("balanced");
     setResult(null);
     setError("");
+    setShowRegenPanel(false);
+    setRegenError("");
+  }
+
+  function openRegenPanel() {
+    if (!result) return;
+    setRegenScope(result.scope ?? "full");
+    setRegenAggressiveness(result.aggressiveness ?? "balanced");
+    setRegenError("");
+    setShowRegenPanel(true);
   }
 
   const creditsRemaining = result?.creditsRemaining ?? meData?.resumeTailoringCredits ?? null;
@@ -899,16 +950,110 @@ export default function ResumeTailor({ authMenu, authMobileMenu, showAuthPrompt 
                         </p>
                       )}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={startOver}
-                      className="gap-1.5 text-slate-600 border-slate-200 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-200"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      New Tailoring
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={openRegenPanel}
+                        className="gap-1.5 text-purple-700 border-purple-200 hover:text-purple-800 hover:bg-purple-50 hover:border-purple-300"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Regenerate
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={startOver}
+                        className="gap-1.5 text-slate-600 border-slate-200 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-200"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        New Tailoring
+                      </Button>
+                    </div>
                   </div>
+
+                  {/* ── Regenerate panel ── */}
+                  {showRegenPanel && (
+                    <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 shadow-sm">
+                      <CardContent className="p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-purple-500" />
+                            Regenerate with different options
+                          </h3>
+                          <button
+                            onClick={() => setShowRegenPanel(false)}
+                            className="text-slate-400 hover:text-slate-600 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Your resume and job description are saved — just pick new settings and generate a fresh version. Uses 1 credit.
+                        </p>
+
+                        <div>
+                          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Scope</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {(["full", "role_specific"] as Scope[]).map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => setRegenScope(s)}
+                                className={`px-3 py-2.5 rounded-lg border text-sm font-medium text-left transition-all ${
+                                  regenScope === s
+                                    ? "border-purple-400 bg-white text-purple-700 shadow-sm"
+                                    : "border-slate-200 bg-white/60 text-slate-600 hover:border-purple-300 hover:text-purple-600"
+                                }`}
+                              >
+                                {s === "full" ? "Full Resume" : "Last Role Only"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Aggressiveness</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {(["conservative", "balanced", "strong"] as Aggressiveness[]).map((a) => (
+                              <button
+                                key={a}
+                                onClick={() => setRegenAggressiveness(a)}
+                                className={`px-3 py-2.5 rounded-lg border text-sm font-medium text-center capitalize transition-all ${
+                                  regenAggressiveness === a
+                                    ? "border-purple-400 bg-white text-purple-700 shadow-sm"
+                                    : "border-slate-200 bg-white/60 text-slate-600 hover:border-purple-300 hover:text-purple-600"
+                                }`}
+                              >
+                                {a === "strong" ? "Strong" : a.charAt(0).toUpperCase() + a.slice(1)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {regenError && (
+                          <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">
+                            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                            {regenError}
+                            {regenError.includes("credits") && (
+                              <> <a href="/pricing" className="underline underline-offset-2 font-medium hover:text-red-900">Top up →</a></>
+                            )}
+                          </div>
+                        )}
+
+                        <Button
+                          onClick={handleRegenerate}
+                          disabled={regenLoading}
+                          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border-0 gap-2"
+                        >
+                          {regenLoading ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" />Generating new version…</>
+                          ) : (
+                            <><Sparkles className="w-4 h-4" />Generate New Version</>
+                          )}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Tailored resume */}
                   <Card className="shadow-sm border-slate-200">

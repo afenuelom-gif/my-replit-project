@@ -6,6 +6,7 @@ export const resumeTailoringTable = pgTable("resume_tailoring", {
   jobTitle: text("job_title"),
   scope: text("scope").notNull(),
   aggressiveness: text("aggressiveness").notNull(),
+  jobDescriptionText: text("job_description_text"),
   originalResumeText: text("original_resume_text").notNull(),
   tailoredResumeText: text("tailored_resume_text").notNull(),
   changeSummary: text("change_summary").notNull(),

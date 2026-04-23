@@ -175,6 +175,7 @@ router.post(
         jobTitle: result.jobTitle,
         scope,
         aggressiveness,
+        jobDescriptionText,
         originalResumeText: resumeText,
         tailoredResumeText: result.tailoredResumeText,
         changeSummary: JSON.stringify(result.changeSummary),
@@ -186,11 +187,129 @@ router.post(
     res.json({
       id: saved.id,
       jobTitle: result.jobTitle,
+      scope,
+      aggressiveness,
       tailoredResumeText: result.tailoredResumeText,
       changeSummary: result.changeSummary,
       atsKeywords: result.atsKeywords,
       improvementSuggestions: result.improvementSuggestions,
       creditsRemaining: Math.max(0, (user?.resumeTailoringCredits ?? 0) - 1),
+    });
+  },
+);
+
+// ── POST /resume/regenerate ──────────────────────────────────────────────────
+router.post(
+  "/resume/regenerate",
+  requireAuth,
+  resumeTailorLimiter,
+  async (req: Request, res: Response): Promise<void> => {
+    const userId = req.userId!;
+    const { tailoringId, scope, aggressiveness } = req.body as {
+      tailoringId?: number;
+      scope?: string;
+      aggressiveness?: string;
+    };
+
+    if (!tailoringId || !scope || !aggressiveness) {
+      res.status(400).json({ error: "tailoringId, scope and aggressiveness are required" });
+      return;
+    }
+    if (!["full", "role_specific"].includes(scope)) {
+      res.status(400).json({ error: "scope must be 'full' or 'role_specific'" });
+      return;
+    }
+    if (!["conservative", "balanced", "strong"].includes(aggressiveness)) {
+      res.status(400).json({ error: "aggressiveness must be 'conservative', 'balanced', or 'strong'" });
+      return;
+    }
+
+    const [original] = await db
+      .select()
+      .from(resumeTailoringTable)
+      .where(and(eq(resumeTailoringTable.id, tailoringId), eq(resumeTailoringTable.userId, userId)))
+      .limit(1);
+
+    if (!original) {
+      res.status(404).json({ error: "Original tailoring not found" });
+      return;
+    }
+    if (!original.jobDescriptionText) {
+      res.status(422).json({ error: "This tailoring was created before Regenerate was supported. Please start a new tailoring." });
+      return;
+    }
+
+    const [user] = await db
+      .select({
+        plan: usersTable.plan,
+        resumeTailoringCredits: usersTable.resumeTailoringCredits,
+        email: usersTable.email,
+        firstName: usersTable.firstName,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .limit(1);
+
+    if (!user || user.resumeTailoringCredits <= 0) {
+      const onFreePlan = !user || user.plan === "free";
+      res.status(403).json({
+        code: onFreePlan ? "PLAN_REQUIRED" : "NO_CREDITS",
+        error: onFreePlan
+          ? "You have no resume tailoring credits. Purchase a top-up or upgrade to a paid plan."
+          : "You have no resume tailoring credits remaining. Purchase a top-up or wait for your monthly credits to renew.",
+      });
+      return;
+    }
+
+    let result;
+    try {
+      result = await tailorResume({
+        resumeText: original.originalResumeText,
+        jobDescriptionText: original.jobDescriptionText,
+        scope: scope as "full" | "role_specific",
+        aggressiveness: aggressiveness as "conservative" | "balanced" | "strong",
+      });
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message ?? "AI tailoring failed" });
+      return;
+    }
+
+    await db
+      .update(usersTable)
+      .set({ resumeTailoringCredits: sql`${usersTable.resumeTailoringCredits} - 1` })
+      .where(eq(usersTable.id, userId));
+
+    const creditsAfter = Math.max(0, (user?.resumeTailoringCredits ?? 0) - 1);
+    if (creditsAfter === 1 && user?.email) {
+      emailService.sendLowTailorCredits(user.email, user.firstName, creditsAfter);
+    }
+
+    const [saved] = await db
+      .insert(resumeTailoringTable)
+      .values({
+        userId,
+        jobTitle: result.jobTitle,
+        scope,
+        aggressiveness,
+        jobDescriptionText: original.jobDescriptionText,
+        originalResumeText: original.originalResumeText,
+        tailoredResumeText: result.tailoredResumeText,
+        changeSummary: JSON.stringify(result.changeSummary),
+        atsKeywords: JSON.stringify(result.atsKeywords),
+        improvementSuggestions: JSON.stringify(result.improvementSuggestions),
+      })
+      .returning();
+
+    res.json({
+      id: saved.id,
+      jobTitle: result.jobTitle,
+      scope,
+      aggressiveness,
+      tailoredResumeText: result.tailoredResumeText,
+      changeSummary: result.changeSummary,
+      atsKeywords: result.atsKeywords,
+      improvementSuggestions: result.improvementSuggestions,
+      creditsRemaining: creditsAfter,
     });
   },
 );
