@@ -51,6 +51,14 @@ export class WebhookHandlers {
         }
         break;
       }
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
+        if (!invoice.subscription) break;
+        const stripe = getStripeClient();
+        const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
+        await WebhookHandlers.handlePaymentFailed(sub);
+        break;
+      }
       default:
         logger.info({ type: event.type }, "Unhandled webhook event");
     }
@@ -78,7 +86,22 @@ export class WebhookHandlers {
     const userId = customers.data[0]?.metadata?.userId;
     if (!userId) return;
 
-    const { plan, sessionCredits, resumeCredits } = await stripeService.getPlanFromSubscription(sub);
+    const { plan } = await stripeService.getPlanFromSubscription(sub);
+
+    // For past_due / unpaid: preserve credits — Stripe is still retrying the payment.
+    // Only reset credits when the subscription is genuinely active or trialing.
+    const isPastDue = sub.status === "past_due" || sub.status === "unpaid";
+    if (isPastDue) {
+      await db.update(usersTable).set({
+        plan,
+        stripeSubscriptionId: sub.id,
+        stripeCustomerId: customerId,
+      }).where(eq(usersTable.id, userId));
+      logger.info({ userId, plan, status: sub.status }, "Subscription past_due — credits preserved");
+      return;
+    }
+
+    const { sessionCredits, resumeCredits } = await stripeService.getPlanFromSubscription(sub);
     await db.update(usersTable).set({
       plan,
       stripeSubscriptionId: sub.id,
@@ -88,6 +111,20 @@ export class WebhookHandlers {
     }).where(eq(usersTable.id, userId));
 
     logger.info({ userId, plan }, "Subscription upserted via webhook");
+  }
+
+  private static async handlePaymentFailed(sub: Stripe.Subscription): Promise<void> {
+    const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+
+    const stripe = getStripeClient();
+    const customers = await stripe.customers.search({ query: `id:'${customerId}'`, limit: 1 });
+    const userId = customers.data[0]?.metadata?.userId;
+    if (!userId) return;
+
+    // Do NOT revoke or alter credits — Stripe will retry automatically.
+    // The subscription status on the Stripe object will be "past_due", which
+    // the frontend reads and shows a warning banner to the user.
+    logger.warn({ userId, subId: sub.id, status: sub.status }, "Payment failed — user notified via account page banner");
   }
 
   private static async handleSubscriptionRenewal(sub: Stripe.Subscription): Promise<void> {

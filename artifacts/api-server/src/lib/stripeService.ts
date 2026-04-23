@@ -71,12 +71,13 @@ export class StripeService {
 
   async getActiveSubscriptionForCustomer(customerId: string) {
     const stripe = getStripeClient();
-    const subs = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
-    return subs.data[0] ?? null;
+    // Include past_due so users with a failed payment aren't incorrectly downgraded
+    // during a plan sync — Stripe is still retrying their payment.
+    const [activeSubs, pastDueSubs] = await Promise.all([
+      stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 }),
+      stripe.subscriptions.list({ customer: customerId, status: "past_due", limit: 1 }),
+    ]);
+    return activeSubs.data[0] ?? pastDueSubs.data[0] ?? null;
   }
 
   async getPlanFromSubscription(sub: { items: { data: Array<{ price: { id: string; product: string | { id: string } } }> } }) {

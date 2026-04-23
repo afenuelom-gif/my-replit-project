@@ -116,6 +116,7 @@ export default function AccountPage({ authMenu, authMobileMenu }: AccountPagePro
   const subscription = sub?.subscription;
   const isCancelledAtEnd = subscription?.cancel_at_period_end ?? false;
   const periodEnd = subscription?.current_period_end;
+  const isPaymentFailed = subscription?.status === "past_due" || subscription?.status === "unpaid";
   const isPro = plan === "pro";
   const isStarter = plan === "starter";
   const hasSub = !!subscription;
@@ -139,6 +140,29 @@ export default function AccountPage({ authMenu, authMobileMenu }: AccountPagePro
           </div>
         ) : (
           <>
+            {/* Payment failed banner */}
+            {isPaymentFailed && (
+              <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-800">Payment failed</p>
+                  <p className="text-sm text-red-700 mt-0.5">
+                    Your last payment didn't go through. Please update your payment method to keep your plan active — Stripe will retry automatically.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-red-300 text-red-700 hover:bg-red-100 shrink-0 gap-1.5"
+                  onClick={() => portalMutation.mutate()}
+                  disabled={portalMutation.isPending}
+                >
+                  {portalMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CreditCard className="w-3.5 h-3.5" />}
+                  Fix payment
+                </Button>
+              </div>
+            )}
+
             {/* Cancellation banner */}
             {isCancelledAtEnd && periodEnd && (
               <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
