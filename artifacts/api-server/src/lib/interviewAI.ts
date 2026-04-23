@@ -148,7 +148,6 @@ export async function generateReport(
   qaItems: Array<{ question: string; answer: string | null }>,
   postureScores: number[]
 ): Promise<{
-  overallScore: number;
   communicationScore: number;
   technicalScore: number;
   confidenceScore: number;
@@ -177,7 +176,6 @@ export async function generateReport(
         content: `You are an expert interview coach evaluating a candidate's performance for the role: ${jobRole}${jobDescription ? `\nJob description: ${jobDescription}` : ""}${postureContext}
 
 Based on the Q&A below, return a JSON object with:
-- overallScore (integer 0-100)
 - communicationScore (integer 0-100)
 - technicalScore (integer 0-100)
 - confidenceScore (integer 0-100)
@@ -220,7 +218,6 @@ Return ONLY valid JSON, no markdown.`,
   const raw = response.choices[0]?.message?.content?.trim() ?? "{}";
   try {
     const parsed = JSON.parse(raw) as {
-      overallScore: number;
       communicationScore: number;
       technicalScore: number;
       confidenceScore: number;
@@ -228,7 +225,6 @@ Return ONLY valid JSON, no markdown.`,
       suggestions: string[];
     };
     return {
-      overallScore: Math.min(100, Math.max(0, Number(parsed.overallScore) || 0)),
       communicationScore: Math.min(100, Math.max(0, Number(parsed.communicationScore) || 0)),
       technicalScore: Math.min(100, Math.max(0, Number(parsed.technicalScore) || 0)),
       confidenceScore: Math.min(100, Math.max(0, Number(parsed.confidenceScore) || 0)),
@@ -239,7 +235,6 @@ Return ONLY valid JSON, no markdown.`,
     };
   } catch {
     return {
-      overallScore: 0,
       communicationScore: 0,
       technicalScore: 0,
       confidenceScore: 0,

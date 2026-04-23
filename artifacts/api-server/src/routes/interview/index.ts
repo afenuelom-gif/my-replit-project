@@ -758,7 +758,6 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
   );
 
   let reportData: {
-    overallScore: number;
     communicationScore: number;
     technicalScore: number;
     confidenceScore: number;
@@ -768,7 +767,6 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
 
   if (answeredQA.length === 0) {
     reportData = {
-      overallScore: 0,
       communicationScore: 0,
       technicalScore: 0,
       confidenceScore: 0,
@@ -793,10 +791,21 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
     );
   }
 
+  // Overall Score = 40% question average + 60% soft-skills average
+  // Soft Skills = (communication + technical + confidence + posture) / 4
+  const avgQuestionScore =
+    answerFeedbacks.length > 0
+      ? Math.round(answerFeedbacks.reduce((sum, f) => sum + f.score, 0) / answerFeedbacks.length)
+      : 0;
+  const postureForOverall = answeredQA.length === 0 ? 0 : avgPosture;
+  const softSkillsAvg =
+    (reportData.communicationScore + reportData.technicalScore + reportData.confidenceScore + postureForOverall) / 4;
+  const overallScore = Math.round(0.4 * avgQuestionScore + 0.6 * softSkillsAvg);
+
   await db.insert(reportsTable).values({
     userId: session.userId ?? null,
     sessionId: session.id,
-    overallScore: reportData.overallScore,
+    overallScore,
     communicationScore: reportData.communicationScore,
     technicalScore: reportData.technicalScore,
     confidenceScore: reportData.confidenceScore,
@@ -816,7 +825,7 @@ router.get("/interview/sessions/:id/report", optionalAuth, async (req, res): Pro
 
   res.json({
     sessionId: session.id,
-    overallScore: reportData.overallScore,
+    overallScore,
     communicationScore: reportData.communicationScore,
     technicalScore: reportData.technicalScore,
     confidenceScore: reportData.confidenceScore,
