@@ -258,51 +258,87 @@ const TOPUP_PRICE_IDS = new Set([
 router.get("/users/admin/revenue", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
   const stripe = getStripeClient();
 
-  const [activeSubs, canceledSubs, invoices] = await Promise.all([
+  // Subscriptions create invoices; one-time top-up packs go through
+  // checkout sessions with mode:"payment" and never produce invoices.
+  // Fetch both sources separately so neither is missed.
+  const [activeSubs, canceledSubs, invoices, topUpSessions] = await Promise.all([
     stripe.subscriptions.list({ status: "active", limit: 100, expand: ["data.items.data.price"] }),
     stripe.subscriptions.list({ status: "canceled", limit: 100 }),
     stripe.invoices.list({ status: "paid", limit: 100 }),
+    stripe.checkout.sessions.list({
+      limit: 100,
+      expand: ["data.line_items"],
+    }),
   ]);
 
+  // ── MRR + plan breakdown ────────────────────────────────────────────────
   let mrr = 0;
   let starterCount = 0;
   let proCount = 0;
   for (const sub of activeSubs.data) {
     const price = sub.items.data[0]?.price;
     if (!price) continue;
-    const amount = price.unit_amount ?? 0;
-    mrr += amount;
+    mrr += price.unit_amount ?? 0;
     if (price.id === STARTER_PRICE_ID) starterCount++;
     else if (price.id === PRO_PRICE_ID) proCount++;
   }
 
+  // ── Churn ───────────────────────────────────────────────────────────────
   const now = Date.now() / 1000;
   const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
   const churnedThisMonth = canceledSubs.data.filter(
     (s) => s.canceled_at != null && s.canceled_at >= thirtyDaysAgo
   ).length;
 
+  // ── Revenue aggregation ─────────────────────────────────────────────────
   let totalRevenue = 0;
   let totalSubscriptionRevenue = 0;
   let totalTopUpRevenue = 0;
   const monthlyMap = new Map<string, number>();
 
+  type ChargeRow = { date: string; amount: number; description: string; type: string; status: string; ts: number };
+  const allCharges: ChargeRow[] = [];
+
+  // Subscription invoices
   for (const inv of invoices.data) {
     if (!inv.amount_paid || inv.amount_paid <= 0) continue;
     totalRevenue += inv.amount_paid;
-
-    const priceId = inv.lines?.data[0]?.price?.id ?? "";
-    if (TOPUP_PRICE_IDS.has(priceId)) {
-      totalTopUpRevenue += inv.amount_paid;
-    } else {
-      totalSubscriptionRevenue += inv.amount_paid;
-    }
-
-    const d = new Date((inv.created) * 1000);
+    totalSubscriptionRevenue += inv.amount_paid;
+    const d = new Date(inv.created * 1000);
     const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
     monthlyMap.set(key, (monthlyMap.get(key) ?? 0) + inv.amount_paid);
+    allCharges.push({
+      ts: inv.created,
+      date: d.toISOString(),
+      amount: inv.amount_paid,
+      description: inv.lines?.data[0]?.description ?? "Subscription",
+      type: "Subscription",
+      status: inv.status ?? "paid",
+    });
   }
 
+  // One-time top-up checkout sessions
+  for (const session of topUpSessions.data) {
+    if (session.mode !== "payment" || session.payment_status !== "paid") continue;
+    const amount = session.amount_total ?? 0;
+    if (amount <= 0) continue;
+    totalRevenue += amount;
+    totalTopUpRevenue += amount;
+    const d = new Date(session.created * 1000);
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    monthlyMap.set(key, (monthlyMap.get(key) ?? 0) + amount);
+    const lineDesc = session.line_items?.data[0]?.description ?? "Top-up pack";
+    allCharges.push({
+      ts: session.created,
+      date: d.toISOString(),
+      amount,
+      description: lineDesc,
+      type: "Top-up",
+      status: "paid",
+    });
+  }
+
+  // ── Monthly chart (last 12 months) ──────────────────────────────────────
   const monthlyRevenue: { month: string; revenue: number }[] = [];
   for (let i = 11; i >= 0; i--) {
     const d = new Date();
@@ -313,18 +349,9 @@ router.get("/users/admin/revenue", requireAuth, requireAdmin, async (_req, res):
     monthlyRevenue.push({ month: label, revenue: monthlyMap.get(key) ?? 0 });
   }
 
-  const recentCharges = invoices.data.slice(0, 20).map((inv) => {
-    const priceId = inv.lines?.data[0]?.price?.id ?? "";
-    let type = "Subscription";
-    if (TOPUP_PRICE_IDS.has(priceId)) type = "Top-up";
-    return {
-      date: new Date(inv.created * 1000).toISOString(),
-      amount: inv.amount_paid,
-      description: inv.lines?.data[0]?.description ?? type,
-      type,
-      status: inv.status ?? "paid",
-    };
-  });
+  // ── Recent payments (newest first, capped at 20) ────────────────────────
+  allCharges.sort((a, b) => b.ts - a.ts);
+  const recentCharges = allCharges.slice(0, 20).map(({ ts: _ts, ...rest }) => rest);
 
   res.json({
     mrr,
