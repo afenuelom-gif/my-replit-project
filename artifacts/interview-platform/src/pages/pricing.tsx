@@ -221,6 +221,21 @@ export default function Pricing({ authMenu, authMobileMenu, isSignedIn }: Pricin
             Cancel anytime. No hidden fees. Your free trial session does not require a credit card.
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 border-t border-slate-200 pt-12">
+            <div className="text-center space-y-2">
+              <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">2–3</div>
+              <div className="text-sm text-slate-500">AI interviewers per session</div>
+            </div>
+            <div className="text-center space-y-2">
+              <div className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">45 min</div>
+              <div className="text-sm text-slate-500">Maximum session length</div>
+            </div>
+            <div className="text-center space-y-2">
+              <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Real-time</div>
+              <div className="text-sm text-slate-500">Voice & performance feedback</div>
+            </div>
+          </div>
+
           {/* Top-up packs */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -257,21 +272,6 @@ export default function Pricing({ authMenu, authMobileMenu, isSignedIn }: Pricin
                   </Button>
                 </div>
               ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 border-t border-slate-200 pt-12">
-            <div className="text-center space-y-2">
-              <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">2–3</div>
-              <div className="text-sm text-slate-500">AI interviewers per session</div>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">45 min</div>
-              <div className="text-sm text-slate-500">Maximum session length</div>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Real-time</div>
-              <div className="text-sm text-slate-500">Voice & performance feedback</div>
             </div>
           </div>
 
