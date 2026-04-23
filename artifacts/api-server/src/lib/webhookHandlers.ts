@@ -98,13 +98,16 @@ export class WebhookHandlers {
     const userId = customers.data[0]?.metadata?.userId;
     if (!userId) return;
 
-    const { plan, sessionCredits } = await stripeService.getPlanFromSubscription(sub);
+    const { plan, sessionCredits, resumeCredits } = await stripeService.getPlanFromSubscription(sub);
 
     await db.update(usersTable)
-      .set({ sessionCredits })
+      .set({
+        sessionCredits,
+        resumeTailoringCredits: drizzleSql`${usersTable.resumeTailoringCredits} + ${resumeCredits}`,
+      })
       .where(eq(usersTable.id, userId));
 
-    logger.info({ userId, plan, sessionCredits }, "Session credits reset on billing renewal");
+    logger.info({ userId, plan, sessionCredits, resumeCredits }, "Credits renewed on billing cycle");
   }
 
   private static async handleSubscriptionDeleted(sub: Stripe.Subscription): Promise<void> {
