@@ -226,12 +226,14 @@ export default function AccountPage({ authMenu, authMobileMenu }: AccountPagePro
                     <div className="text-xs font-semibold text-purple-500 uppercase tracking-wider mb-1">Resume Tailors</div>
                     <div className="flex items-baseline gap-1">
                       <span className="text-2xl font-black text-purple-700">{resumeCredits}</span>
-                      {planInfo.tailors !== null && (
-                        <span className="text-sm text-purple-400">/ {planInfo.tailors} this month</span>
-                      )}
+                      <span className="text-sm text-purple-400">available</span>
                     </div>
                     <div className="text-xs text-purple-400 mt-1">
-                      {resumeCredits === 0 ? "Buy a top-up pack" : `${resumeCredits} tailor${resumeCredits !== 1 ? "s" : ""} remaining`}
+                      {resumeCredits === 0
+                        ? "Buy a top-up pack"
+                        : planInfo.tailors !== null
+                          ? `${resumeCredits} remaining · plan adds ${planInfo.tailors}/mo`
+                          : `${resumeCredits} tailor${resumeCredits !== 1 ? "s" : ""} remaining`}
                     </div>
                   </div>
                 </div>
