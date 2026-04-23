@@ -73,6 +73,8 @@ export default function Interview() {
   const closingTTSStartedRef = useRef(false);
   const isFinalThankYouRef = useRef(false);
   const isEndingManuallyRef = useRef(false);
+  // Set when user hits End while recording — lets onstop score first, then ends
+  const pendingEndRef = useRef(false);
 
   // Interviewer card refs — keyed by interviewer ID
   const cardRefsMap = useRef<Map<number, React.RefObject<InterviewerCardHandle | null>>>(new Map());
@@ -307,14 +309,20 @@ export default function Interview() {
   const CLOSING_LINE = "Thank you for interviewing with PrepInterv AI. Please review your performance report!";
 
   const handleEndWithThankYou = async () => {
+    // If currently recording, let the onstop handler score the answer first,
+    // then it will call handleEndWithThankYou again (pendingEndRef prevents recursion).
+    if (isRecording && mediaRecorderRef.current && !pendingEndRef.current) {
+      pendingEndRef.current = true;
+      setIsEndingManually(true); // disables the End button immediately
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setIsProcessing(true);
+      setStatusMessage("Scoring your answer before finishing...");
+      return;
+    }
     // Mark as ending FIRST so any in-flight TTS chains bail out
     isEndingManuallyRef.current = true;
     setIsEndingManually(true);
-    // Stop any active recording gracefully
-    if (isRecording && mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
     // Stop ALL cards immediately so nothing overlaps the closing line
     for (const ref of cardRefsMap.current.values()) {
       ref.current?.stop();
@@ -398,11 +406,14 @@ export default function Interview() {
       };
       
       recorder.onstop = async () => {
-        // If the user clicked "End & Get Report" while recording, skip transcription
+        // If the user clicked "End & Get Report" before recording started, skip entirely
         if (isEndingManuallyRef.current) {
           setIsProcessing(false);
           return;
         }
+        // Check whether End was hit while this recording was active
+        const endAfterScoring = pendingEndRef.current;
+
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
@@ -414,6 +425,12 @@ export default function Interview() {
               data: { audioBase64: base64Audio, mimeType }
             });
             if (!transcribeRes.text?.trim()) {
+              if (endAfterScoring) {
+                // No usable audio — just end without re-prompting
+                pendingEndRef.current = false;
+                handleEndWithThankYou();
+                return;
+              }
               setStatusMessage("Interviewer speaking...");
               const activeCard = activeInterviewerId ? cardRefsMap.current.get(activeInterviewerId)?.current : null;
               if (activeCard) {
@@ -432,7 +449,14 @@ export default function Interview() {
                   answerText: transcript
                 }
               });
-              
+
+              if (endAfterScoring) {
+                pendingEndRef.current = false;
+                handleEndWithThankYou();
+                return;
+              }
+
+              // Normal continue-interview flow
               if (nextQ.done) {
                 handleComplete();
               } else if (nextQ.isFinalThankYou) {
@@ -442,8 +466,17 @@ export default function Interview() {
               } else {
                 await refetch();
               }
+            } else if (endAfterScoring) {
+              pendingEndRef.current = false;
+              handleEndWithThankYou();
             }
           } catch (e) {
+            if (endAfterScoring) {
+              // Error during scoring — still proceed to end
+              pendingEndRef.current = false;
+              handleEndWithThankYou();
+              return;
+            }
             if (e instanceof Error && e.message.includes("NO_CLEAR_RESPONSE")) {
               setStatusMessage("Interviewer speaking...");
               const activeCard = activeInterviewerId ? cardRefsMap.current.get(activeInterviewerId)?.current : null;
