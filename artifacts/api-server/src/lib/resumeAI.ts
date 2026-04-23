@@ -1,18 +1,23 @@
 import OpenAI from "openai";
 
-if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
-  throw new Error("AI_INTEGRATIONS_OPENAI_BASE_URL must be set.");
-}
-if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-  throw new Error("AI_INTEGRATIONS_OPENAI_API_KEY must be set.");
+// Prefer a direct OpenAI key when provided (no shared rate limits).
+// Falls back to the Replit AI proxy if OPENAI_API_KEY is not set.
+const usingOwnKey = !!process.env.OPENAI_API_KEY;
+
+if (!usingOwnKey) {
+  if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
+    throw new Error("AI_INTEGRATIONS_OPENAI_BASE_URL must be set (or provide OPENAI_API_KEY).");
+  }
+  if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+    throw new Error("AI_INTEGRATIONS_OPENAI_API_KEY must be set (or provide OPENAI_API_KEY).");
+  }
 }
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  maxRetries: 1,
-  timeout: 90_000,
-});
+const openai = new OpenAI(
+  usingOwnKey
+    ? { apiKey: process.env.OPENAI_API_KEY, maxRetries: 2, timeout: 90_000 }
+    : { apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL, maxRetries: 1, timeout: 90_000 },
+);
 
 export interface TailoringResult {
   tailoredResumeText: string;
