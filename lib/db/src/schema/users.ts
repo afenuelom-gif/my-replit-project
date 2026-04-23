@@ -7,7 +7,7 @@ export const usersTable = pgTable("users", {
   lastName: text("last_name"),
   sessionCredits: integer("session_credits").notNull().default(0),
   trialUsed: boolean("trial_used").notNull().default(false),
-  resumeTailoringCredits: integer("resume_tailoring_credits").notNull().default(1),
+  resumeTailoringCredits: integer("resume_tailoring_credits").notNull().default(0),
   plan: text("plan").notNull().default("free"),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
