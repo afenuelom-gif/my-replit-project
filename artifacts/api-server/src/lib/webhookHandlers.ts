@@ -2,6 +2,7 @@ import { db, usersTable } from "@workspace/db";
 import { eq, sql as drizzleSql } from "drizzle-orm";
 import { getStripeClient, getWebhookSecret } from "./stripeClient.js";
 import { stripeService } from "./stripeService.js";
+import { grantTopupCredits } from "./topupCredits.js";
 import { logger } from "./logger.js";
 import { emailService } from "./emailService.js";
 import type Stripe from "stripe";
@@ -89,22 +90,14 @@ export class WebhookHandlers {
     if (!userId) return;
 
     if (session.mode === "payment") {
-      // Stripe webhook payloads do not expand line_items — read priceId from
-      // the metadata we stamped onto the session at checkout creation instead.
       const priceId = session.metadata?.priceId ?? "";
-      const tailorCredits = stripeService.getTopUpCreditsForPrice(priceId);
-      if (tailorCredits === 0) {
-        logger.warn({ userId, priceId }, "Top-up: unrecognised priceId — no credits added");
-        return;
-      }
-      await db.execute(
-        drizzleSql`UPDATE users SET resume_tailoring_credits = resume_tailoring_credits + ${tailorCredits} WHERE id = ${userId}`,
-      );
-      logger.info({ userId, priceId, tailorCredits }, "Top-up credits added via webhook");
+      const { granted, creditsAdded } = await grantTopupCredits({ sessionId: session.id, userId, priceId });
 
-      const user = await WebhookHandlers.getUser(userId);
-      if (user?.email) {
-        emailService.sendTopUpConfirmed(user.email, user.firstName, tailorCredits);
+      if (granted) {
+        const user = await WebhookHandlers.getUser(userId);
+        if (user?.email) {
+          emailService.sendTopUpConfirmed(user.email, user.firstName, creditsAdded);
+        }
       }
     }
   }

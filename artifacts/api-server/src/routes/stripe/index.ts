@@ -6,6 +6,7 @@ import { stripeService } from "../../lib/stripeService.js";
 import { stripeStorage } from "../../lib/stripeStorage.js";
 import { getStripeClient, isStripeConfigured } from "../../lib/stripeClient.js";
 import { emailService } from "../../lib/emailService.js";
+import { grantTopupCredits } from "../../lib/topupCredits.js";
 
 const router: IRouter = Router();
 
@@ -165,15 +166,25 @@ router.post("/stripe/sync-user-plan", requireAuth, async (req: Request, res: Res
       });
 
       if (session.mode === "payment" && session.payment_status === "paid") {
-        // Top-up purchase — credits are added exclusively by the webhook (checkout.session.completed).
-        // Here we only return the current DB state so the billing-success page can display it.
-        // Adding credits here would double-count every purchase.
+        // Grant credits here (idempotency via processed_topup_sessions table prevents
+        // double-counting if the webhook also fires). This ensures credits are always
+        // granted even in dev where Stripe webhooks can't reach localhost.
+        const priceId = session.metadata?.priceId ?? "";
+        await grantTopupCredits({ sessionId: session.id, userId, priceId });
+
         if (user.stripeCustomerId == null && session.customer) {
           await db.update(usersTable)
             .set({ stripeCustomerId: session.customer as string })
             .where(eq(usersTable.id, userId));
         }
-        res.json({ plan: user.plan, resumeTailoringCredits: user.resumeTailoringCredits, type: "topup" });
+
+        const [fresh] = await db
+          .select({ resumeTailoringCredits: usersTable.resumeTailoringCredits, plan: usersTable.plan })
+          .from(usersTable)
+          .where(eq(usersTable.id, userId))
+          .limit(1);
+
+        res.json({ plan: fresh?.plan ?? user.plan, resumeTailoringCredits: fresh?.resumeTailoringCredits ?? user.resumeTailoringCredits, type: "topup" });
         return;
       }
 
