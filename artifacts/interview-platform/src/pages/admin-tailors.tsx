@@ -87,14 +87,15 @@ function userLabel(row: { email: string | null; first_name: string | null; last_
 
 export default function AdminTailors({ authMenu, authMobileMenu }: AdminTailorProps) {
   const [, setLocation] = useLocation();
-  const { getToken } = useAuthActions();
+  const { getAuthHeaders } = useAuthActions();
 
   const { data, isLoading, error } = useQuery<TailorData>({
     queryKey: ["admin-tailors"],
     queryFn: async () => {
-      const token = await getToken();
+      const headers = await getAuthHeaders();
       const res = await fetch("/api/users/admin/tailors", {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+        headers,
       });
       if (!res.ok) throw new Error("Failed to load");
       return res.json();
