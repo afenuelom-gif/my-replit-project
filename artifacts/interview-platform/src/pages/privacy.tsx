@@ -59,22 +59,81 @@ export default function Privacy() {
           </p>
         </section>
 
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold text-white">6. Cookies and local storage</h2>
+          <p className="text-zinc-400 text-sm leading-relaxed">
+            We use a small number of cookies and browser local storage entries to operate the service. When you first visit PrepInterv AI, a consent banner lets you choose between essential-only or full acceptance. Your choice is saved in your browser's local storage under the key <code className="text-zinc-300 bg-white/5 px-1 rounded text-xs">cookie_consent</code> and is respected on every subsequent visit.
+          </p>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-zinc-300">Essential cookies — always active</h3>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              These are necessary for the service to function and cannot be disabled. They do not require your consent under the ePrivacy Directive.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-zinc-400 border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10">
+                    <th className="text-left py-2 pr-4 font-semibold text-zinc-300 whitespace-nowrap">Cookie / key</th>
+                    <th className="text-left py-2 pr-4 font-semibold text-zinc-300">Set by</th>
+                    <th className="text-left py-2 font-semibold text-zinc-300">Purpose</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  <tr>
+                    <td className="py-2 pr-4 font-mono whitespace-nowrap text-zinc-300">__clerk_*, __session</td>
+                    <td className="py-2 pr-4 whitespace-nowrap">Clerk / Auth0</td>
+                    <td className="py-2">Maintains your authenticated session so you stay signed in between pages.</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-4 font-mono whitespace-nowrap text-zinc-300">__stripe_*, __hssc</td>
+                    <td className="py-2 pr-4 whitespace-nowrap">Stripe</td>
+                    <td className="py-2">Fraud prevention and secure payment processing during checkout.</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-4 font-mono whitespace-nowrap text-zinc-300">cookie_consent</td>
+                    <td className="py-2 pr-4 whitespace-nowrap">PrepInterv AI</td>
+                    <td className="py-2">Stores your cookie preference so the consent banner does not reappear. Saved in local storage, not transmitted to our servers.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-zinc-300">Functional cookies — only if you accept all</h3>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              If you click <em>Accept all</em> on the consent banner, we may additionally store local preferences (such as your interview configuration choices) in your browser's local storage to improve your experience on return visits. These entries are never transmitted to third parties.
+            </p>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              We do not use any analytics, advertising, or tracking cookies. No third-party ad networks have access to your browsing behaviour on this site.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-zinc-300">Managing your preferences</h3>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              You can withdraw or change your cookie consent at any time by clearing your browser's local storage (usually found in your browser's developer tools under Application → Local Storage → <code className="text-zinc-300 bg-white/5 px-1 rounded text-xs">cookie_consent</code>). Essential cookies cannot be disabled through the consent mechanism — if you wish to block them entirely you may do so through your browser settings, though this will prevent you from signing in to the service.
+            </p>
+          </div>
+        </section>
+
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-white">6. Your rights</h2>
+          <h2 className="text-lg font-semibold text-white">7. Your rights</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
             You have the right to access, correct, or delete your personal data. To exercise these rights, please contact us at <a href="mailto:hello@prepinterv.com" className="text-primary hover:underline">hello@prepinterv.com</a>.
           </p>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-white">7. Changes to this policy</h2>
+          <h2 className="text-lg font-semibold text-white">8. Changes to this policy</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
             We may update this Privacy Policy from time to time. We will notify you of significant changes by posting a notice on the platform or sending an email to the address associated with your account.
           </p>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-white">8. Contact</h2>
+          <h2 className="text-lg font-semibold text-white">9. Contact</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
             For any privacy-related questions, contact us at <a href="mailto:hello@prepinterv.com" className="text-primary hover:underline">hello@prepinterv.com</a>.
           </p>
