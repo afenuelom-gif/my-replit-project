@@ -440,6 +440,7 @@ export default function Interview() {
               return;
             }
             const transcript = transcribeRes.text.trim();
+            setStatusMessage("Evaluating your answer...");
 
             if (currentQuestion) {
               const nextQ = await getNextQuestion.mutateAsync({
@@ -710,6 +711,20 @@ export default function Interview() {
             </button>
           )}
           <div className="mt-1 text-xs text-zinc-500">{statusMessage}</div>
+
+          {/* Processing step indicator */}
+          {(isProcessing || transcribeAnswer.isPending || getNextQuestion.isPending) && !isEndingManually && (
+            <div className="mt-2 flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-lg px-3 py-2 w-fit">
+              <Loader2 className="w-3.5 h-3.5 text-primary animate-spin shrink-0" />
+              <span className="text-xs font-medium text-primary">
+                {getNextQuestion.isPending
+                  ? "Evaluating your answer…"
+                  : transcribeAnswer.isPending
+                    ? "Transcribing your answer…"
+                    : "Processing…"}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Controls */}
