@@ -4,6 +4,7 @@ const ADMIN_TABS = [
   { label: "Feedback", path: "/admin/feedback" },
   { label: "Users", path: "/admin/users" },
   { label: "Tailors", path: "/admin/tailors" },
+  { label: "Revenue", path: "/admin/revenue" },
 ];
 
 export function AdminNav() {

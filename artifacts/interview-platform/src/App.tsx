@@ -20,6 +20,7 @@ import Terms from "@/pages/terms";
 import AdminFeedback from "@/pages/admin-feedback";
 import AdminUsers from "@/pages/admin-users";
 import AdminTailors from "@/pages/admin-tailors";
+import AdminRevenue from "@/pages/admin-revenue";
 import ResumeTailor from "@/pages/resume-tailor";
 import ResumeHistory from "@/pages/resume-history";
 import BillingSuccess from "@/pages/billing-success";
@@ -352,6 +353,7 @@ function Auth0ProviderWithRoutes() {
             <Route path="/admin/feedback" component={AdminFeedback} />
             <Route path="/admin/users" component={AdminUsers} />
             <Route path="/admin/tailors" component={AdminTailors} />
+            <Route path="/admin/revenue" component={AdminRevenue} />
             <Route path="/billing/success" component={() => {
               const { isAuthenticated } = useAuth0();
               return isAuthenticated
@@ -465,6 +467,10 @@ function ClerkUserMenu() {
                 <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                 Tailors
               </button>
+              <button className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 transition-colors text-left" onClick={() => navigate("/admin/revenue")}>
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                Revenue
+              </button>
             </>
           )}
           <div className="my-1 border-t border-slate-100" />
@@ -530,6 +536,13 @@ function ClerkMobileActions() {
           >
             <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
             Tailors
+          </button>
+          <button
+            className="cursor-pointer flex items-center gap-2 w-full px-6 py-2 text-sm font-medium text-purple-700 hover:text-purple-800 hover:bg-purple-50 transition-colors text-left"
+            onClick={() => setLocation("/admin/revenue")}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+            Revenue
           </button>
         </>
       )}
@@ -678,6 +691,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin/feedback" component={AdminFeedback} />
             <Route path="/admin/users" component={AdminUsers} />
             <Route path="/admin/tailors" component={AdminTailors} />
+            <Route path="/admin/revenue" component={AdminRevenue} />
             <Route path="/billing/success" component={() => {
               const { isSignedIn } = useUser();
               return isSignedIn
@@ -735,6 +749,7 @@ function App() {
               <Route path="/admin/feedback" component={AdminFeedback} />
               <Route path="/admin/users" component={AdminUsers} />
               <Route path="/admin/tailors" component={AdminTailors} />
+              <Route path="/admin/revenue" component={AdminRevenue} />
               <Route path="/billing/success" component={() => <BillingSuccess />} />
               <Route component={NotFound} />
             </Switch>

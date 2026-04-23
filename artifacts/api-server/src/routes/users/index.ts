@@ -3,6 +3,7 @@ import { db, sessionsTable, reportsTable, usersTable, loginEventsTable, resumeTa
 import { eq, and, desc, inArray, sql, max, count } from "drizzle-orm";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { isAdminUserOrEmail, hasAnyAdminConfigured } from "../../lib/adminAuth.js";
+import { getStripeClient } from "../../lib/stripeClient.js";
 
 const router: IRouter = Router();
 
@@ -243,6 +244,99 @@ router.get("/users/admin/tailors", requireAuth, requireAdmin, async (_req, res):
     },
     recentUsage: recentUsageResult.rows,
     creditBalances: creditBalancesResult.rows,
+  });
+});
+
+const STARTER_PRICE_ID = "price_1TP7dFRtEcuSwbZwGirNXwpc";
+const PRO_PRICE_ID = "price_1TP7dZRtEcuSwbZw0Sb4ywUP";
+const TOPUP_PRICE_IDS = new Set([
+  "price_1TP7dnRtEcuSwbZwinKg4z5b",
+  "price_1TP7doRtEcuSwbZwAslgIUPe",
+  "price_1TP7dnRtEcuSwbZwHAftqQp5",
+]);
+
+router.get("/users/admin/revenue", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
+  const stripe = getStripeClient();
+
+  const [activeSubs, canceledSubs, invoices] = await Promise.all([
+    stripe.subscriptions.list({ status: "active", limit: 100, expand: ["data.items.data.price"] }),
+    stripe.subscriptions.list({ status: "canceled", limit: 100 }),
+    stripe.invoices.list({ status: "paid", limit: 100 }),
+  ]);
+
+  let mrr = 0;
+  let starterCount = 0;
+  let proCount = 0;
+  for (const sub of activeSubs.data) {
+    const price = sub.items.data[0]?.price;
+    if (!price) continue;
+    const amount = price.unit_amount ?? 0;
+    mrr += amount;
+    if (price.id === STARTER_PRICE_ID) starterCount++;
+    else if (price.id === PRO_PRICE_ID) proCount++;
+  }
+
+  const now = Date.now() / 1000;
+  const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
+  const churnedThisMonth = canceledSubs.data.filter(
+    (s) => s.canceled_at != null && s.canceled_at >= thirtyDaysAgo
+  ).length;
+
+  let totalRevenue = 0;
+  let totalSubscriptionRevenue = 0;
+  let totalTopUpRevenue = 0;
+  const monthlyMap = new Map<string, number>();
+
+  for (const inv of invoices.data) {
+    if (!inv.amount_paid || inv.amount_paid <= 0) continue;
+    totalRevenue += inv.amount_paid;
+
+    const priceId = inv.lines?.data[0]?.price?.id ?? "";
+    if (TOPUP_PRICE_IDS.has(priceId)) {
+      totalTopUpRevenue += inv.amount_paid;
+    } else {
+      totalSubscriptionRevenue += inv.amount_paid;
+    }
+
+    const d = new Date((inv.created) * 1000);
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    monthlyMap.set(key, (monthlyMap.get(key) ?? 0) + inv.amount_paid);
+  }
+
+  const monthlyRevenue: { month: string; revenue: number }[] = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date();
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() - i);
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" });
+    monthlyRevenue.push({ month: label, revenue: monthlyMap.get(key) ?? 0 });
+  }
+
+  const recentCharges = invoices.data.slice(0, 20).map((inv) => {
+    const priceId = inv.lines?.data[0]?.price?.id ?? "";
+    let type = "Subscription";
+    if (TOPUP_PRICE_IDS.has(priceId)) type = "Top-up";
+    return {
+      date: new Date(inv.created * 1000).toISOString(),
+      amount: inv.amount_paid,
+      description: inv.lines?.data[0]?.description ?? type,
+      type,
+      status: inv.status ?? "paid",
+    };
+  });
+
+  res.json({
+    mrr,
+    totalRevenue,
+    totalSubscriptionRevenue,
+    totalTopUpRevenue,
+    activeSubscribers: activeSubs.data.length,
+    starterCount,
+    proCount,
+    churnedThisMonth,
+    monthlyRevenue,
+    recentCharges,
   });
 });
 
