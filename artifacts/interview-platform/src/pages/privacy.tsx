@@ -36,7 +36,8 @@ export default function Privacy() {
             We use the following third-party services to deliver the platform:
           </p>
           <ul className="list-disc list-inside text-zinc-400 text-sm space-y-1 ml-2">
-            <li><span className="text-zinc-300">Clerk</span> — authentication and account management</li>
+            <li><span className="text-zinc-300">Clerk</span> — authentication and account management (development environment)</li>
+            <li><span className="text-zinc-300">Auth0</span> — authentication and account management (production environment)</li>
             <li><span className="text-zinc-300">OpenAI</span> — AI question generation and answer analysis</li>
             <li><span className="text-zinc-300">ElevenLabs</span> — text-to-speech voice synthesis</li>
           </ul>
