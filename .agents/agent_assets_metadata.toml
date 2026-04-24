@@ -245,3 +245,93 @@ id = "aZoifAMNL1u0369DfRGEW"
 uri = "file://.local/voice_samples/VoiceDesign_South_Asian_v3.mp3"
 type = "audio"
 title = "South Asian — Voice Design, variation 3"
+
+[[outputs]]
+id = "ra9B4cvKA4WM_3PYYzcBJ"
+uri = "file://.local/voice_samples/VoiceDesign_Middle_Eastern_v1.mp3"
+type = "audio"
+title = "Middle Eastern — variation 1"
+
+[[outputs]]
+id = "BztKskSTcKNOHdoUHxdWd"
+uri = "file://.local/voice_samples/VoiceDesign_Middle_Eastern_v2.mp3"
+type = "audio"
+title = "Middle Eastern — variation 2"
+
+[[outputs]]
+id = "T8uksrrIuaHP68PcUJYC1"
+uri = "file://.local/voice_samples/VoiceDesign_Middle_Eastern_v3.mp3"
+type = "audio"
+title = "Middle Eastern — variation 3"
+
+[[outputs]]
+id = "2C0ZrPXNWyU4b2moUwssq"
+uri = "file://.local/voice_samples/VoiceDesign_African_American_v1.mp3"
+type = "audio"
+title = "African American — variation 1"
+
+[[outputs]]
+id = "kq8V2s26gSllM_uup3g-r"
+uri = "file://.local/voice_samples/VoiceDesign_African_American_v2.mp3"
+type = "audio"
+title = "African American — variation 2"
+
+[[outputs]]
+id = "36-ohU6qEFVhnU_RVT-cT"
+uri = "file://.local/voice_samples/VoiceDesign_African_American_v3.mp3"
+type = "audio"
+title = "African American — variation 3"
+
+[[outputs]]
+id = "q-OAQ8qavmLOXwFm6ZmH2"
+uri = "file://.local/voice_samples/VoiceDesign_East_African_v1.mp3"
+type = "audio"
+title = "East African — variation 1"
+
+[[outputs]]
+id = "ShxSzn0eP4PCA0_l7CrJ6"
+uri = "file://.local/voice_samples/VoiceDesign_East_African_v2.mp3"
+type = "audio"
+title = "East African — variation 2"
+
+[[outputs]]
+id = "5n9S5bcptdX1b03lBvgdp"
+uri = "file://.local/voice_samples/VoiceDesign_East_African_v3.mp3"
+type = "audio"
+title = "East African — variation 3"
+
+[[outputs]]
+id = "p3kamJpGT8eeCTQdHfck1"
+uri = "file://.local/voice_samples/VoiceDesign_Latino_v1.mp3"
+type = "audio"
+title = "Latino — variation 1"
+
+[[outputs]]
+id = "cmjrphjyWlxPZufXxfqfI"
+uri = "file://.local/voice_samples/VoiceDesign_Latino_v2.mp3"
+type = "audio"
+title = "Latino — variation 2"
+
+[[outputs]]
+id = "4-7Fip9HnxFNIuHoNYq-5"
+uri = "file://.local/voice_samples/VoiceDesign_Latino_v3.mp3"
+type = "audio"
+title = "Latino — variation 3"
+
+[[outputs]]
+id = "nMZVcUI-faeApsfMB-Hoa"
+uri = "file://.local/voice_samples/VoiceDesign_Mixed_Ethnicity_v1.mp3"
+type = "audio"
+title = "Mixed Ethnicity — variation 1"
+
+[[outputs]]
+id = "4bH9Y6WnRwcay6oa9eBvV"
+uri = "file://.local/voice_samples/VoiceDesign_Mixed_Ethnicity_v2.mp3"
+type = "audio"
+title = "Mixed Ethnicity — variation 2"
+
+[[outputs]]
+id = "MhrfiDarivF38Upkj35h1"
+uri = "file://.local/voice_samples/VoiceDesign_Mixed_Ethnicity_v3.mp3"
+type = "audio"
+title = "Mixed Ethnicity — variation 3"
