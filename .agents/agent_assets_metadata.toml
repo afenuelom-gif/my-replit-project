@@ -335,3 +335,51 @@ id = "MhrfiDarivF38Upkj35h1"
 uri = "file://.local/voice_samples/VoiceDesign_Mixed_Ethnicity_v3.mp3"
 type = "audio"
 title = "Mixed Ethnicity — variation 3"
+
+[[outputs]]
+id = "-wwgAYyGy7CNM8FGieQU0"
+uri = "file://.local/voice_samples/FINAL_east_asian.mp3"
+type = "audio"
+title = "FINAL — East Asian (avatars: Sarah Chen, David Kim, Kenji Tanaka, Mei Lin)"
+
+[[outputs]]
+id = "LeosfgfQjbUkpUrWnwCzb"
+uri = "file://.local/voice_samples/FINAL_south_asian.mp3"
+type = "audio"
+title = "FINAL — South Asian (avatars: Priya Sharma, Arjun Patel)"
+
+[[outputs]]
+id = "bkpX1lHNGa-gauozbAmwr"
+uri = "file://.local/voice_samples/FINAL_middle_eastern.mp3"
+type = "audio"
+title = "FINAL — Middle Eastern (avatars: Layla Hassan, Omar Rahman)"
+
+[[outputs]]
+id = "Ib_Gcbeo4H5SMToRyq5My"
+uri = "file://.local/voice_samples/FINAL_african_american_a.mp3"
+type = "audio"
+title = "FINAL — African American A (avatar: Marcus Williams)"
+
+[[outputs]]
+id = "CKX4ZH7cCLbAyT8CbHQVE"
+uri = "file://.local/voice_samples/FINAL_african_american_b.mp3"
+type = "audio"
+title = "FINAL — African American B (avatar: Afua Boateng)"
+
+[[outputs]]
+id = "Q2UEjGiTtGJxQIKJPy-CC"
+uri = "file://.local/voice_samples/FINAL_east_african_a.mp3"
+type = "audio"
+title = "FINAL — East African A"
+
+[[outputs]]
+id = "gcfemfCYgprdlgzpZnkf8"
+uri = "file://.local/voice_samples/FINAL_east_african_b.mp3"
+type = "audio"
+title = "FINAL — East African B"
+
+[[outputs]]
+id = "fo0X4j3rIwLBncUBRWiAX"
+uri = "file://.local/voice_samples/FINAL_mixed_ethnicity.mp3"
+type = "audio"
+title = "FINAL — Mixed Ethnicity"
