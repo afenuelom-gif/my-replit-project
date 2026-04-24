@@ -1,5 +1,11 @@
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import type { Request, Response } from "express";
+import { isAdminUser } from "./adminAuth.js";
+
+function isAdmin(req: Request): boolean {
+  const userId = (req as Request & { userId?: string }).userId;
+  return isAdminUser(userId);
+}
 
 function userOrIpKey(req: Request): string {
   const userId = (req as Request & { userId?: string }).userId;
@@ -21,6 +27,8 @@ const base = {
   legacyHeaders: false,
   keyGenerator: userOrIpKey,
   handler: tooManyRequestsHandler,
+  // Admin accounts are never rate-limited — important for testing
+  skip: isAdmin,
 };
 
 export const resumeTailorLimiter = rateLimit({
