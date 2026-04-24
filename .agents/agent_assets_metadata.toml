@@ -209,3 +209,39 @@ id = "_LC2QJBmy8GzCdlysBq7e"
 uri = "file://.local/voice_samples/Liam.mp3"
 type = "audio"
 title = "Liam — NEW male, neutral American"
+
+[[outputs]]
+id = "pYZ_ewsAkuE5G13A_v3hG"
+uri = "file://.local/voice_samples/VoiceDesign_East_Asian_v1.mp3"
+type = "audio"
+title = "East Asian — Voice Design, variation 1"
+
+[[outputs]]
+id = "HV4kclobsItS4FxpQUqtm"
+uri = "file://.local/voice_samples/VoiceDesign_East_Asian_v2.mp3"
+type = "audio"
+title = "East Asian — Voice Design, variation 2"
+
+[[outputs]]
+id = "OlIhWoYzKHMpKtxB0h4pC"
+uri = "file://.local/voice_samples/VoiceDesign_East_Asian_v3.mp3"
+type = "audio"
+title = "East Asian — Voice Design, variation 3"
+
+[[outputs]]
+id = "HmJfk8XfoERyYabUpI93Z"
+uri = "file://.local/voice_samples/VoiceDesign_South_Asian_v1.mp3"
+type = "audio"
+title = "South Asian — Voice Design, variation 1"
+
+[[outputs]]
+id = "CxAFZJK_v_xOiCJlGi-h1"
+uri = "file://.local/voice_samples/VoiceDesign_South_Asian_v2.mp3"
+type = "audio"
+title = "South Asian — Voice Design, variation 2"
+
+[[outputs]]
+id = "aZoifAMNL1u0369DfRGEW"
+uri = "file://.local/voice_samples/VoiceDesign_South_Asian_v3.mp3"
+type = "audio"
+title = "South Asian — Voice Design, variation 3"
