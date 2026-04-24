@@ -125,3 +125,87 @@ id = "fM2jfaOOhA8aOHvvfrXyZ"
 uri = "file://artifacts/interview-platform/public/logo-icon.png"
 type = "image"
 title = "PrepInterv AI — Icon"
+
+[[outputs]]
+id = "VyjPxWa5VOOQNtuk5Q4ni"
+uri = "file://.local/voice_samples/Rachel_(nova_-_current).mp3"
+type = "audio"
+title = "Rachel — nova (current female #1, warm American)"
+
+[[outputs]]
+id = "EXQY0Z3M90s6zLzANqbFs"
+uri = "file://.local/voice_samples/Bella_(shimmer_-_current).mp3"
+type = "audio"
+title = "Bella — shimmer (current female #2, soft American)"
+
+[[outputs]]
+id = "H7opCeJqRba8uc0EZaARc"
+uri = "file://.local/voice_samples/Elli_(alloy_-_current).mp3"
+type = "audio"
+title = "Elli — alloy (current female #3, young American)"
+
+[[outputs]]
+id = "L8Q1bEW2CgklVkxAlNGm4"
+uri = "file://.local/voice_samples/Arnold_(onyx_-_current).mp3"
+type = "audio"
+title = "Arnold — onyx (current male #1, deep crisp)"
+
+[[outputs]]
+id = "nQnZgfCjlelOvVLeZbXuu"
+uri = "file://.local/voice_samples/Antoni_(fable_-_current).mp3"
+type = "audio"
+title = "Antoni — fable (current male #2, smooth American)"
+
+[[outputs]]
+id = "Nt8Bb-xUzGgai7Jk23n4J"
+uri = "file://.local/voice_samples/Josh_(echo_-_current).mp3"
+type = "audio"
+title = "Josh — echo (current male #3, deep American)"
+
+[[outputs]]
+id = "GVYC0oo4UmQLBLZ-Y0Cs3"
+uri = "file://.local/voice_samples/Matilda.mp3"
+type = "audio"
+title = "Matilda — NEW female, warm friendly American"
+
+[[outputs]]
+id = "4ZWD_Tz45CvrDn1xQLJTl"
+uri = "file://.local/voice_samples/Dorothy.mp3"
+type = "audio"
+title = "Dorothy — NEW female, pleasant British"
+
+[[outputs]]
+id = "KRXCzPPEd-JN_HDo6eVBx"
+uri = "file://.local/voice_samples/Grace.mp3"
+type = "audio"
+title = "Grace — NEW female, gentle Southern US"
+
+[[outputs]]
+id = "a41l_6wc1ak3qX6YaDm2g"
+uri = "file://.local/voice_samples/Charlotte.mp3"
+type = "audio"
+title = "Charlotte — NEW female, Swedish accent"
+
+[[outputs]]
+id = "Ki665zESBkExRdncYknlX"
+uri = "file://.local/voice_samples/Daniel.mp3"
+type = "audio"
+title = "Daniel — NEW male, deep British"
+
+[[outputs]]
+id = "5z1m23oRLFrS48k7UkR_B"
+uri = "file://.local/voice_samples/Sam.mp3"
+type = "audio"
+title = "Sam — NEW male, raspy American"
+
+[[outputs]]
+id = "hvOkXS8m5VjyRL1Fjnp2j"
+uri = "file://.local/voice_samples/Thomas.mp3"
+type = "audio"
+title = "Thomas — NEW male, calm measured American"
+
+[[outputs]]
+id = "_LC2QJBmy8GzCdlysBq7e"
+uri = "file://.local/voice_samples/Liam.mp3"
+type = "audio"
+title = "Liam — NEW male, neutral American"
