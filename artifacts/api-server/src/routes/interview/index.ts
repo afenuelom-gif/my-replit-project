@@ -53,7 +53,7 @@ import {
   shouldAskFollowUp,
   generateDynamicInterviewers,
 } from "../../lib/interviewAI.js";
-import { seedInterviewersIfNeeded, HEYGEN_FEMALE_AVATARS, HEYGEN_MALE_AVATARS, FEMALE_VOICES } from "../../lib/seedInterviewers.js";
+import { seedInterviewersIfNeeded, HEYGEN_FEMALE_AVATARS, HEYGEN_MALE_AVATARS, FEMALE_VOICES, AVATAR_VOICE_MAP } from "../../lib/seedInterviewers.js";
 import { isAdminUserOrEmail, hasAnyAdminConfigured } from "../../lib/adminAuth.js";
 
 const router: IRouter = Router();
@@ -223,12 +223,15 @@ router.post("/interview/sessions", optionalAuth, sessionCreateLimiter, async (re
           const heygenPool = isFemale ? HEYGEN_FEMALE_AVATARS : HEYGEN_MALE_AVATARS;
           const heygenIdx = isFemale ? femaleAvatarIdx - 1 : maleAvatarIdx - 1;
           const heygenAvatarId = heygenPool[heygenIdx % heygenPool.length];
+          // Use the voice mapped to this specific avatar so every session
+          // interviewer speaks with the correct ElevenLabs voice for their face.
+          const voiceId = AVATAR_VOICE_MAP[avatarUrl] ?? p.voiceId;
           return {
             name: p.name,
             title: p.title,
             company: p.company,
             personality: p.personality,
-            voiceId: p.voiceId,
+            voiceId,
             avatarUrl,
             heygenAvatarId,
             sessionId: session.id,

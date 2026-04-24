@@ -37,6 +37,27 @@ export const FEMALE_VOICES = new Set(["nova", "shimmer"]);
 // Avatar 18      White/Western male 60s     TX3LPaxmHKxFdv7VOQHJ  (Liam – neutral US)
 // ──────────────────────────────────────────────────────────────────────────
 
+export const AVATAR_VOICE_MAP: Record<string, string> = {
+  "/avatars/interviewer-1.png":  "heoaHqgqA3CQLtMDLa4c",
+  "/avatars/interviewer-2.png":  "rJLvfJVPEOEikEb43sqN",
+  "/avatars/interviewer-3.png":  "P39EFrcpltm1lGu3bBj6",
+  "/avatars/interviewer-4.png":  "q1CITMmkG1EzRQDARDDn",
+  "/avatars/interviewer-5.png":  "XT11Ld3OsUg6QlWCZMiw",
+  "/avatars/interviewer-6.png":  "onwK4e9ZLuTAKqWW03F9",
+  "/avatars/interviewer-7.png":  "XrExE9yKIg1WjnnlVkGX",
+  "/avatars/interviewer-8.png":  "GBv7mTt0atIp3Br8iCZE",
+  "/avatars/interviewer-9.png":  "SAUJnuf0vCDgTQDWx4wI",
+  "/avatars/interviewer-10.png": "XHYj423YTmrtKuAeDM4z",
+  "/avatars/interviewer-11.png": "P39EFrcpltm1lGu3bBj6",
+  "/avatars/interviewer-12.png": "q1CITMmkG1EzRQDARDDn",
+  "/avatars/interviewer-13.png": "1a8j57sZVYjnK5uCty7R",
+  "/avatars/interviewer-14.png": "MShyCq4HjuznDScfP2mr",
+  "/avatars/interviewer-15.png": "heoaHqgqA3CQLtMDLa4c",
+  "/avatars/interviewer-16.png": "S7PLrsTwYww90uerouYn",
+  "/avatars/interviewer-17.png": "XT11Ld3OsUg6QlWCZMiw",
+  "/avatars/interviewer-18.png": "TX3LPaxmHKxFdv7VOQHJ",
+};
+
 const INTERVIEWERS: Array<{
   name: string;
   title: string;
