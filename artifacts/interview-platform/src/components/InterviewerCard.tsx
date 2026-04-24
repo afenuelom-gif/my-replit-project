@@ -126,8 +126,8 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
           <span className="text-xs text-primary">Speaking…</span>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pt-6 pb-3">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent px-3 pt-4 pb-2">
+          <div className="flex items-center gap-2 mb-0.5">
             <div
               className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-300 ${
                 isSpeakingNow ? "bg-primary animate-pulse" : isActive ? "bg-primary/60" : "bg-zinc-600"
@@ -136,11 +136,6 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
             <span className="font-semibold text-sm text-white">{interviewer.name}</span>
           </div>
           <p className="text-xs text-zinc-400 leading-tight">{interviewer.title}</p>
-          {isActive ? (
-            <p className="text-xs text-primary/50 mt-2">Active</p>
-          ) : (
-            <p className="text-xs text-zinc-700 mt-2">Waiting</p>
-          )}
         </div>
       </div>
     );
