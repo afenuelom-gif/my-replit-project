@@ -74,6 +74,9 @@ export default function Interview() {
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   // Mobile: allows the user to expand a truncated question to read it in full.
   const [questionExpanded, setQuestionExpanded] = useState(false);
+  // Mobile: shows the last transcribed answer in the footer.
+  const [lastTranscript, setLastTranscript] = useState("");
+  const [transcriptExpanded, setTranscriptExpanded] = useState(false);
 
   // Refs for user webcam / recording
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -390,8 +393,12 @@ export default function Interview() {
   const currentQuestion = sessionData?.questions[sessionData.questions.length - 1];
   const activeInterviewerId = currentQuestion?.interviewerId;
 
-  // Collapse the question expansion whenever a new question arrives.
-  useEffect(() => { setQuestionExpanded(false); }, [currentQuestion?.id]);
+  // Collapse expansions and clear last transcript whenever a new question arrives.
+  useEffect(() => {
+    setQuestionExpanded(false);
+    setLastTranscript("");
+    setTranscriptExpanded(false);
+  }, [currentQuestion?.id]);
 
   const handleToggleRecord = () => {
     if (isRecording) {
@@ -460,6 +467,8 @@ export default function Interview() {
               return;
             }
             const transcript = transcribeRes.text.trim();
+            setLastTranscript(transcript);
+            setTranscriptExpanded(false);
             setStatusMessage("Evaluating your answer… this may take a moment.");
 
             if (currentQuestion) {
@@ -719,17 +728,36 @@ export default function Interview() {
         {/* Question text */}
         <div className="flex-1 max-w-3xl w-full">
           <div className="text-xs text-primary mb-1 font-mono uppercase tracking-wider">Current Question</div>
-          <div className={`text-sm sm:text-lg font-medium text-white/90 sm:line-clamp-3 min-h-[2.5rem] sm:min-h-[4.5rem] ${!questionExpanded ? "line-clamp-2" : ""}`}>
+          <div className={`text-sm sm:text-lg font-medium text-white/90 min-h-[2.5rem] sm:min-h-[4.5rem] ${!questionExpanded ? "line-clamp-2 sm:line-clamp-3" : ""}`}>
             {currentQuestion?.questionText || "Starting interview — please wait..."}
           </div>
           {currentQuestion?.questionText && (
             <button
-              className="sm:hidden mt-1.5 text-xs text-primary font-semibold tracking-wide"
+              className="mt-1.5 text-xs text-primary font-semibold tracking-wide"
               onClick={() => setQuestionExpanded(v => !v)}
             >
               {questionExpanded ? "Show less ▲" : "Show more ▼"}
             </button>
           )}
+
+          {/* Last answer transcript — only visible on mobile (xl sidebar shows it on large screens) */}
+          {lastTranscript && (
+            <div className="xl:hidden mt-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+              <div className="text-xs text-zinc-500 font-semibold mb-0.5">Your answer</div>
+              <p className={`text-xs text-zinc-400 ${!transcriptExpanded ? "line-clamp-3" : ""}`}>
+                {lastTranscript}
+              </p>
+              {lastTranscript.length > 120 && (
+                <button
+                  className="mt-1 text-xs text-primary/70 font-semibold tracking-wide"
+                  onClick={() => setTranscriptExpanded(v => !v)}
+                >
+                  {transcriptExpanded ? "Show less ▲" : "Show more ▼"}
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="mt-1 text-xs text-zinc-500">{statusMessage}</div>
 
           {/* Processing step indicator */}
