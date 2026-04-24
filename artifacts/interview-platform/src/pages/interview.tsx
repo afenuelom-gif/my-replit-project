@@ -616,7 +616,7 @@ export default function Interview() {
           // remaining cell next to the third interviewer.
           const userSpansFull = interviewerCount === 2;
           return (
-            <div className="flex-1 min-h-0 grid grid-cols-2 auto-rows-fr gap-2 sm:gap-3 p-2 sm:p-3">
+            <div className="flex-1 min-h-0 grid grid-cols-2 gap-2 sm:gap-3 p-2 sm:p-3 content-start overflow-y-auto">
               {/* Interviewers */}
               {sessionData?.interviewers.map(inv => {
                 const isActive = inv.id === activeInterviewerId;
@@ -640,8 +640,8 @@ export default function Interview() {
                 );
               })}
 
-              {/* User Webcam */}
-              <div className={`relative rounded-xl overflow-hidden bg-zinc-900 border border-white/10 min-h-[160px] ${userSpansFull ? "col-span-2" : ""}`}>
+              {/* User Webcam tile — styled the same as interviewer cards */}
+              <div className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 border-white/10 w-full aspect-square ${userSpansFull ? "col-span-2 max-w-[50%] mx-auto" : ""}`}>
                 {webcamEnabled ? (
                   <video
                     ref={videoRef}
@@ -652,12 +652,15 @@ export default function Interview() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-zinc-800">
-                    <VideoOff className="w-12 h-12 text-zinc-600" />
+                    <VideoOff className="w-10 h-10 text-zinc-600" />
                   </div>
                 )}
-                <div className="absolute bottom-4 left-4 bg-black/80 px-3 py-1 rounded-md backdrop-blur-sm border border-white/10 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span className="font-medium text-sm">You</span>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 px-3 pt-4 pb-2">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                    <span className="font-semibold text-sm text-white">You</span>
+                  </div>
                 </div>
               </div>
             </div>
