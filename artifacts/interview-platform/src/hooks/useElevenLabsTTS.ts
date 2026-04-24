@@ -17,6 +17,26 @@ function browserFallbackSpeak(text: string, signal: AbortSignal): Promise<void> 
   });
 }
 
+// Build a tiny silent WAV blob URL used as the keepalive audio element source.
+// This must be a real audio file (not empty) so iOS actually "plays" it.
+function buildSilentWavUrl(): string {
+  const sr = 44100;
+  const numSamples = sr; // 1 second of silence
+  const buf = new ArrayBuffer(44 + numSamples * 2);
+  const v = new DataView(buf);
+  const w = (o: number, s: string) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + numSamples * 2, true);
+  w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);  // PCM
+  v.setUint16(22, 1, true);  // mono
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, "data"); v.setUint32(40, numSamples * 2, true);
+  // silence — all zero samples (already zero-initialised)
+  const blob = new Blob([buf], { type: "audio/wav" });
+  return URL.createObjectURL(blob);
+}
+
 export function useElevenLabsTTS(sessionId: number) {
   const [isSpeaking, setIsSpeaking]         = useState(false);
   const [isPaused, setIsPaused]             = useState(false);
@@ -29,14 +49,25 @@ export function useElevenLabsTTS(sessionId: number) {
   const fetchAbortRef       = useRef<AbortController | null>(null);
   const destroyedRef        = useRef(false);
 
-  // AudioBufferSourceNode approach — bypasses iOS user-gesture requirement
-  // for subsequent .play() calls. Once the AudioContext is unlocked by a
-  // user gesture, AudioBufferSourceNode.start() works at any time.
+  // AudioBufferSourceNode for actual speech — bypasses iOS user-gesture
+  // requirement for subsequent plays (gesture only needed to unlock the ctx).
   const bufferSourceRef     = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef      = useRef<AudioBuffer | null>(null);
   const playStartCtxTimeRef = useRef<number>(0);
   const playStartOffsetRef  = useRef<number>(0);
   const timeIntervalRef     = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Keepalive: a looping silent HTMLAudioElement connected to the AudioContext.
+  //
+  // iOS suspends an AudioContext that has been silent for ~1 s, which means
+  // any AudioBufferSourceNode started after a long fetch (2-3 s) will produce
+  // no output even though ctx.state === "running" and the timer still ticks.
+  //
+  // Connecting an HTMLAudioElement via createMediaElementSource also promotes
+  // the AudioContext to AVAudioSessionCategoryPlayback, which bypasses the
+  // hardware silent/mute switch (plain AudioContext uses Ambient category).
+  const keepaliveAudioRef   = useRef<HTMLAudioElement | null>(null);
+  const keepaliveUrlRef     = useRef<string | null>(null);
 
   const getAudioContext = useCallback((): AudioContext => {
     if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
@@ -113,7 +144,6 @@ export function useElevenLabsTTS(sessionId: number) {
     const buf = audioBufferRef.current;
     if (!ctx || !buf) return;
 
-    // Stop current source
     if (bufferSourceRef.current) {
       try { bufferSourceRef.current.onended = null; bufferSourceRef.current.stop(); } catch { /* already stopped */ }
       bufferSourceRef.current = null;
@@ -123,7 +153,6 @@ export function useElevenLabsTTS(sessionId: number) {
     const clamped = Math.max(0, Math.min(seconds, buf.duration));
     setCurrentTime(clamped);
 
-    // Start a new source from the seek position
     const source = ctx.createBufferSource();
     source.buffer = buf;
     source.connect(ctx.destination);
@@ -161,7 +190,8 @@ export function useElevenLabsTTS(sessionId: number) {
       const controller = new AbortController();
       fetchAbortRef.current = controller;
 
-      // Ensure AudioContext is running (may be suspended on iOS after inactivity)
+      // Ensure context is running before the fetch (it may have been suspended
+      // briefly; the keepalive loop will prevent future suspensions).
       try {
         const ctx = getAudioContext();
         if (ctx.state === "suspended") await ctx.resume();
@@ -191,11 +221,14 @@ export function useElevenLabsTTS(sessionId: number) {
         const { audioBase64 } = (await res.json()) as { audioBase64: string; format: string };
         if (destroyedRef.current) return;
 
-        // Decode via AudioContext — AudioBufferSourceNode.start() works without a
-        // user gesture as long as the AudioContext was previously unlocked. This
-        // is the key fix for iOS Safari which blocks HTMLAudioElement.play() on
-        // every newly-created Audio() element unless called in a gesture handler.
         const ctx = getAudioContext();
+
+        // Re-resume before decode+play in case iOS suspended between the fetch
+        // completing and this line (unlikely with keepalive, but defensive).
+        if (ctx.state === "suspended") {
+          try { await ctx.resume(); } catch { /* non-fatal */ }
+        }
+
         const bytes = Uint8Array.from(atob(audioBase64), (c) => c.charCodeAt(0));
         const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
         if (destroyedRef.current) return;
@@ -257,6 +290,16 @@ export function useElevenLabsTTS(sessionId: number) {
       resolveCurrentRef.current?.();
       resolveCurrentRef.current = null;
       if (isBrowserTTSRef.current) window.speechSynthesis?.cancel();
+      // Stop keepalive
+      if (keepaliveAudioRef.current) {
+        keepaliveAudioRef.current.pause();
+        keepaliveAudioRef.current.src = "";
+        keepaliveAudioRef.current = null;
+      }
+      if (keepaliveUrlRef.current) {
+        URL.revokeObjectURL(keepaliveUrlRef.current);
+        keepaliveUrlRef.current = null;
+      }
       if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
         audioCtxRef.current.close().catch(() => {});
         audioCtxRef.current = null;
@@ -270,12 +313,40 @@ export function useElevenLabsTTS(sessionId: number) {
     try {
       const ctx = getAudioContext();
       if (ctx.state === "suspended") await ctx.resume();
-      // Play a 1-frame silent buffer — fully commits the AudioContext unlock on iOS.
+
+      // Commit the gesture unlock with a 1-frame silent buffer.
       const buf = ctx.createBuffer(1, 1, 22050);
       const src = ctx.createBufferSource();
       src.buffer = buf;
       src.connect(ctx.destination);
       src.start(0);
+
+      // Start the keepalive HTMLAudioElement if not already running.
+      //
+      // Two purposes:
+      // 1. Promotes the AudioContext from AVAudioSessionCategoryAmbient
+      //    (muted by silent switch) to AVAudioSessionCategoryPlayback
+      //    (always audible) by connecting it via createMediaElementSource.
+      // 2. Keeps the AudioContext "warm" so iOS does not suspend it during
+      //    long network fetches between speak() calls, which would cause
+      //    subsequent AudioBufferSourceNode playback to be inaudible.
+      if (!keepaliveAudioRef.current) {
+        const url = buildSilentWavUrl();
+        keepaliveUrlRef.current = url;
+
+        const audio = new Audio(url);
+        audio.loop = true;
+        audio.volume = 0;
+        keepaliveAudioRef.current = audio;
+
+        try {
+          const mediaSource = ctx.createMediaElementSource(audio);
+          mediaSource.connect(ctx.destination);
+        } catch { /* if already connected or unavailable, ignore */ }
+
+        // play() MUST be called within the user-gesture call stack.
+        await audio.play().catch(() => {});
+      }
     } catch { /* non-fatal */ }
   }, [getAudioContext]);
 
