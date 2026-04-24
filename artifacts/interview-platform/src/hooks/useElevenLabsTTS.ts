@@ -174,6 +174,9 @@ export function useElevenLabsTTS(sessionId: number) {
         if (!sharedAudioRef.current) sharedAudioRef.current = audio;
 
         // Swap the src on the already-activated element.
+        // Always restore volume to 1 — unlockAudio() sets it to 0 for the
+        // silent activation blob, and the same element is reused here.
+        audio.volume = 1;
         audio.src = blobUrl;
         audio.load();
 
