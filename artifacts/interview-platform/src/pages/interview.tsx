@@ -551,7 +551,7 @@ export default function Interview() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col relative overflow-hidden">
+    <div className="h-screen bg-[#0a0a0a] text-white flex flex-col relative overflow-hidden">
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Gradient orbs — same blue/purple family as the rest of the site */}
