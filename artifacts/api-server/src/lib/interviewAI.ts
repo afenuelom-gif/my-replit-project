@@ -414,7 +414,8 @@ export async function generateTTS(text: string, voiceId: string): Promise<Buffer
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) throw new Error("ELEVENLABS_API_KEY is not set");
 
-  const elevenVoiceId = ELEVENLABS_VOICE_MAP[voiceId] ?? ELEVENLABS_VOICE_MAP.nova;
+  // If voiceId is a direct ElevenLabs ID (not a legacy map key), use it as-is
+  const elevenVoiceId = ELEVENLABS_VOICE_MAP[voiceId] ?? voiceId;
 
   const response = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${elevenVoiceId}`,

@@ -174,6 +174,34 @@ const INTERVIEWERS = [
     avatarUrl: "/avatars/interviewer-4.png",
     heygenAvatarId: HEYGEN_MALE_AVATARS[4],
   },
+  // Avatar 9 — Black woman, braided updo, grey blazer
+  {
+    name: "Afua Boateng",
+    title: "Director of Operations",
+    company: "GlobalReach",
+    personality: "Composed and strategic. Probes organizational thinking, cross-functional leadership, and how candidates handle ambiguity at scale.",
+    voiceId: "SAUJnuf0vCDgTQDWx4wI",
+    avatarUrl: "/avatars/interviewer-9.png",
+    heygenAvatarId: HEYGEN_FEMALE_AVATARS[3],
+  },
+  {
+    name: "Nana Ofori",
+    title: "Senior People Partner",
+    company: "TalentBridge",
+    personality: "Warm yet incisive. Focuses on team culture, inclusion, and how candidates navigate difficult interpersonal dynamics.",
+    voiceId: "SAUJnuf0vCDgTQDWx4wI",
+    avatarUrl: "/avatars/interviewer-9.png",
+    heygenAvatarId: HEYGEN_FEMALE_AVATARS[4],
+  },
+  {
+    name: "Jasmine Carter",
+    title: "VP of Customer Success",
+    company: "ClientFirst",
+    personality: "Empathetic and results-driven. Explores client relationship skills, escalation handling, and building long-term partnerships.",
+    voiceId: "SAUJnuf0vCDgTQDWx4wI",
+    avatarUrl: "/avatars/interviewer-9.png",
+    heygenAvatarId: HEYGEN_FEMALE_AVATARS[0],
+  },
 ];
 
 // Backfill heygen_avatar_id for existing seeded interviewers that don't have one yet
@@ -196,13 +224,11 @@ export async function seedInterviewersIfNeeded(): Promise<void> {
       .from(interviewersTable)
       .where(isNull(interviewersTable.sessionId));
 
-    // Insert any missing interviewers
-    if (existing.length < INTERVIEWERS.length) {
-      for (const persona of INTERVIEWERS) {
-        const existingByName = existing.find(e => e.name === persona.name);
-        if (!existingByName) {
-          await db.insert(interviewersTable).values(persona);
-        }
+    // Always insert any missing base interviewers by name
+    for (const persona of INTERVIEWERS) {
+      const existingByName = existing.find(e => e.name === persona.name);
+      if (!existingByName) {
+        await db.insert(interviewersTable).values(persona);
       }
     }
 
