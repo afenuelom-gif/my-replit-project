@@ -17,25 +17,27 @@ function browserFallbackSpeak(text: string, signal: AbortSignal): Promise<void> 
   });
 }
 
-// Build a tiny silent WAV blob URL used as the keepalive audio element source.
-// This must be a real audio file (not empty) so iOS actually "plays" it.
-function buildSilentWavUrl(): string {
-  const sr = 44100;
-  const numSamples = sr; // 1 second of silence
-  const buf = new ArrayBuffer(44 + numSamples * 2);
-  const v = new DataView(buf);
-  const w = (o: number, s: string) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
-  w(0, "RIFF"); v.setUint32(4, 36 + numSamples * 2, true);
-  w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true);
-  v.setUint16(20, 1, true);  // PCM
-  v.setUint16(22, 1, true);  // mono
-  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
-  v.setUint16(32, 2, true); v.setUint16(34, 16, true);
-  w(36, "data"); v.setUint32(40, numSamples * 2, true);
-  // silence — all zero samples (already zero-initialised)
-  const blob = new Blob([buf], { type: "audio/wav" });
-  return URL.createObjectURL(blob);
-}
+// ─── Shared-element approach ──────────────────────────────────────────────────
+//
+// iOS Safari only allows HTMLAudioElement.play() within a user-gesture call
+// stack for the VERY FIRST play on a given element. Once an element has been
+// "activated" (played at least once in a gesture), subsequent .play() calls —
+// even from async contexts like fetch callbacks — are permitted on THAT SAME
+// element without another gesture.
+//
+// Previous approaches created a new Audio() inside each speak() call, which
+// meant every call needed its own gesture. The fix: create ONE element during
+// unlockAudio() (which always runs inside a gesture handler), activate it with
+// a silent blob, and reuse it for all subsequent speak() calls by swapping src.
+//
+// AudioContext is still used for:
+//  1. Routing the shared element through it via createMediaElementSource, which
+//     promotes the iOS audio session to AVAudioSessionCategoryPlayback and
+//     bypasses the hardware silent/mute switch.
+//  2. pause/resume via ctx.suspend()/resume() — this pauses/resumes the
+//     element in sync with the rest of the graph.
+//  3. seekTime() — we seek via audio.currentTime on the shared element.
+// ──────────────────────────────────────────────────────────────────────────────
 
 export function useElevenLabsTTS(sessionId: number) {
   const [isSpeaking, setIsSpeaking]         = useState(false);
@@ -49,25 +51,10 @@ export function useElevenLabsTTS(sessionId: number) {
   const fetchAbortRef       = useRef<AbortController | null>(null);
   const destroyedRef        = useRef(false);
 
-  // AudioBufferSourceNode for actual speech — bypasses iOS user-gesture
-  // requirement for subsequent plays (gesture only needed to unlock the ctx).
-  const bufferSourceRef     = useRef<AudioBufferSourceNode | null>(null);
-  const audioBufferRef      = useRef<AudioBuffer | null>(null);
-  const playStartCtxTimeRef = useRef<number>(0);
-  const playStartOffsetRef  = useRef<number>(0);
-  const timeIntervalRef     = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Keepalive: a looping silent HTMLAudioElement connected to the AudioContext.
-  //
-  // iOS suspends an AudioContext that has been silent for ~1 s, which means
-  // any AudioBufferSourceNode started after a long fetch (2-3 s) will produce
-  // no output even though ctx.state === "running" and the timer still ticks.
-  //
-  // Connecting an HTMLAudioElement via createMediaElementSource also promotes
-  // the AudioContext to AVAudioSessionCategoryPlayback, which bypasses the
-  // hardware silent/mute switch (plain AudioContext uses Ambient category).
-  const keepaliveAudioRef   = useRef<HTMLAudioElement | null>(null);
-  const keepaliveUrlRef     = useRef<string | null>(null);
+  // The ONE shared audio element — created during unlockAudio() inside a
+  // user-gesture handler so iOS allows .play() on it at any future time.
+  const sharedAudioRef      = useRef<HTMLAudioElement | null>(null);
+  const currentBlobUrlRef   = useRef<string | null>(null);
 
   const getAudioContext = useCallback((): AudioContext => {
     if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
@@ -77,34 +64,28 @@ export function useElevenLabsTTS(sessionId: number) {
     return audioCtxRef.current;
   }, []);
 
-  const clearTimer = useCallback(() => {
-    if (timeIntervalRef.current) {
-      clearInterval(timeIntervalRef.current);
-      timeIntervalRef.current = null;
+  const revokeCurrent = useCallback(() => {
+    if (currentBlobUrlRef.current) {
+      URL.revokeObjectURL(currentBlobUrlRef.current);
+      currentBlobUrlRef.current = null;
     }
   }, []);
-
-  const startTimer = useCallback((ctx: AudioContext, buf: AudioBuffer, startCtxTime: number, startOffset: number) => {
-    clearTimer();
-    timeIntervalRef.current = setInterval(() => {
-      if (ctx.state === "running") {
-        const elapsed = (ctx.currentTime - startCtxTime) + startOffset;
-        setCurrentTime(Math.min(Math.max(0, elapsed), buf.duration));
-      }
-    }, 100);
-  }, [clearTimer]);
 
   const stop = useCallback(() => {
     fetchAbortRef.current?.abort();
     fetchAbortRef.current = null;
 
-    clearTimer();
-
-    if (bufferSourceRef.current) {
-      try { bufferSourceRef.current.onended = null; bufferSourceRef.current.stop(); } catch { /* already stopped */ }
-      bufferSourceRef.current = null;
+    if (sharedAudioRef.current) {
+      sharedAudioRef.current.pause();
+      // Remove the old event listeners by swapping to a blank src, then
+      // restore it empty (keeps the element "activated" on iOS).
+      sharedAudioRef.current.onended = null;
+      sharedAudioRef.current.onerror = null;
+      sharedAudioRef.current.onloadedmetadata = null;
+      sharedAudioRef.current.ontimeupdate    = null;
     }
-    audioBufferRef.current = null;
+
+    revokeCurrent();
 
     if (isBrowserTTSRef.current) {
       window.speechSynthesis?.cancel();
@@ -118,64 +99,30 @@ export function useElevenLabsTTS(sessionId: number) {
     setIsPaused(false);
     setCurrentTime(0);
     setDuration(0);
-  }, [clearTimer]);
+  }, [revokeCurrent]);
 
   const pause = useCallback(() => {
+    // Pause via AudioContext so all nodes pause in sync.
     const ctx = audioCtxRef.current;
     if (ctx && ctx.state === "running") ctx.suspend().catch(() => {});
     if (isBrowserTTSRef.current) window.speechSynthesis?.pause();
-    clearTimer();
     setIsPaused(true);
-  }, [clearTimer]);
+  }, []);
 
   const resume = useCallback(() => {
     const ctx = audioCtxRef.current;
-    if (ctx && ctx.state === "suspended") {
-      ctx.resume().catch(() => {});
-      const buf = audioBufferRef.current;
-      if (buf) startTimer(ctx, buf, playStartCtxTimeRef.current, playStartOffsetRef.current);
-    }
+    if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
     if (isBrowserTTSRef.current) window.speechSynthesis?.resume();
     setIsPaused(false);
-  }, [startTimer]);
+  }, []);
 
   const seekTime = useCallback((seconds: number) => {
-    const ctx = audioCtxRef.current;
-    const buf = audioBufferRef.current;
-    if (!ctx || !buf) return;
-
-    if (bufferSourceRef.current) {
-      try { bufferSourceRef.current.onended = null; bufferSourceRef.current.stop(); } catch { /* already stopped */ }
-      bufferSourceRef.current = null;
-    }
-    clearTimer();
-
-    const clamped = Math.max(0, Math.min(seconds, buf.duration));
+    const audio = sharedAudioRef.current;
+    if (!audio) return;
+    const clamped = Math.max(0, Math.min(seconds, audio.duration || seconds));
+    audio.currentTime = clamped;
     setCurrentTime(clamped);
-
-    const source = ctx.createBufferSource();
-    source.buffer = buf;
-    source.connect(ctx.destination);
-    bufferSourceRef.current = source;
-
-    const startCtxTime = ctx.currentTime;
-    playStartCtxTimeRef.current = startCtxTime;
-    playStartOffsetRef.current = clamped;
-
-    source.onended = () => {
-      if (bufferSourceRef.current !== source) return;
-      clearTimer();
-      bufferSourceRef.current = null;
-      audioBufferRef.current = null;
-      resolveCurrentRef.current?.();
-      resolveCurrentRef.current = null;
-      setIsSpeaking(false);
-      setIsPaused(false);
-    };
-
-    source.start(0, clamped);
-    startTimer(ctx, buf, startCtxTime, clamped);
-  }, [clearTimer, startTimer]);
+  }, []);
 
   const speak = useCallback(
     async (text: string, interviewerId: number): Promise<void> => {
@@ -190,13 +137,6 @@ export function useElevenLabsTTS(sessionId: number) {
       const controller = new AbortController();
       fetchAbortRef.current = controller;
 
-      // Ensure context is running before the fetch (it may have been suspended
-      // briefly; the keepalive loop will prevent future suspensions).
-      try {
-        const ctx = getAudioContext();
-        if (ctx.state === "suspended") await ctx.resume();
-      } catch { /* non-fatal */ }
-
       try {
         const res = await fetch(`/api/interview/sessions/${sessionId}/tts`, {
           method: "POST",
@@ -209,7 +149,7 @@ export function useElevenLabsTTS(sessionId: number) {
         fetchAbortRef.current = null;
 
         if (!res.ok) {
-          console.warn(`ElevenLabs TTS unavailable (${res.status}), falling back to browser TTS`);
+          console.warn(`ElevenLabs TTS unavailable (${res.status}), falling back`);
           isBrowserTTSRef.current = true;
           await browserFallbackSpeak(text, controller.signal);
           if (destroyedRef.current) return;
@@ -218,49 +158,55 @@ export function useElevenLabsTTS(sessionId: number) {
           return;
         }
 
-        const { audioBase64 } = (await res.json()) as { audioBase64: string; format: string };
+        const { audioBase64, format } = (await res.json()) as { audioBase64: string; format: string };
         if (destroyedRef.current) return;
 
-        const ctx = getAudioContext();
-
-        // Re-resume before decode+play in case iOS suspended between the fetch
-        // completing and this line (unlikely with keepalive, but defensive).
-        if (ctx.state === "suspended") {
-          try { await ctx.resume(); } catch { /* non-fatal */ }
-        }
-
+        const mimeType = `audio/${format ?? "mpeg"}`;
         const bytes = Uint8Array.from(atob(audioBase64), (c) => c.charCodeAt(0));
-        const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
-        if (destroyedRef.current) return;
+        const blob = new Blob([bytes], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+        currentBlobUrlRef.current = blobUrl;
 
-        audioBufferRef.current = audioBuffer;
-        setDuration(audioBuffer.duration);
+        // Use the shared element that was activated during unlockAudio().
+        // If it was never created (non-iOS or unlockAudio skipped), fall back
+        // to creating a new element — it will need a gesture but is a safe default.
+        const audio = sharedAudioRef.current ?? new Audio();
+        if (!sharedAudioRef.current) sharedAudioRef.current = audio;
 
-        const source = ctx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(ctx.destination);
-        bufferSourceRef.current = source;
-
-        const startCtxTime = ctx.currentTime;
-        playStartCtxTimeRef.current = startCtxTime;
-        playStartOffsetRef.current = 0;
+        // Swap the src on the already-activated element.
+        audio.src = blobUrl;
+        audio.load();
 
         await new Promise<void>((resolve) => {
           resolveCurrentRef.current = resolve;
 
-          source.onended = () => {
-            if (bufferSourceRef.current !== source) return;
-            clearTimer();
-            bufferSourceRef.current = null;
-            audioBufferRef.current = null;
+          const finish = () => {
+            if (resolveCurrentRef.current !== resolve) return;
             resolveCurrentRef.current = null;
+            // Don't null sharedAudioRef — keep it for the next speak() call.
+            revokeCurrent();
             setIsSpeaking(false);
             setIsPaused(false);
             resolve();
           };
 
-          source.start(0);
-          startTimer(ctx, audioBuffer, startCtxTime, 0);
+          audio.onended = finish;
+          audio.onerror = finish;
+          audio.onloadedmetadata = () => setDuration(audio.duration);
+          audio.ontimeupdate    = () => setCurrentTime(audio.currentTime);
+
+          const startPlay = () => {
+            audio.play().catch((err) => {
+              console.warn("[TTS] play() rejected:", err);
+              finish();
+            });
+          };
+
+          if (audio.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) {
+            startPlay();
+          } else {
+            audio.addEventListener("canplaythrough", startPlay, { once: true });
+          }
         });
       } catch (e: unknown) {
         if (e instanceof Error && e.name === "AbortError") return;
@@ -274,7 +220,7 @@ export function useElevenLabsTTS(sessionId: number) {
         setIsPaused(false);
       }
     },
-    [sessionId, stop, getAudioContext, clearTimer, startTimer]
+    [sessionId, stop, revokeCurrent]
   );
 
   useEffect(() => {
@@ -282,24 +228,18 @@ export function useElevenLabsTTS(sessionId: number) {
       destroyedRef.current = true;
       fetchAbortRef.current?.abort();
       fetchAbortRef.current = null;
-      if (timeIntervalRef.current) clearInterval(timeIntervalRef.current);
-      if (bufferSourceRef.current) {
-        try { bufferSourceRef.current.onended = null; bufferSourceRef.current.stop(); } catch { /* already stopped */ }
-        bufferSourceRef.current = null;
+      if (sharedAudioRef.current) {
+        sharedAudioRef.current.pause();
+        sharedAudioRef.current.src = "";
+        sharedAudioRef.current = null;
+      }
+      if (currentBlobUrlRef.current) {
+        URL.revokeObjectURL(currentBlobUrlRef.current);
+        currentBlobUrlRef.current = null;
       }
       resolveCurrentRef.current?.();
       resolveCurrentRef.current = null;
       if (isBrowserTTSRef.current) window.speechSynthesis?.cancel();
-      // Stop keepalive
-      if (keepaliveAudioRef.current) {
-        keepaliveAudioRef.current.pause();
-        keepaliveAudioRef.current.src = "";
-        keepaliveAudioRef.current = null;
-      }
-      if (keepaliveUrlRef.current) {
-        URL.revokeObjectURL(keepaliveUrlRef.current);
-        keepaliveUrlRef.current = null;
-      }
       if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
         audioCtxRef.current.close().catch(() => {});
         audioCtxRef.current = null;
@@ -307,47 +247,60 @@ export function useElevenLabsTTS(sessionId: number) {
     };
   }, []);
 
-  // Call synchronously inside a user-gesture handler to unlock the
-  // AudioContext on iOS before any async work begins.
+  // Call synchronously inside a user-gesture handler BEFORE any async work.
+  //
+  // This creates and activates the shared HTMLAudioElement by playing a silent
+  // blob on it. Once activated, .play() on the same element works from async
+  // contexts (fetch callbacks etc.) without a new gesture — iOS only requires
+  // a gesture for the first .play() on any given element instance.
+  //
+  // The element is also routed through AudioContext via createMediaElementSource
+  // which promotes the iOS audio session to AVAudioSessionCategoryPlayback,
+  // bypassing the hardware silent/mute switch.
   const unlockAudio = useCallback(async () => {
     try {
       const ctx = getAudioContext();
       if (ctx.state === "suspended") await ctx.resume();
 
-      // Commit the gesture unlock with a 1-frame silent buffer.
-      const buf = ctx.createBuffer(1, 1, 22050);
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      src.connect(ctx.destination);
-      src.start(0);
+      if (!sharedAudioRef.current) {
+        // Build a minimal silent WAV blob (1 second mono 44100 Hz 16-bit PCM).
+        const sr = 44100;
+        const ns = sr; // 1 second
+        const buf = new ArrayBuffer(44 + ns * 2);
+        const v = new DataView(buf);
+        const ws = (o: number, s: string) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+        ws(0, "RIFF"); v.setUint32(4, 36 + ns * 2, true);
+        ws(8, "WAVE"); ws(12, "fmt "); v.setUint32(16, 16, true);
+        v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+        v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
+        v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+        ws(36, "data"); v.setUint32(40, ns * 2, true);
+        // data bytes are zero-initialised (silence)
 
-      // Start the keepalive HTMLAudioElement if not already running.
-      //
-      // Two purposes:
-      // 1. Promotes the AudioContext from AVAudioSessionCategoryAmbient
-      //    (muted by silent switch) to AVAudioSessionCategoryPlayback
-      //    (always audible) by connecting it via createMediaElementSource.
-      // 2. Keeps the AudioContext "warm" so iOS does not suspend it during
-      //    long network fetches between speak() calls, which would cause
-      //    subsequent AudioBufferSourceNode playback to be inaudible.
-      if (!keepaliveAudioRef.current) {
-        const url = buildSilentWavUrl();
-        keepaliveUrlRef.current = url;
+        const silentUrl = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
 
-        const audio = new Audio(url);
-        audio.loop = true;
-        audio.volume = 0;
-        keepaliveAudioRef.current = audio;
+        const audio = new Audio(silentUrl);
+        audio.volume = 0;   // Truly silent — activates the element without sound
+        audio.loop   = false;
+        sharedAudioRef.current = audio;
 
+        // Route through AudioContext → promotes iOS audio session to Playback
+        // category so audio plays even when the hardware mute switch is on.
         try {
-          const mediaSource = ctx.createMediaElementSource(audio);
-          mediaSource.connect(ctx.destination);
-        } catch { /* if already connected or unavailable, ignore */ }
+          const src = ctx.createMediaElementSource(audio);
+          src.connect(ctx.destination);
+        } catch { /* already connected or unavailable — audio still plays directly */ }
 
-        // play() MUST be called within the user-gesture call stack.
-        await audio.play().catch(() => {});
+        // This .play() MUST succeed within the gesture call stack.
+        // After it resolves, iOS considers the element "activated".
+        await audio.play().catch((e) => { console.warn("[TTS unlock] silent play failed:", e); });
+
+        // Clean up the silent blob URL; the element stays alive.
+        URL.revokeObjectURL(silentUrl);
       }
-    } catch { /* non-fatal */ }
+    } catch (e) {
+      console.warn("[TTS unlock] unlockAudio error:", e);
+    }
   }, [getAudioContext]);
 
   return { speak, stop, pause, resume, seekTime, unlockAudio, isSpeaking, isPaused, audioCurrentTime, audioDuration };
