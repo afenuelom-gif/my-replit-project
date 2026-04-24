@@ -616,7 +616,7 @@ export default function Interview() {
           // remaining cell next to the third interviewer.
           const userSpansFull = interviewerCount === 2;
           return (
-            <div className="flex-1 min-h-0 grid grid-cols-2 gap-2 sm:gap-3 p-2 sm:p-3 content-start overflow-y-auto">
+            <div className="flex-1 min-h-0 grid grid-cols-2 gap-2 sm:gap-3 p-2 sm:p-3 content-start overflow-y-auto md:auto-rows-fr md:content-stretch md:overflow-hidden">
               {/* Interviewers */}
               {sessionData?.interviewers.map(inv => {
                 const isActive = inv.id === activeInterviewerId;
@@ -641,7 +641,7 @@ export default function Interview() {
               })}
 
               {/* User Webcam tile — styled the same as interviewer cards */}
-              <div className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 border-white/10 w-full aspect-square ${userSpansFull ? "col-span-2 max-w-[50%] mx-auto" : ""}`}>
+              <div className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 border-white/10 w-full aspect-square md:aspect-auto md:h-full ${userSpansFull ? "col-span-2 max-w-[50%] mx-auto" : ""}`}>
                 {webcamEnabled ? (
                   <video
                     ref={videoRef}

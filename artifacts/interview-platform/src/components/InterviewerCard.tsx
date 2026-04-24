@@ -80,7 +80,7 @@ const InterviewerCard = forwardRef<InterviewerCardHandle, InterviewerCardProps>(
 
     return (
       <div
-        className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-colors duration-300 w-full aspect-square ${
+        className={`relative rounded-xl overflow-hidden bg-zinc-900 border-2 transition-colors duration-300 w-full aspect-square md:aspect-auto md:h-full ${
           isSpeakingNow
             ? "border-primary shadow-[0_0_18px_2px_rgba(99,102,241,0.35)]"
             : isActive
