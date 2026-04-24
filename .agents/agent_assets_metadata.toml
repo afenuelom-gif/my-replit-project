@@ -383,3 +383,165 @@ id = "fo0X4j3rIwLBncUBRWiAX"
 uri = "file://.local/voice_samples/FINAL_mixed_ethnicity.mp3"
 type = "audio"
 title = "FINAL — Mixed Ethnicity"
+
+[[outputs]]
+id = "REu0E3i3DgdNZP0UKG0tI"
+uri = "file://.local/voice_samples/NEW_latino_male_v1.mp3"
+type = "audio"
+title = "Latino Male (Mexico) — v1"
+
+[[outputs]]
+id = "CJCXcQ7zbaZBu55iJFOjh"
+uri = "file://.local/voice_samples/NEW_latino_male_v2.mp3"
+type = "audio"
+title = "Latino Male (Mexico) — v2"
+
+[[outputs]]
+id = "UOPJcSH6sKKQ11qFAK0qv"
+uri = "file://.local/voice_samples/NEW_latino_male_v3.mp3"
+type = "audio"
+title = "Latino Male (Mexico) — v3"
+
+[[outputs]]
+id = "c78WA2W5JTv0SHHh-u_G5"
+uri = "file://.local/voice_samples/NEW_latina_female_v1.mp3"
+type = "audio"
+title = "Latina Female (Mexico) — v1"
+
+[[outputs]]
+id = "clXmujYZuDHSrr_Hs5SuT"
+uri = "file://.local/voice_samples/NEW_latina_female_v2.mp3"
+type = "audio"
+title = "Latina Female (Mexico) — v2"
+
+[[outputs]]
+id = "5EqAXzTcvJ4XykjbTviyF"
+uri = "file://.local/voice_samples/NEW_latina_female_v3.mp3"
+type = "audio"
+title = "Latina Female (Mexico) — v3"
+
+[[outputs]]
+id = "pvAEUYDLGNSr0mZ14cKNl"
+uri = "file://.local/voice_samples/NEW_south_asian_female_v1.mp3"
+type = "audio"
+title = "South Asian Female (India/Pakistan) — v1"
+
+[[outputs]]
+id = "65eybsy37ZmEIxGsDOqxc"
+uri = "file://.local/voice_samples/NEW_south_asian_female_v2.mp3"
+type = "audio"
+title = "South Asian Female (India/Pakistan) — v2"
+
+[[outputs]]
+id = "wewNJA5iX_6XIBS-qyzaS"
+uri = "file://.local/voice_samples/NEW_south_asian_female_v3.mp3"
+type = "audio"
+title = "South Asian Female (India/Pakistan) — v3"
+
+[[outputs]]
+id = "jFFqCGHYXYFKwAUpQnUaJ"
+uri = "file://.local/voice_samples/NEW_south_asian_male_v1.mp3"
+type = "audio"
+title = "South Asian Male (India/Pakistan) — v1"
+
+[[outputs]]
+id = "LmTp6_AzQOu2af_WTpZcp"
+uri = "file://.local/voice_samples/NEW_south_asian_male_v2.mp3"
+type = "audio"
+title = "South Asian Male (India/Pakistan) — v2"
+
+[[outputs]]
+id = "md5mQ1iaNjD8MfN5XF_4U"
+uri = "file://.local/voice_samples/NEW_south_asian_male_v3.mp3"
+type = "audio"
+title = "South Asian Male (India/Pakistan) — v3"
+
+[[outputs]]
+id = "rzUbnR8rs9q-WBD0ZQeNT"
+uri = "file://.local/voice_samples/NEW_middle_eastern_male_v1.mp3"
+type = "audio"
+title = "Middle Eastern Male (Turkish/Greek) — v1"
+
+[[outputs]]
+id = "n6-cxatxiCC7QJ914JtU1"
+uri = "file://.local/voice_samples/NEW_middle_eastern_male_v2.mp3"
+type = "audio"
+title = "Middle Eastern Male (Turkish/Greek) — v2"
+
+[[outputs]]
+id = "dHziF8OpXPhQ5YJY98Vdu"
+uri = "file://.local/voice_samples/NEW_middle_eastern_male_v3.mp3"
+type = "audio"
+title = "Middle Eastern Male (Turkish/Greek) — v3"
+
+[[outputs]]
+id = "SA3m8iTETxyN5qp9Rlydd"
+uri = "file://.local/voice_samples/NEW_middle_eastern_female_v1.mp3"
+type = "audio"
+title = "Middle Eastern Female (Arab) — v1"
+
+[[outputs]]
+id = "TXdC5tDjQcGmDxFSoJAmx"
+uri = "file://.local/voice_samples/NEW_middle_eastern_female_v2.mp3"
+type = "audio"
+title = "Middle Eastern Female (Arab) — v2"
+
+[[outputs]]
+id = "m5J-BgtWH6Mo5kTaZUNFV"
+uri = "file://.local/voice_samples/NEW_middle_eastern_female_v3.mp3"
+type = "audio"
+title = "Middle Eastern Female (Arab) — v3"
+
+[[outputs]]
+id = "Qbtnz3oUkh-iVxE4J4Er9"
+uri = "file://.local/voice_samples/NEW_east_asian_female_v1.mp3"
+type = "audio"
+title = "East Asian Female (China) — v1"
+
+[[outputs]]
+id = "QnfZzq59nFkQLChdTjqXy"
+uri = "file://.local/voice_samples/NEW_east_asian_female_v2.mp3"
+type = "audio"
+title = "East Asian Female (China) — v2"
+
+[[outputs]]
+id = "3Y80p0cyhAaPf66bdG9yC"
+uri = "file://.local/voice_samples/NEW_east_asian_female_v3.mp3"
+type = "audio"
+title = "East Asian Female (China) — v3"
+
+[[outputs]]
+id = "ciNRTQCS_APPT1jU_eHGe"
+uri = "file://.local/voice_samples/NEW_east_asian_male_v1.mp3"
+type = "audio"
+title = "East Asian Male (China) — v1"
+
+[[outputs]]
+id = "9wI_12jtldzTHckLcT-u4"
+uri = "file://.local/voice_samples/NEW_east_asian_male_v2.mp3"
+type = "audio"
+title = "East Asian Male (China) — v2"
+
+[[outputs]]
+id = "UHnY5C0F6BH0Y0imHZJNo"
+uri = "file://.local/voice_samples/NEW_east_asian_male_v3.mp3"
+type = "audio"
+title = "East Asian Male (China) — v3"
+
+[[outputs]]
+id = "tKY14RzjBOP-SPGzXy4Wj"
+uri = "file://.local/voice_samples/NEW_west_african_female_v1.mp3"
+type = "audio"
+title = "West African Female (Ghana) — v1"
+
+[[outputs]]
+id = "iTob0A781EjeZmvet_K21"
+uri = "file://.local/voice_samples/NEW_west_african_female_v2.mp3"
+type = "audio"
+title = "West African Female (Ghana) — v2"
+
+[[outputs]]
+id = "gqq1TcLMBEcBIZT6X7d0Z"
+uri = "file://.local/voice_samples/NEW_west_african_female_v3.mp3"
+type = "audio"
+title = "West African Female (Ghana) — v3"
