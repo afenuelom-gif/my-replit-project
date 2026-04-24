@@ -102,7 +102,12 @@ export function useElevenLabsTTS(sessionId: number) {
   }, [revokeCurrent]);
 
   const pause = useCallback(() => {
-    // Pause via AudioContext so all nodes pause in sync.
+    // Pause the audio element directly — this works regardless of whether the
+    // element is routed through an AudioContext (createMediaElementSource may
+    // silently fail on some browsers, so we can't rely on ctx.suspend() alone).
+    const audio = sharedAudioRef.current;
+    if (audio && !audio.paused) audio.pause();
+    // Also suspend the AudioContext so any connected nodes stop.
     const ctx = audioCtxRef.current;
     if (ctx && ctx.state === "running") ctx.suspend().catch(() => {});
     if (isBrowserTTSRef.current) window.speechSynthesis?.pause();
@@ -110,6 +115,11 @@ export function useElevenLabsTTS(sessionId: number) {
   }, []);
 
   const resume = useCallback(() => {
+    // Resume the audio element directly.
+    const audio = sharedAudioRef.current;
+    if (audio && audio.paused && audio.src && !audio.ended) {
+      audio.play().catch(() => {});
+    }
     const ctx = audioCtxRef.current;
     if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
     if (isBrowserTTSRef.current) window.speechSynthesis?.resume();
