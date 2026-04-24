@@ -608,52 +608,61 @@ export default function Interview() {
 
       {/* Main Area: Video Grid + Transcript Panel */}
       <main className="relative z-10 flex-1 flex overflow-hidden">
-        {/* Video Grid */}
-        <div className="flex-1 p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 content-start overflow-y-auto">
-          {/* Interviewers */}
-          {sessionData?.interviewers.map(inv => {
-            const isActive = inv.id === activeInterviewerId;
-            const cardRef = getOrCreateCardRef(inv.id);
-            return (
-              <InterviewerCard
-                key={inv.id}
-                ref={cardRef}
-                interviewer={inv}
-                isActive={isActive}
-                sessionId={sessionId}
-                onSpeakingChange={(speaking) => {
-                  if (inv.id === activeInterviewerId) {
-                    setIsHeyGenSpeaking(speaking);
-                    if (!speaking && !isFinalThankYouRef.current && !isEndingManuallyRef.current) {
-                      setStatusMessage("Your turn — click the mic to answer");
-                    }
-                  }
-                }}
-              />
-            );
-          })}
+        {/* Video Grid — Teams/Zoom-style 2-column layout */}
+        {(() => {
+          const interviewerCount = sessionData?.interviewers.length ?? 0;
+          // With 2 interviewers (3 total tiles) the user tile spans both columns
+          // so it sits centred below. With 3 interviewers (4 tiles) it sits in the
+          // remaining cell next to the third interviewer.
+          const userSpansFull = interviewerCount === 2;
+          return (
+            <div className="flex-1 min-h-0 grid grid-cols-2 auto-rows-fr gap-2 sm:gap-3 p-2 sm:p-3">
+              {/* Interviewers */}
+              {sessionData?.interviewers.map(inv => {
+                const isActive = inv.id === activeInterviewerId;
+                const cardRef = getOrCreateCardRef(inv.id);
+                return (
+                  <InterviewerCard
+                    key={inv.id}
+                    ref={cardRef}
+                    interviewer={inv}
+                    isActive={isActive}
+                    sessionId={sessionId}
+                    onSpeakingChange={(speaking) => {
+                      if (inv.id === activeInterviewerId) {
+                        setIsHeyGenSpeaking(speaking);
+                        if (!speaking && !isFinalThankYouRef.current && !isEndingManuallyRef.current) {
+                          setStatusMessage("Your turn — click the mic to answer");
+                        }
+                      }
+                    }}
+                  />
+                );
+              })}
 
-          {/* User Webcam */}
-          <div className="relative rounded-xl overflow-hidden bg-zinc-900 border border-white/10 min-h-48">
-            {webcamEnabled ? (
-              <video 
-                ref={videoRef}
-                autoPlay 
-                playsInline 
-                muted 
-                className="w-full h-full object-cover transform -scale-x-100"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-zinc-800 min-h-48">
-                <VideoOff className="w-12 h-12 text-zinc-600" />
+              {/* User Webcam */}
+              <div className={`relative rounded-xl overflow-hidden bg-zinc-900 border border-white/10 min-h-[160px] ${userSpansFull ? "col-span-2" : ""}`}>
+                {webcamEnabled ? (
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover transform -scale-x-100"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                    <VideoOff className="w-12 h-12 text-zinc-600" />
+                  </div>
+                )}
+                <div className="absolute bottom-4 left-4 bg-black/80 px-3 py-1 rounded-md backdrop-blur-sm border border-white/10 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span className="font-medium text-sm">You</span>
+                </div>
               </div>
-            )}
-            <div className="absolute bottom-4 left-4 bg-black/80 px-3 py-1 rounded-md backdrop-blur-sm border border-white/10 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="font-medium text-sm">You</span>
             </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Transcript Panel — rolling view: last answered pair + current question */}
         <div className="hidden xl:flex flex-col w-80 border-l border-white/10 bg-black/30">
