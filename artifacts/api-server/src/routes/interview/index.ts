@@ -53,7 +53,7 @@ import {
   shouldAskFollowUp,
   generateDynamicInterviewers,
 } from "../../lib/interviewAI.js";
-import { seedInterviewersIfNeeded, HEYGEN_FEMALE_AVATARS, HEYGEN_MALE_AVATARS, FEMALE_VOICES, AVATAR_VOICE_MAP } from "../../lib/seedInterviewers.js";
+import { seedInterviewersIfNeeded, HEYGEN_FEMALE_AVATARS, HEYGEN_MALE_AVATARS, FEMALE_VOICES, AVATAR_VOICE_MAP, AVATAR_NAME_POOL } from "../../lib/seedInterviewers.js";
 import { isAdminUserOrEmail, hasAnyAdminConfigured } from "../../lib/adminAuth.js";
 
 const router: IRouter = Router();
@@ -223,11 +223,18 @@ router.post("/interview/sessions", optionalAuth, sessionCreateLimiter, async (re
           const heygenPool = isFemale ? HEYGEN_FEMALE_AVATARS : HEYGEN_MALE_AVATARS;
           const heygenIdx = isFemale ? femaleAvatarIdx - 1 : maleAvatarIdx - 1;
           const heygenAvatarId = heygenPool[heygenIdx % heygenPool.length];
-          // Use the voice mapped to this specific avatar so every session
-          // interviewer speaks with the correct ElevenLabs voice for their face.
+          // Use the voice mapped to this specific avatar.
           const voiceId = AVATAR_VOICE_MAP[avatarUrl] ?? p.voiceId;
+
+          // Override the AI-generated name with a canonical name from the
+          // approved pool for this avatar — prevents rogue name/face mismatches.
+          const namePool = AVATAR_NAME_POOL[avatarUrl] ?? [];
+          const canonicalName = namePool.length > 0
+            ? namePool[Math.floor(Math.random() * namePool.length)]
+            : p.name;
+
           return {
-            name: p.name,
+            name: canonicalName,
             title: p.title,
             company: p.company,
             personality: p.personality,

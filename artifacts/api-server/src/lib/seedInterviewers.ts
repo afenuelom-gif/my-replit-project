@@ -546,6 +546,18 @@ const INTERVIEWERS: Array<{
   },
 ];
 
+// ── Canonical name pool per avatar ────────────────────────────────────────
+// Derived from INTERVIEWERS above. Used by session creation to guarantee
+// that dynamically-generated session interviewers always get a name that
+// matches their avatar's appearance — preventing rogue name/face mismatches.
+export const AVATAR_NAME_POOL: Record<string, string[]> = {};
+for (const iv of INTERVIEWERS) {
+  if (!AVATAR_NAME_POOL[iv.avatarUrl]) AVATAR_NAME_POOL[iv.avatarUrl] = [];
+  if (!AVATAR_NAME_POOL[iv.avatarUrl].includes(iv.name)) {
+    AVATAR_NAME_POOL[iv.avatarUrl].push(iv.name);
+  }
+}
+
 // Patch voices and heygen IDs for existing rows that may have stale data
 async function patchExistingInterviewers(
   existing: Array<{ id: number; name: string; avatarUrl: string; voiceId: string; heygenAvatarId: string | null }>
