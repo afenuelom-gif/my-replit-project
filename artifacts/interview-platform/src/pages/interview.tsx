@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Mic, Video, VideoOff, SquareSquare, Activity, Loader2, MessagesSquare, XCircle, Play, Zap, CheckCircle2, Trophy } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, SquareSquare, Activity, Loader2, MessagesSquare, XCircle, Play, Zap, CheckCircle2, Trophy } from "lucide-react";
 import InterviewerCard, { type InterviewerCardHandle } from "@/components/InterviewerCard";
 import { AuthPrompt } from "@/components/AuthPrompt";
 
@@ -656,9 +656,22 @@ export default function Interview() {
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
+
+                {/* Mute / active mic badge — top-right corner like Teams/Zoom */}
+                <div className={`absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md backdrop-blur-sm border text-xs font-semibold transition-all duration-200 ${
+                  isRecording
+                    ? "bg-green-500/20 border-green-500/50 text-green-400"
+                    : "bg-red-500/20 border-red-500/40 text-red-400"
+                }`}>
+                  {isRecording
+                    ? <><Mic className="w-3 h-3" /><span>Live</span></>
+                    : <><MicOff className="w-3 h-3" /><span>Muted</span></>
+                  }
+                </div>
+
                 <div className="absolute bottom-0 left-0 right-0 px-3 pt-4 pb-2">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-200 ${isRecording ? "bg-green-400 animate-pulse" : "bg-red-500"}`} />
                     <span className="font-semibold text-sm text-white">You</span>
                   </div>
                 </div>
