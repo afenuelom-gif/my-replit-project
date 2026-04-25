@@ -551,3 +551,9 @@ id = "CpcgKNAZfRzANW3PV3uby"
 uri = "file://.local/voice_samples/PREVIEW_SAUJnuf0vCDgTQDWx4wI.mp3"
 type = "audio"
 title = "Voice ID: SAUJnuf0vCDgTQDWx4wI"
+
+[[outputs]]
+id = "yHRnmZ54mZmAeQVSwmNod"
+uri = "file://screenshots/prepinterv-homepage.jpg"
+type = "image"
+title = "PrepInterv AI — Homepage"
