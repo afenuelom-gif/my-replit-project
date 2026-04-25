@@ -557,3 +557,9 @@ id = "yHRnmZ54mZmAeQVSwmNod"
 uri = "file://screenshots/prepinterv-homepage.jpg"
 type = "image"
 title = "PrepInterv AI — Homepage"
+
+[[outputs]]
+id = "BF9pEHNm0weenaTKXl56D"
+uri = "file://screenshots/prepinterv-wordmark.jpg"
+type = "image"
+title = "PrepInterv AI — Wordmark"
