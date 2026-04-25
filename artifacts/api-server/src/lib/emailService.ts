@@ -1,6 +1,15 @@
 import { Resend } from "resend";
 import { logger } from "./logger.js";
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 function getClient(): Resend | null {
   const key = process.env.RESEND_API_KEY;
   if (!key) return null;
@@ -48,7 +57,7 @@ function btn(label: string, href: string): string {
 }
 
 function hi(firstName?: string | null): string {
-  return firstName ? `Hi ${firstName},` : "Hi there,";
+  return firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,";
 }
 
 async function deliver(to: string, subject: string, html: string): Promise<void> {
@@ -193,7 +202,7 @@ export const emailService = {
 
   sendWebhookFailureAlert(eventType: string, eventId: string, err: unknown): void {
     const adminEmail = process.env.ADMIN_EMAIL ?? "hello@prepinterv.com";
-    const message = err instanceof Error ? err.message : String(err);
+    const message = escapeHtml(err instanceof Error ? err.message : String(err));
     const timestamp = new Date().toUTCString();
     deliver(adminEmail, `[ALERT] Stripe webhook failed — ${eventType}`, wrap(`
       <p style="margin:0 0 16px;font-size:17px;font-weight:700;color:#dc2626;">⚠️ Stripe Webhook Failure</p>
