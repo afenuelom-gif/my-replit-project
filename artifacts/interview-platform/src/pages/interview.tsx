@@ -321,11 +321,11 @@ export default function Interview() {
       if (userMe?.plan === "starter" && userMe.sessionCredits <= 1) {
         setShowUpsellModal(true);
       } else {
-        setLocation(`/report/${sessionId}`);
+        setLocation(`/report/${sessionId}`, { replace: true });
       }
     } catch (e) {
       console.error(e);
-      setLocation(`/report/${sessionId}`);
+      setLocation(`/report/${sessionId}`, { replace: true });
     }
   };
 
@@ -964,7 +964,7 @@ export default function Interview() {
                   <Zap className="w-4 h-4" /> Upgrade to Pro
                 </a>
                 <button
-                  onClick={() => setLocation(`/report/${sessionId}`)}
+                  onClick={() => setLocation(`/report/${sessionId}`, { replace: true })}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
                 >
                   View my report first

@@ -70,30 +70,51 @@ function buildScript(report: ReportData, hasFeedback: boolean): NarrationItem[] 
     return [{ label: "No Interview Data", text: "It looks like no questions were answered in this session. Complete an interview to receive a voice review." }];
   }
   const items: NarrationItem[] = [];
+  const total = report.answerFeedback.length;
+
   items.push({ label: "Introduction", text: "Let's review this together." });
+
   report.answerFeedback.forEach((fb, i) => {
+    // 1. Question
     items.push({
-      label: `Question ${i + 1} of ${report.answerFeedback.length}`,
-      text: `For Question ${i + 1}, you were asked: ${fb.questionText}. Here is the feedback I have for you. ${fb.feedback}`,
+      label: `Question ${i + 1} of ${total}`,
+      text: `Question ${i + 1}. You were asked: ${fb.questionText}.`,
     });
+
+    // 2. Feedback for this question
+    items.push({
+      label: `Question ${i + 1} — Feedback`,
+      text: `Here is the feedback for your answer. ${fb.feedback}`,
+    });
+
+    // 3. Strengths for this question
+    const strengths = fb.strengths?.filter(Boolean) ?? [];
+    if (strengths.length > 0) {
+      items.push({
+        label: `Question ${i + 1} — Strengths`,
+        text: `Your strengths for this answer. ${strengths.join(". ")}.`,
+      });
+    }
+
+    // 4. Areas to improve for this question
+    const improvements = fb.improvements?.filter(Boolean) ?? [];
+    if (improvements.length > 0) {
+      items.push({
+        label: `Question ${i + 1} — Areas to Improve`,
+        text: `Areas to improve for this answer. ${improvements.join(". ")}.`,
+      });
+    }
   });
-  const allStrengths = report.answerFeedback.flatMap((fb) => fb.strengths).filter(Boolean);
-  if (allStrengths.length > 0) {
+
+  // Overall suggestions (if any)
+  const suggestions = (report.suggestions ?? []).filter(Boolean);
+  if (suggestions.length > 0) {
     items.push({
-      label: "Strengths",
-      text: `Here are your key strengths. ${allStrengths.slice(0, 4).join(". ")}.`,
+      label: "Overall Suggestions",
+      text: `Finally, here are some overall suggestions. ${suggestions.slice(0, 3).join(". ")}.`,
     });
   }
-  const combined = [
-    ...new Set(report.answerFeedback.flatMap((fb) => fb.improvements)),
-    ...(report.suggestions ?? []),
-  ].filter(Boolean);
-  if (combined.length > 0) {
-    items.push({
-      label: "Areas to Improve",
-      text: `Here are the areas you can improve. ${combined.slice(0, 3).join(". ")}.`,
-    });
-  }
+
   const closingText = hasFeedback
     ? "This ends the review. Keep practicing, and all the best with your interview preparations."
     : "This ends the review. We would appreciate your feedback on this interview to help us improve the service. Keep practicing, and all the best with your interview preparations.";
